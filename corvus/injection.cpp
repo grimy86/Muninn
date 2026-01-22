@@ -1,8 +1,8 @@
-#include "injector.hpp"
+#include "injection.hpp"
 
-namespace corvus::injector
+namespace corvus::injection
 {
-	bool SimpleDLLInject(const std::string& dllPath, const std::string& procName)
+	bool SimpleInject(const std::string& dllPath, const std::string& procName)
 	{
 		// Guard clauses
 		if (dllPath.empty() || procName.empty()) return false;
@@ -13,7 +13,7 @@ namespace corvus::injector
 		{
 			for (int i = 0; i < 5 && !procId; i++)
 			{
-				procId = corvus::proc::GetProcessIdByName(procName);
+				procId = corvus::process::GetProcessIdByName(procName);
 				if (!procId) Sleep(10000);
 			}
 			if (!procId) return false;

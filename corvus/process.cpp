@@ -1,6 +1,6 @@
-#include "proc.hpp"
+#include "process.hpp"
 
-namespace corvus::proc
+namespace corvus::process
 {
 	DWORD GetProcessIdByName(const std::string& processName)
 	{
@@ -144,5 +144,21 @@ namespace corvus::proc
 			hwnd = GetNextWindow(hwnd, GW_HWNDNEXT);
 		}
 		return false;
+	}
+
+	Win32_Process::Win32_Process(const std::string& processName)
+		: _processName{ processName }
+	{
+		_processId = corvus::process::GetProcessIdByName(GetProcessName());
+		_moduleBaseAddress = corvus::memory::GetModuleBaseAddress(_processId, processName);
+		_processHandle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, _processId);
+	}
+
+	Win32_Process::~Win32_Process()
+	{
+		if (corvus::memory::IsValidHandle(_processHandle))
+		{
+			CloseHandle(_processHandle);
+		};
 	}
 }

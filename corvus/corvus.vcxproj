@@ -29,11 +29,10 @@
     <ClCompile Include="imgui\imgui_impl_win32.cpp" />
     <ClCompile Include="imgui\imgui_tables.cpp" />
     <ClCompile Include="imgui\imgui_widgets.cpp" />
-    <ClCompile Include="injector.cpp" />
+    <ClCompile Include="injection.cpp" />
     <ClCompile Include="math.cpp" />
     <ClCompile Include="memory.cpp" />
-    <ClCompile Include="proc.cpp" />
-    <ClCompile Include="windows.cpp" />
+    <ClCompile Include="process.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="converter.hpp" />
@@ -48,11 +47,10 @@
     <ClInclude Include="imgui\imstb_rectpack.h" />
     <ClInclude Include="imgui\imstb_textedit.h" />
     <ClInclude Include="imgui\imstb_truetype.h" />
-    <ClInclude Include="injector.hpp" />
+    <ClInclude Include="injection.hpp" />
     <ClInclude Include="math.hpp" />
     <ClInclude Include="memory.hpp" />
-    <ClInclude Include="proc.hpp" />
-    <ClInclude Include="windows.hpp" />
+    <ClInclude Include="process.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="imgui.ini" />
