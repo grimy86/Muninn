@@ -110,7 +110,7 @@ namespace corvus::process
 
 	void WIN32Process::QueryHandlesW32()
 	{
-		HANDLE pHandle = OpenProcessHandleW32(m_processId, PROCESS_QUERY_INFORMATION);
+		HANDLE pHandle = OpenProcessHandleW32(m_processId, PROCESS_ALL_ACCESS);
 		if (!IsValidHandle(pHandle))
 			return;
 
@@ -122,8 +122,7 @@ namespace corvus::process
 			PSS_CAPTURE_HANDLE_TRACE;
 
 		HPSS hSnapshot{};
-		DWORD captureStatus{ PssCaptureSnapshot(pHandle, captureFlags, 0, &hSnapshot) };
-		if (captureStatus != ERROR_SUCCESS)
+		if (PssCaptureSnapshot(pHandle, captureFlags, 0, &hSnapshot) != ERROR_SUCCESS)
 		{
 			CloseHandle(pHandle);
 			return;
@@ -137,13 +136,10 @@ namespace corvus::process
 			return;
 		}
 
-		// m_handles.clear();
-		// m_handles.reserve(1024);
-
-		for (;;)
+		while (true)
 		{
 			PSS_HANDLE_ENTRY handleBuffer{};
-			DWORD status = PssWalkSnapshot(
+			const DWORD walkStatus = PssWalkSnapshot(
 				hSnapshot,
 				PSS_WALK_HANDLES,
 				hWalkMarker,
@@ -151,31 +147,12 @@ namespace corvus::process
 				sizeof(handleBuffer)
 			);
 
-			if (status == ERROR_NO_MORE_ITEMS)
-				break;
-
-			if (status != ERROR_SUCCESS)
+			if (walkStatus == ERROR_NO_MORE_ITEMS || walkStatus != ERROR_SUCCESS)
 				break;
 
 			HandleEntry handle{};
-
-			// Safe string copy using provided lengths (bytes → wchar count)
-			if (handleBuffer.TypeName && handleBuffer.TypeNameLength)
-			{
-				handle.TypeName.assign(
-					handleBuffer.TypeName,
-					handleBuffer.TypeNameLength / sizeof(wchar_t)
-				);
-			}
-
-			if (handleBuffer.ObjectName && handleBuffer.ObjectNameLength)
-			{
-				handle.ObjectName.assign(
-					handleBuffer.ObjectName,
-					handleBuffer.ObjectNameLength / sizeof(wchar_t)
-				);
-			}
-
+			handle.TypeName = handleBuffer.TypeName ? handleBuffer.TypeName : L"";
+			handle.ObjectName = handleBuffer.ObjectName ? handleBuffer.ObjectName : L"";
 			handle.handle = handleBuffer.Handle;
 			handle.flags = handleBuffer.Flags;
 			handle.objectType = static_cast<HandleType>(handleBuffer.ObjectType);
@@ -187,12 +164,11 @@ namespace corvus::process
 			handle.NonPagedPoolCharge = handleBuffer.NonPagedPoolCharge;
 			handle.TypeNameLength = handleBuffer.TypeNameLength;
 			handle.ObjectNameLength = handleBuffer.ObjectNameLength;
-
 			m_handles.push_back(handle);
 		}
 
 		PssWalkMarkerFree(hWalkMarker);
-		PssFreeSnapshot(GetCurrentProcess(), hSnapshot);
+		PssFreeSnapshot(pHandle, hSnapshot);
 		CloseHandle(pHandle);
 	}
 
