@@ -1,6 +1,7 @@
 ﻿#include "process.hpp"
 #include <TlHelp32.h>
 #include <Psapi.h>
+#include <ProcessSnapshot.h>
 
 namespace corvus::process
 {
@@ -30,15 +31,15 @@ namespace corvus::process
 
 	void WIN32Process::QueryModulesW32()
 	{
-		HANDLE hSnapshot = CreateToolhelp32Snapshot(
+		HANDLE hSnapshot{ CreateToolhelp32Snapshot(
 			TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32,
 			m_processId
-		);
+		) };
 
-		HANDLE hProcess = OpenProcessHandleW32(
+		HANDLE hProcess{ OpenProcessHandleW32(
 			m_processId,
 			PROCESS_QUERY_INFORMATION | PROCESS_VM_READ
-		);
+		) };
 
 		if (hSnapshot == INVALID_HANDLE_VALUE || hProcess == INVALID_HANDLE_VALUE)
 			return;
@@ -109,17 +110,42 @@ namespace corvus::process
 
 	void WIN32Process::QueryHandlesW32()
 	{
+		HANDLE pHandle{ OpenProcessHandleW32(m_processId, PROCESS_ALL_ACCESS) };
+		PSS_CAPTURE_FLAGS captureFlags{
+			PSS_CAPTURE_HANDLES |
+			PSS_CAPTURE_HANDLE_NAME_INFORMATION |
+			PSS_CAPTURE_HANDLE_BASIC_INFORMATION |
+			PSS_CAPTURE_HANDLE_TYPE_SPECIFIC_INFORMATION |
+			PSS_CAPTURE_HANDLE_TRACE };
+		HPSS hSnaphot{};
+		DWORD snaphot{ PssCaptureSnapshot(pHandle, captureFlags, 0, &hSnaphot) };
 
-		HandleEntry handle{};
-		handle.ownerPid = m_processId;
-		handle.grantedAccess = 0x0;
-		handle.handleValue = 0x0;
-		handle.type = HandleType::Unknown;
-		handle.objectTypeNumber = 0x0;
-		handle.flags = 0x0;
-		handle.handle = 0x0;
-		handle.object = 0x0;
-		m_handles.push_back(handle);
+		PSS_WALK_INFORMATION_CLASS handleInfoClass{ PSS_WALK_HANDLES };
+		PSS_HANDLE_ENTRY handleBuffer{};
+		HPSSWALK hWalkMarker{};
+		DWORD walkMarkerCreate{ PssWalkMarkerCreate(nullptr, &hWalkMarker) };
+		DWORD snapshotWalk{ PssWalkSnapshot(hSnaphot, handleInfoClass, hWalkMarker , &handleBuffer, sizeof(handleBuffer)) };
+
+		while (snapshotWalk == static_cast<DWORD>(ERROR_SUCCESS))
+		{
+			HandleEntry handle{};
+			handle.TypeName = handleBuffer.TypeName;
+			handle.ObjectName = handleBuffer.ObjectName;
+			handle.handle = handleBuffer.Handle;
+			handle.flags = handleBuffer.Flags;
+			handle.objectType = static_cast<HandleType>(handleBuffer.ObjectType);
+			handle.Attributes = handleBuffer.Attributes;
+			handle.GrantedAccess = handleBuffer.GrantedAccess;
+			handle.HandleCount = handleBuffer.HandleCount;
+			handle.PointerCount = handleBuffer.PointerCount;
+			handle.PagedPoolCharge = handleBuffer.PagedPoolCharge;
+			handle.NonPagedPoolCharge = handleBuffer.NonPagedPoolCharge;
+			handle.TypeNameLength = handleBuffer.TypeNameLength;
+			handle.ObjectNameLength = handleBuffer.ObjectNameLength;
+			m_handles.push_back(handle);
+		}
+		CloseHandle(pHandle);
+		return;
 	}
 
 	void WIN32Process::QueryModuleBaseAddressW32()

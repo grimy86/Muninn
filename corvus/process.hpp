@@ -8,64 +8,66 @@ namespace corvus::process
 {
 	enum class ArchitectureType : uint8_t // BYTE
 	{
-		Unknown = 0,
-		Native = 1,
-		x86 = 2,
-		x64 = 3,
-		arm = 4,
-		arm64 = 5
+		Unknown,
+		Native,
+		x86,
+		x64,
+		arm,
+		arm64
 	};
 
 	enum class HandleType : uint8_t // BYTE
 	{
-		Unknown = 0,
-		Process = 1,
-		Thread = 2,
-		File = 3,
-		Section = 4,
-		Mutex = 5,
-		Event = 6,
-		RegistryKey = 7,
-		Socket = 8,
-		Heap = 9
+		Unknown,
+		Process,
+		Thread,
+		Mutant,
+		Event,
+		Section,
+		Semaphore
 	};
 
 	struct ModuleEntry
 	{
 		std::wstring moduleName{}; // UTF-16 string (heap-allocated, size varies)
 		std::wstring modulePath{}; // UTF-16 string (heap-allocated, size varies)
-		SIZE_T size; // 32 | 64 bits
-		uintptr_t baseAddress; // 32 | 64 bits
-		SIZE_T moduleBaseSize; // 32 | 64 bits
-		HMODULE ownerHandle; // 32 | 64 bits
+		SIZE_T size{}; // 32 | 64 bits
+		uintptr_t baseAddress{}; // 32 | 64 bits
+		SIZE_T moduleBaseSize{}; // 32 | 64 bits
+		HMODULE ownerHandle{}; // 32 | 64 bits
 		LPVOID entryPoint{}; // 32 | 64 bits
-		DWORD moduleId; // 32 bits
-		DWORD processId; // 32 bits
-		DWORD globalLoadCount; // 32 bits
-		DWORD processLoadCount; // 32 bits
+		DWORD moduleId{}; // 32 bits
+		DWORD processId{}; // 32 bits
+		DWORD globalLoadCount{}; // 32 bits
+		DWORD processLoadCount{}; // 32 bits
 	};
 
 	struct ThreadEntry
 	{
-		SIZE_T size; // 32 bits
-		DWORD cntUsage; // 32 bits
-		DWORD threadId; // 32 bits
+		SIZE_T size{}; // 32 bits
+		DWORD cntUsage{}; // 32 bits
+		DWORD threadId{}; // 32 bits
 		DWORD ownerProcessId{}; // 32 bits
 		LONG basePriority{}; // 32 bits
 		LONG deltaPriority{}; // 32 bits
-		DWORD flags; // 32 bits
+		DWORD flags{}; // 32 bits
 	};
 
 	struct HandleEntry
 	{
+		std::wstring TypeName{}; // UTF-16 string (heap-allocated, size varies)
+		std::wstring ObjectName{}; // UTF-16 string (heap-allocated, size varies)
 		HANDLE handle{}; // x86: 32 bits, x64: 64 bits
-		PVOID object{}; // x86: 32 bits, x64: 64 bits
-		DWORD ownerPid{}; // 32 bits
-		ACCESS_MASK grantedAccess{}; // 32 bits
-		USHORT handleValue{}; // 16 bits
-		HandleType type{ HandleType::Unknown }; // 8 bits
-		BYTE objectTypeNumber{}; // 8 bits
-		BYTE flags{}; // 8 bits
+		DWORD flags{}; // 32 bits
+		HandleType objectType{}; // 32 bits
+		DWORD Attributes{}; // 32 bits
+		DWORD GrantedAccess{}; // 32 bits
+		DWORD HandleCount{}; // 32 bits
+		DWORD PointerCount{}; // 32 bits
+		DWORD PagedPoolCharge{}; // 32 bits
+		DWORD NonPagedPoolCharge{}; // 32 bits
+		WORD TypeNameLength{}; // 16 bits
+		WORD ObjectNameLength{}; // 16 bits
 	};
 
 	class IProcess
