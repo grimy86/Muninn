@@ -88,14 +88,14 @@ namespace corvus::imgui
 			ImGuiTableFlags_ScrollY |
 			ImGuiTableFlags_SizingStretchProp))
 		{
-			ImGui::TableSetupColumn("PID", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+			ImGui::TableSetupColumn("PID", ImGuiTableColumnFlags_WidthFixed, 25.0f);
 			ImGui::TableSetupColumn("Process Name");
-			ImGui::TableSetupColumn("CPU ISA", ImGuiTableColumnFlags_WidthFixed, 150.0f);
+			ImGui::TableSetupColumn("CPU ISA");
 			ImGui::TableHeadersRow();
 
 			if (!foreground.empty())
 			{
-				DrawSectionHeader("Foreground Processes");
+				DrawSectionHeader("Windowed Processes");
 				for (auto& proc : foreground)
 					DrawProcessRow(proc.get());
 			}
@@ -132,8 +132,8 @@ namespace corvus::imgui
 			ImGuiTableFlags_Resizable |
 			ImGuiTableFlags_ScrollY))
 		{
-			ImGui::TableSetupColumn("Base", ImGuiTableColumnFlags_WidthFixed, 110.0f);
-			ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed, 90.0f);
+			ImGui::TableSetupColumn("Base");
+			ImGui::TableSetupColumn("Size");
 			ImGui::TableSetupColumn("Name");
 			ImGui::TableHeadersRow();
 
@@ -170,28 +170,44 @@ namespace corvus::imgui
 
 		if (ImGui::BeginTable(
 			"threads_table",
-			3,
+			7,
 			ImGuiTableFlags_RowBg |
 			ImGuiTableFlags_Borders |
 			ImGuiTableFlags_Resizable |
 			ImGuiTableFlags_ScrollY))
 		{
-			ImGui::TableSetupColumn("TID", ImGuiTableColumnFlags_WidthFixed, 90.0f);
-			ImGui::TableSetupColumn("PID", ImGuiTableColumnFlags_WidthFixed, 90.0f);
-			ImGui::TableSetupColumn("Base Priority");
+			ImGui::TableSetupColumn("size");
+			ImGui::TableSetupColumn("cntUsage");
+			ImGui::TableSetupColumn("threadId");
+			ImGui::TableSetupColumn("ownerProcessId");
+			ImGui::TableSetupColumn("basePriority");
+			ImGui::TableSetupColumn("deltaPriority");
+			ImGui::TableSetupColumn("flags");
 			ImGui::TableHeadersRow();
 
 			for (const auto& t : threads)
 			{
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
-				ImGui::Text("%lu", t.threadId);
+				ImGui::Text("%lu", t.size);
 
 				ImGui::TableSetColumnIndex(1);
-				ImGui::Text("%lu", g_SelectedProcess->GetProcessId());
+				ImGui::Text("%lu", t.cntUsage);
 
 				ImGui::TableSetColumnIndex(2);
-				ImGui::Text("%ld", t.priority);
+				ImGui::Text("%lu", t.threadId);
+
+				ImGui::TableSetColumnIndex(3);
+				ImGui::Text("%lu", t.ownerProcessId);
+
+				ImGui::TableSetColumnIndex(4);
+				ImGui::Text("%lu", t.basePriority);
+
+				ImGui::TableSetColumnIndex(5);
+				ImGui::Text("%lu", t.deltaPriority);
+
+				ImGui::TableSetColumnIndex(6);
+				ImGui::Text("%lu", t.flags);
 			}
 
 			ImGui::EndTable();
@@ -213,31 +229,47 @@ namespace corvus::imgui
 
 		if (ImGui::BeginTable(
 			"handles_table",
-			4,
+			8,
 			ImGuiTableFlags_RowBg |
 			ImGuiTableFlags_Borders |
 			ImGuiTableFlags_Resizable |
 			ImGuiTableFlags_ScrollY))
 		{
+			ImGui::TableSetupColumn("Owner PID", ImGuiTableColumnFlags_WidthFixed, 90.0f);
+			ImGui::TableSetupColumn("Granted Access", ImGuiTableColumnFlags_WidthFixed, 90.0f);
+			ImGui::TableSetupColumn("Index", ImGuiTableColumnFlags_WidthFixed, 90.0f);
+			ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 90.0f);
+			ImGui::TableSetupColumn("Object Type Number", ImGuiTableColumnFlags_WidthFixed, 90.0f);
+			ImGui::TableSetupColumn("Flags", ImGuiTableColumnFlags_WidthFixed, 90.0f);
 			ImGui::TableSetupColumn("Handle", ImGuiTableColumnFlags_WidthFixed, 90.0f);
-			ImGui::TableSetupColumn("Access", ImGuiTableColumnFlags_WidthFixed, 120.0f);
-			ImGui::TableSetupColumn("TypeIdx", ImGuiTableColumnFlags_WidthFixed, 80.0f);
-			ImGui::TableSetupColumn("Object");
+			ImGui::TableSetupColumn("Kernel Object", ImGuiTableColumnFlags_WidthFixed, 90.0f);
 			ImGui::TableHeadersRow();
 
 			for (const auto& h : handles)
 			{
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
-				ImGui::Text("0x%llX", h.handleValue);
+				ImGui::Text("%lu", h.ownerPid);
 
 				ImGui::TableSetColumnIndex(1);
-				ImGui::Text("0x%08X", h.grantedAccess);
+				ImGui::Text("0x%08lX", static_cast<unsigned long>(h.grantedAccess));
 
 				ImGui::TableSetColumnIndex(2);
-				ImGui::Text("%u", static_cast<unsigned>(h.type));
+				ImGui::Text("%hu", h.handleValue);
 
 				ImGui::TableSetColumnIndex(3);
+				ImGui::Text("%u", static_cast<unsigned int>(h.type));
+
+				ImGui::TableSetColumnIndex(4);
+				ImGui::Text("%u", static_cast<unsigned int>(h.objectTypeNumber));
+
+				ImGui::TableSetColumnIndex(5);
+				ImGui::Text("0x%02X", static_cast<unsigned>(h.flags));
+
+				ImGui::TableSetColumnIndex(6);
+				ImGui::Text("0x%p", h.handle);
+
+				ImGui::TableSetColumnIndex(7);
 				ImGui::Text("0x%p", h.object);
 			}
 

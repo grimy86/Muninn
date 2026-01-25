@@ -30,31 +30,42 @@ namespace corvus::process
 		Heap = 9
 	};
 
-	struct Module
+	struct ModuleEntry
 	{
-		std::wstring description{}; // UTF-16 string (heap-allocated, size varies)
-		uintptr_t baseAddress{}; // x86: 32 bits, x64 : 64 bits
-		SIZE_T size{}; // x86: 32 bits, x64 : 64 bits
+		std::wstring moduleName{}; // UTF-16 string (heap-allocated, size varies)
+		std::wstring modulePath{}; // UTF-16 string (heap-allocated, size varies)
+		SIZE_T size; // 32 | 64 bits
+		uintptr_t baseAddress; // 32 | 64 bits
+		SIZE_T moduleBaseSize; // 32 | 64 bits
+		HMODULE ownerHandle; // 32 | 64 bits
+		LPVOID entryPoint{}; // 32 | 64 bits
+		DWORD moduleId; // 32 bits
+		DWORD processId; // 32 bits
+		DWORD globalLoadCount; // 32 bits
+		DWORD processLoadCount; // 32 bits
 	};
 
-	struct Thread
+	struct ThreadEntry
 	{
-		std::wstring description{}; // UTF-16 string (heap-allocated, size varies)
-		DWORD threadId{}; // 32 bits
-		DWORD ownerPid{}; // 32 bits
-		LONG priority{}; // 32 bits
+		SIZE_T size; // 32 bits
+		DWORD cntUsage; // 32 bits
+		DWORD threadId; // 32 bits
+		DWORD ownerProcessId{}; // 32 bits
+		LONG basePriority{}; // 32 bits
+		LONG deltaPriority{}; // 32 bits
+		DWORD flags; // 32 bits
 	};
 
-	struct Handle
+	struct HandleEntry
 	{
+		HANDLE handle{}; // x86: 32 bits, x64: 64 bits
+		PVOID object{}; // x86: 32 bits, x64: 64 bits
 		DWORD ownerPid{}; // 32 bits
 		ACCESS_MASK grantedAccess{}; // 32 bits
-		USHORT handleValue{}; // NT handle index, 16 bits
+		USHORT handleValue{}; // 16 bits
 		HandleType type{ HandleType::Unknown }; // 8 bits
-		BYTE objectTypeNumber{}; // NT object type index, 8 bits
+		BYTE objectTypeNumber{}; // 8 bits
 		BYTE flags{}; // 8 bits
-		HANDLE handle{}; // void*
-		PVOID object{}; // void*
 	};
 
 	class IProcess
@@ -64,9 +75,9 @@ namespace corvus::process
 
 		// virtual const noexcept getters
 		virtual const std::wstring& GetName() const noexcept = 0;
-		virtual const std::vector<Module>& GetModules() const noexcept = 0;
-		virtual const std::vector<Thread>& GetThreads() const noexcept = 0;
-		virtual const std::vector<Handle>& GetHandles() const noexcept = 0;
+		virtual const std::vector<ModuleEntry>& GetModules() const noexcept = 0;
+		virtual const std::vector<ThreadEntry>& GetThreads() const noexcept = 0;
+		virtual const std::vector<HandleEntry>& GetHandles() const noexcept = 0;
 		virtual uintptr_t GetModuleBaseAddress() const noexcept = 0;
 		virtual uintptr_t GetPEBAddress() const noexcept = 0;
 		virtual DWORD GetProcessId() const noexcept = 0;
@@ -88,9 +99,9 @@ namespace corvus::process
 
 		// base members
 		std::wstring m_name{}; // UTF-16 string (heap-allocated, size varies)
-		std::vector<Module> m_modules{}; // (heap-allocated, size varies)
-		std::vector<Thread> m_threads{}; // (heap-allocated, size varies)
-		std::vector<Handle> m_handles{}; // (heap-allocated, size varies)
+		std::vector<ModuleEntry> m_modules{}; // (heap-allocated, size varies)
+		std::vector<ThreadEntry> m_threads{}; // (heap-allocated, size varies)
+		std::vector<HandleEntry> m_handles{}; // (heap-allocated, size varies)
 		uintptr_t m_moduleBaseAddress{}; // x86: 32 bits, x64: 64 bits
 		uintptr_t m_pebAddress{}; // x86: 32 bits, x64: 64 bits
 		DWORD m_processId{}; // 32 bits
@@ -103,9 +114,9 @@ namespace corvus::process
 
 		// const noexcept getters
 		const std::wstring& GetName() const noexcept override { return m_name; }
-		const std::vector<Module>& GetModules() const noexcept override { return m_modules; }
-		const std::vector<Thread>& GetThreads() const noexcept override { return m_threads; }
-		const std::vector<Handle>& GetHandles() const noexcept override { return m_handles; }
+		const std::vector<ModuleEntry>& GetModules() const noexcept override { return m_modules; }
+		const std::vector<ThreadEntry>& GetThreads() const noexcept override { return m_threads; }
+		const std::vector<HandleEntry>& GetHandles() const noexcept override { return m_handles; }
 		uintptr_t GetModuleBaseAddress() const noexcept override { return m_moduleBaseAddress; }
 		uintptr_t GetPEBAddress() const noexcept override { return m_pebAddress; }
 		DWORD GetProcessId() const noexcept override { return m_processId; }
@@ -114,9 +125,14 @@ namespace corvus::process
 		BOOL HasVisibleWindow() const noexcept override { return m_hasVisibleWindow; }
 
 		// static noexcept validators
-		static inline bool IsValidProcessId(const DWORD processId) noexcept { return processId != 0; }
-		static inline bool IsValidModuleBaseAddress(const DWORD moduleBaseAddress) noexcept { return moduleBaseAddress != 0; }
-		static inline bool IsValidHandle(const HANDLE processHandle) noexcept { return (processHandle != nullptr && processHandle != INVALID_HANDLE_VALUE); }
+		static inline bool IsValidProcessId(const DWORD processId) noexcept { return processId != 0 && (processId % 4 == 0); }
+		static inline bool IsValidModuleBaseAddress(const DWORD moduleBaseAddress) noexcept { return moduleBaseAddress != ERROR_INVALID_ADDRESS; }
+		static inline bool IsValidHandle(const HANDLE processHandle) noexcept
+		{
+			return (processHandle != nullptr &&
+				processHandle != reinterpret_cast<HANDLE>(-1) &&
+				processHandle != INVALID_HANDLE_VALUE);
+		}
 	};
 
 	class WIN32Process : public WindowsProcessBase
@@ -140,7 +156,7 @@ namespace corvus::process
 		// static process functions
 		static std::vector<WIN32Process> GetProcessListW32();
 		static HANDLE OpenProcessHandleW32(const DWORD processId, const ACCESS_MASK accessMask);
-		static uintptr_t GetModuleBaseAddress(const DWORD& processId, const std::wstring& moduleName);
+		static uintptr_t GetModuleBaseAddressW32(const DWORD& processId, const std::wstring& moduleName);
 		static BOOL SuspendThreadW32(const DWORD threadId);
 		static BOOL ResumeThreadW32(const DWORD threadId);
 

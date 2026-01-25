@@ -1,5 +1,6 @@
 ﻿#include "process.hpp"
 #include <TlHelp32.h>
+#include <Psapi.h>
 
 namespace corvus::process
 {
@@ -29,34 +30,53 @@ namespace corvus::process
 
 	void WIN32Process::QueryModulesW32()
 	{
-		HANDLE snapshot = CreateToolhelp32Snapshot(
+		HANDLE hSnapshot = CreateToolhelp32Snapshot(
 			TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32,
 			m_processId
 		);
 
-		if (snapshot == INVALID_HANDLE_VALUE) return;
+		HANDLE hProcess = OpenProcessHandleW32(
+			m_processId,
+			PROCESS_QUERY_INFORMATION | PROCESS_VM_READ
+		);
 
+		if (hSnapshot == INVALID_HANDLE_VALUE || hProcess == INVALID_HANDLE_VALUE)
+			return;
+
+		MODULEINFO moduleInfoBuffer{};
 		MODULEENTRY32W entry{};
 		entry.dwSize = sizeof(entry);
 
-		if (Module32FirstW(snapshot, &entry))
+		if (Module32FirstW(hSnapshot, &entry))
 		{
 			do
 			{
-				Module module{};
-				module.description = entry.szModule;
+				K32GetModuleInformation(hProcess, reinterpret_cast<HMODULE>(entry.modBaseAddr),
+					&moduleInfoBuffer, sizeof(moduleInfoBuffer));
+
+				ModuleEntry module{};
+				module.moduleName = entry.szModule;
+				module.modulePath = entry.szExePath;
+				module.size = entry.dwSize;
 				module.baseAddress = reinterpret_cast<uintptr_t>(entry.modBaseAddr);
-				module.size = entry.modBaseSize;
+				module.moduleBaseSize = entry.modBaseSize;
+				module.ownerHandle = entry.hModule;
+				module.entryPoint = moduleInfoBuffer.EntryPoint;
+				module.moduleId = entry.th32ModuleID;
+				module.processId = entry.th32ProcessID;
+				module.globalLoadCount = entry.GlblcntUsage;
+				module.processLoadCount = entry.ProccntUsage;
+
 				m_modules.push_back(module);
-			} while (Module32NextW(snapshot, &entry));
+			} while (Module32NextW(hSnapshot, &entry));
 		}
 
-		CloseHandle(snapshot);
+		CloseHandle(hSnapshot);
 	}
 
 	void WIN32Process::QueryThreadsW32()
 	{
-		std::vector<Thread> threads;
+		std::vector<ThreadEntry> threads;
 
 		HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
 		if (snapshot == INVALID_HANDLE_VALUE) return;
@@ -71,10 +91,14 @@ namespace corvus::process
 				if (entry.th32OwnerProcessID != m_processId)
 					continue;
 
-				Thread thread{};
+				ThreadEntry thread{};
+				thread.size = entry.dwSize;
+				thread.cntUsage = entry.cntUsage;
 				thread.threadId = entry.th32ThreadID;
-				thread.ownerPid = entry.th32OwnerProcessID;
-				thread.priority = entry.tpBasePri;
+				thread.ownerProcessId = entry.th32OwnerProcessID;
+				thread.basePriority = entry.tpBasePri;
+				thread.deltaPriority = entry.tpDeltaPri;
+				thread.flags = entry.dwFlags;
 				m_threads.push_back(thread);
 
 			} while (Thread32Next(snapshot, &entry));
@@ -86,19 +110,28 @@ namespace corvus::process
 	void WIN32Process::QueryHandlesW32()
 	{
 
-
-		return;
+		HandleEntry handle{};
+		handle.ownerPid = m_processId;
+		handle.grantedAccess = 0x0;
+		handle.handleValue = 0x0;
+		handle.type = HandleType::Unknown;
+		handle.objectTypeNumber = 0x0;
+		handle.flags = 0x0;
+		handle.handle = 0x0;
+		handle.object = 0x0;
+		m_handles.push_back(handle);
 	}
 
 	void WIN32Process::QueryModuleBaseAddressW32()
 	{
 		if (m_name.empty()) return;
-		m_moduleBaseAddress = GetModuleBaseAddress(m_processId, m_name);
+		m_moduleBaseAddress = GetModuleBaseAddressW32(m_processId, m_name);
 	}
 
 	void WIN32Process::QueryPEBAddressW32()
 	{
-
+		uintptr_t pebAddress{ 0x0 };
+		m_pebAddress = pebAddress;
 	}
 
 	void WIN32Process::QueryArchitectureTypeW32()
@@ -219,7 +252,7 @@ namespace corvus::process
 		return OpenProcess(accessMask, FALSE, processId);
 	}
 
-	uintptr_t WIN32Process::GetModuleBaseAddress(const DWORD& processId, const std::wstring& moduleName)
+	uintptr_t WIN32Process::GetModuleBaseAddressW32(const DWORD& processId, const std::wstring& moduleName)
 	{
 		// Take a snapshot of 32 & 64-bit modules
 		HANDLE hSnapShotHandle{ CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, processId) };
