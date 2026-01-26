@@ -1,154 +1,213 @@
-#pragma once
+﻿#pragma once
 #include <imgui.h>
+#include <thread>
+#include <atomic>
+
 #include "imgui_processes.hpp"
 
 namespace corvus::imgui
 {
-	enum class CanvasView
+	// ------------------------------------------------------------
+	// Routing
+	// ------------------------------------------------------------
+	enum class Route
 	{
 		None,
-		ProcessList,
-		Attach,
-		Modules,
-		Threads,
-		Handles
+		Process_List,
+		Analyze_Modules,
+		Analyze_Threads,
+		Analyze_Handles,
 	};
 
-	inline CanvasView g_CurrentView = CanvasView::None;
+	inline Route g_routedView{ Route::None };
 
+	// ------------------------------------------------------------
+	// Loading state
+	// ------------------------------------------------------------
+	inline std::atomic<bool> g_loading{ false };
+	inline std::atomic<bool> g_processesLoaded{ false };
+	inline float g_loadingAnim = 0.0f;
+
+	// ------------------------------------------------------------
+	// Helpers
+	// ------------------------------------------------------------
+	inline const char* RouteBreadcrumb(Route r)
+	{
+		switch (r)
+		{
+		case Route::Process_List:      return "Analyze > Process List";
+		case Route::Analyze_Modules:   return "Analyze > Modules";
+		case Route::Analyze_Threads:   return "Analyze > Threads";
+		case Route::Analyze_Handles:   return "Analyze > Handles";
+		default:                       return "Home";
+		}
+	}
+
+	inline void DrawIndeterminateBar(float height = 3.0f)
+	{
+		const ImVec2 pos = ImGui::GetCursorScreenPos();
+		const float width = ImGui::GetContentRegionAvail().x;
+
+		// Reserve layout space
+		ImGui::Dummy(ImVec2(width, height + ImGui::GetStyle().ItemSpacing.y));
+
+		// Animation
+		static float anim = 0.0f;
+		anim += ImGui::GetIO().DeltaTime * 1.5f;
+		float t = fmodf(anim, 1.0f);
+
+		const float barWidth = width * 0.25f;
+		const float x = pos.x + (width + barWidth) * t - barWidth;
+
+		ImDrawList* draw = ImGui::GetWindowDrawList();
+
+		// Background
+		draw->AddRectFilled(
+			pos,
+			ImVec2(pos.x + width, pos.y + height),
+			ImGui::GetColorU32(ImGuiCol_FrameBg),
+			height * 0.5f
+		);
+
+		// Moving bar
+		draw->AddRectFilled(
+			ImVec2(x, pos.y),
+			ImVec2(x + barWidth, pos.y + height),
+			ImGui::GetColorU32(ImGuiCol_PlotHistogram),
+			height * 0.5f
+		);
+	}
+
+	// ------------------------------------------------------------
+	// Navigation
+	// ------------------------------------------------------------
+	inline void Navigate(Route r)
+	{
+		g_routedView = r;
+
+		if (r == Route::Process_List && !g_processesLoaded && !g_loading)
+		{
+			g_loading = true;
+
+			std::thread([] {
+				LoadProcessList();   // heavy work
+				g_processesLoaded = true;
+				g_loading = false;
+				}).detach();
+		}
+	}
+
+	// ------------------------------------------------------------
+	// Root UI
+	// ------------------------------------------------------------
 	inline void root()
 	{
-		ImGuiIO& io = ImGui::GetIO();
+		// ------------------ Style ---------------------------------
+		ImGuiStyle& style = ImGui::GetStyle();
+		style.FramePadding = ImVec2(8, 6);
+		style.ItemSpacing = ImVec2(8, 6);
+		style.IndentSpacing = 16.0f;
+		style.ScrollbarSize = 14.0f;
 
+		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.3f, 0.3f, 0.3f, 0.3f));
+		ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.2f, 0.2f, 0.2f, 0.4f));
+
+		// ------------------ Wait cursor ----------------------------
+		if (g_loading)
+			ImGui::SetMouseCursor(ImGuiMouseCursor_Wait);
+
+		// ------------------ Root window ----------------------------
+		ImGuiIO& io = ImGui::GetIO();
 		ImGui::SetNextWindowPos(ImVec2(0, 0));
 		ImGui::SetNextWindowSize(io.DisplaySize);
 
-		ImGui::Begin("##root", nullptr,
-			ImGuiWindowFlags_NoDecoration |
+		ImGuiWindowFlags wFlags =
+			ImGuiWindowFlags_NoTitleBar |
+			ImGuiWindowFlags_NoResize |
 			ImGuiWindowFlags_NoMove |
+			ImGuiWindowFlags_NoCollapse |
 			ImGuiWindowFlags_NoSavedSettings |
-			ImGuiWindowFlags_NoBringToFrontOnFocus);
+			ImGuiWindowFlags_NoDecoration;
 
-		// =====================
-		// Left panel (navigation)
-		// =====================
-		ImGui::BeginChild("left", ImVec2(300, 0), true);
-		ImGui::TextUnformatted("Modules");
+		ImGui::Begin("##root", nullptr, wFlags);
+
+		// ============================================================
+		// Left navigation
+		// ============================================================
+		ImGui::BeginChild("left", ImVec2(280, 0), true);
+
+		ImGui::TextDisabled("ANALYZE");
 		ImGui::Separator();
 
-		ImGuiTreeNodeFlags section_flags =
-			ImGuiTreeNodeFlags_DefaultOpen |
-			ImGuiTreeNodeFlags_FramePadding |
-			ImGuiTreeNodeFlags_SpanAvailWidth;
+		if (ImGui::Selectable("Process List", g_routedView == Route::Process_List))
+			Navigate(Route::Process_List);
 
-		if (ImGui::TreeNodeEx("Process", section_flags))
-		{
-			if (ImGui::Selectable(
-				"Process List",
-				g_CurrentView == CanvasView::ProcessList))
-			{
-				g_CurrentView = CanvasView::ProcessList;
-			}
+		if (ImGui::Selectable("Modules", g_routedView == Route::Analyze_Modules))
+			Navigate(Route::Analyze_Modules);
 
-			if (ImGui::Selectable(
-				"Attach / Detach",
-				g_CurrentView == CanvasView::Attach))
-			{
-				g_CurrentView = CanvasView::Attach;
-			}
+		if (ImGui::Selectable("Threads", g_routedView == Route::Analyze_Threads))
+			Navigate(Route::Analyze_Threads);
 
-			if (ImGui::Selectable(
-				"Modules",
-				g_CurrentView == CanvasView::Modules))
-			{
-				g_CurrentView = CanvasView::Modules;
-			}
+		if (ImGui::Selectable("Handles", g_routedView == Route::Analyze_Handles))
+			Navigate(Route::Analyze_Handles);
 
-			if (ImGui::Selectable(
-				"Threads",
-				g_CurrentView == CanvasView::Threads))
-			{
-				g_CurrentView = CanvasView::Threads;
-			}
+		ImGui::Spacing();
+		ImGui::Separator();
+		ImGui::TextDisabled("UTILITIES");
 
-			if (ImGui::Selectable(
-				"Handles",
-				g_CurrentView == CanvasView::Handles))
-			{
-				g_CurrentView = CanvasView::Handles;
-			}
-
-			ImGui::SeparatorText("Injection");
-
-			ImGui::Selectable("Manual Map");
-			ImGui::Selectable("LoadLibrary");
-			ImGui::Selectable("Shellcode");
-
-			ImGui::TreePop();
-		}
-
-		if (ImGui::TreeNodeEx("Memory Editor", section_flags))
-		{
-			ImGui::Selectable("RPM / WPM");
-			ImGui::Selectable("Pattern Scan");
-
-			ImGui::TreePop();
-		}
-
-		if (ImGui::TreeNodeEx("ReClass.NET DSA Visualization", section_flags))
-		{
-			ImGui::Selectable("Linked List");
-			ImGui::Selectable("Binary Tree");
-			ImGui::Selectable("Heap");
-			ImGui::Selectable("Graph");
-
-			ImGui::TreePop();
-		}
-
-		if (ImGui::TreeNodeEx("Utilities", section_flags))
-		{
-			ImGui::Selectable("Hook Creator");
-			ImGui::Selectable("Shellcode Creator");
-			ImGui::Selectable("Pointer Calculator");
-			ImGui::Selectable("Address Converter");
-
-			ImGui::TreePop();
-		}
+		ImGui::Selectable("Hook Creator");
+		ImGui::Selectable("Shellcode Creator");
+		ImGui::Selectable("Pointer Calculator");
+		ImGui::Selectable("Address Converter");
 
 		ImGui::EndChild();
 
-		// =====================
-		// Canvas (content)
-		// =====================
+		// ============================================================
+		// Right canvas
+		// ============================================================
 		ImGui::SameLine();
-		ImGui::BeginChild("canvas", ImVec2(0, 0), true,
-			ImGuiWindowFlags_NoScrollbar |
-			ImGuiWindowFlags_NoScrollWithMouse);
+		ImGui::BeginChild("canvas", ImVec2(0, 0), false);
 
-		switch (g_CurrentView)
+		// Header
+		ImGui::TextDisabled(RouteBreadcrumb(g_routedView));
+		ImGui::Separator();
+
+		// Content
+		if (g_loading)
 		{
-		case CanvasView::ProcessList:
-			DrawProcessList();
-			break;
+			ImGui::Spacing();
+			DrawIndeterminateBar(5.0f);
+		}
+		else
+		{
+			switch (g_routedView)
+			{
+			case Route::Process_List:
+				DrawProcessList();
+				break;
 
-		case CanvasView::Modules:
-			DrawModulesView();
-			break;
+			case Route::Analyze_Modules:
+				DrawModulesView();
+				break;
 
-		case CanvasView::Threads:
-			DrawThreadsView();
-			break;
+			case Route::Analyze_Threads:
+				DrawThreadsView();
+				break;
 
-		case CanvasView::Handles:
-			DrawHandlesView();
-			break;
+			case Route::Analyze_Handles:
+				DrawHandlesView();
+				break;
 
-		default:
-			ImGui::TextDisabled("Select a module from the left");
-			break;
+			default:
+				ImGui::TextDisabled("Select a module from the left");
+				break;
+			}
 		}
 
 		ImGui::EndChild();
 		ImGui::End();
+
+		// ------------------ Style cleanup ---------------------------
+		ImGui::PopStyleColor(2);
 	}
 }

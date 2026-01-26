@@ -178,12 +178,6 @@ namespace corvus::process
 		m_moduleBaseAddress = GetModuleBaseAddressW32(m_processId, m_name);
 	}
 
-	void WindowsProcessWin32::QueryPEBAddressW32()
-	{
-		uintptr_t pebAddress{ 0x0 };
-		m_pebAddress = pebAddress;
-	}
-
 	void WindowsProcessWin32::QueryArchitectureTypeW32()
 	{
 		HANDLE hProcess =
@@ -421,7 +415,6 @@ namespace corvus::process
 		QueryModulesW32();
 		QueryThreadsW32();
 		QueryHandlesW32();
-		QueryPEBAddressW32();
 		QueryArchitectureTypeW32();
 		QueryWow64W32();
 		QueryVisibleWindowW32();

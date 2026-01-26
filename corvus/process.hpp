@@ -145,7 +145,6 @@ namespace corvus::process
 		void QueryThreadsW32();
 		void QueryHandlesW32();
 		void QueryModuleBaseAddressW32();
-		void QueryPEBAddressW32();
 		void QueryArchitectureTypeW32();
 		void QueryWow64W32();
 		void QueryVisibleWindowW32();
@@ -222,5 +221,8 @@ namespace corvus::process
 
 		// static process functions
 		static std::vector<WindowsProcessNT> GetProcessListNT();
+		static void VirtualAlloc();
+		static void VirtualFree();
+		static void CreateThreadEx();
 	};
 }
