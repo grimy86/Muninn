@@ -89,8 +89,13 @@ namespace corvus::process
 		virtual uintptr_t GetModuleBaseAddress() const noexcept = 0;
 		virtual uintptr_t GetPEBAddress() const noexcept = 0;
 		virtual DWORD GetProcessId() const noexcept = 0;
+		virtual LONG GetBasePriority() const noexcept = 0;
 		virtual ArchitectureType GetArchitecture() const noexcept = 0;
 		virtual BOOL IsWow64() const noexcept = 0;
+		virtual BOOL IsProtectedProcess() const noexcept = 0;
+		virtual BOOL IsBackgroundProcess() const noexcept = 0;
+		virtual BOOL IsSecureProcess() const noexcept = 0;
+		virtual BOOL IsSubsystemProcess() const noexcept = 0;
 		virtual BOOL HasVisibleWindow() const noexcept = 0;
 	};
 
@@ -137,8 +142,13 @@ namespace corvus::process
 		uintptr_t GetModuleBaseAddress() const noexcept override { return m_moduleBaseAddress; }
 		uintptr_t GetPEBAddress() const noexcept override { return m_pebAddress; }
 		DWORD GetProcessId() const noexcept override { return m_processId; }
+		LONG GetBasePriority() const noexcept override { return m_basePriority; }
 		ArchitectureType GetArchitecture() const noexcept override { return m_architectureType; }
 		BOOL IsWow64() const noexcept override { return m_isWow64; }
+		BOOL IsProtectedProcess() const noexcept override { return m_isProtectedProcess; }
+		BOOL IsBackgroundProcess() const noexcept override { return m_isBackgroundProcess; }
+		BOOL IsSecureProcess() const noexcept override { return m_isSecureProcess; }
+		BOOL IsSubsystemProcess() const noexcept override { return m_isSubsystemProcess; }
 		BOOL HasVisibleWindow() const noexcept override { return m_hasVisibleWindow; }
 
 		// static noexcept validators
