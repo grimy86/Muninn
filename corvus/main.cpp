@@ -10,6 +10,7 @@
 #include <windows.h>
 #include "resource.h"
 #include "imgui_root.hpp"
+#include "process.h"
 
 #if defined(_WIN64)
 #define ARCH_STR "x64"
@@ -45,6 +46,8 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 // Main code
 int __stdcall WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, LPSTR cmdline,
 	int cmdshow) {
+	corvus::process::WindowsProcessWin32::EnableSeDebugPrivilegeW32();
+
 	// Make process DPI aware and obtain main monitor scale
 	ImGui_ImplWin32_EnableDpiAwareness();
 	float main_scale = ImGui_ImplWin32_GetDpiScaleForMonitor(

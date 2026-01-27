@@ -395,6 +395,118 @@ namespace corvus::process
 		return addr;
 	}
 
+	BOOL WindowsProcessWin32::EnableSeDebugPrivilegeW32()
+	{
+		HANDLE hProc{ GetCurrentProcess() };
+		HANDLE hToken{ nullptr };
+
+		BOOL bToken{ OpenProcessToken(
+			hProc,
+			TOKEN_ADJUST_PRIVILEGES |
+			TOKEN_QUERY,
+			&hToken) };
+
+		LUID luid{};
+		BOOL bLookupPriv{ LookupPrivilegeValueW(
+			nullptr,
+			SE_DEBUG_NAME,
+			&luid) };
+
+		if (!bToken || !bLookupPriv)
+		{
+			if (hToken)
+				CloseHandle(hToken);
+
+			CloseHandle(hProc);
+			return FALSE;
+		}
+
+		TOKEN_PRIVILEGES tp{
+			tp.PrivilegeCount = 1,
+			tp.Privileges[0].Luid = luid,
+			tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED
+		};
+
+		BOOL bAdjustPriv{ AdjustTokenPrivileges(
+			hToken,
+			FALSE,
+			&tp,
+			sizeof(tp),
+			nullptr,
+			nullptr) };
+
+		if (!bAdjustPriv)
+		{
+			CloseHandle(hToken);
+			return FALSE;
+		}
+
+		if (GetLastError() == ERROR_NOT_ALL_ASSIGNED)
+		{
+			CloseHandle(hToken);
+			return FALSE;
+		}
+
+		CloseHandle(hToken);
+		return TRUE;
+	}
+
+	BOOL WindowsProcessWin32::EnableSeDebugPrivilegeW32(const DWORD processId)
+	{
+		HANDLE hProc{ OpenProcessHandleW32(processId, PROCESS_ALL_ACCESS) };
+		HANDLE hToken{ nullptr };
+
+		BOOL bToken{ OpenProcessToken(
+			hProc,
+			TOKEN_ADJUST_PRIVILEGES |
+			TOKEN_QUERY,
+			&hToken) };
+
+		LUID luid{};
+		BOOL bLookupPriv{ LookupPrivilegeValueW(
+			nullptr,
+			SE_DEBUG_NAME,
+			&luid) };
+
+		if (!bToken || !bLookupPriv)
+		{
+			if (hToken)
+				CloseHandle(hToken);
+
+			CloseHandle(hProc);
+			return FALSE;
+		}
+
+		TOKEN_PRIVILEGES tp{
+			tp.PrivilegeCount = 1,
+			tp.Privileges[0].Luid = luid,
+			tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED
+		};
+
+		BOOL bAdjustPriv{ AdjustTokenPrivileges(
+			hToken,
+			FALSE,
+			&tp,
+			sizeof(tp),
+			nullptr,
+			nullptr) };
+
+		if (!bAdjustPriv)
+		{
+			CloseHandle(hToken);
+			return FALSE;
+		}
+
+		if (GetLastError() == ERROR_NOT_ALL_ASSIGNED)
+		{
+			CloseHandle(hToken);
+			return FALSE;
+		}
+
+		CloseHandle(hToken);
+		return TRUE;
+	}
+
 	WindowsProcessWin32::WindowsProcessWin32(const DWORD processId)
 		: WindowsProcessBase(processId)
 	{
@@ -405,11 +517,6 @@ namespace corvus::process
 		QueryArchitectureTypeW32();
 		QueryWow64W32();
 		QueryVisibleWindowW32();
-	}
-
-	void UpdateWindowsProcessNt()
-	{
-		return;
 	}
 
 	std::vector<WindowsProcessNt> WindowsProcessNt::GetProcessListNt()

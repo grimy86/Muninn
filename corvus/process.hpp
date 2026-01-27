@@ -184,6 +184,8 @@ namespace corvus::process
 		static uintptr_t GetModuleBaseAddressW32(const DWORD& processId, const std::wstring& moduleName);
 		static BOOL SuspendThreadW32(const DWORD threadId);
 		static BOOL ResumeThreadW32(const DWORD threadId);
+		static BOOL EnableSeDebugPrivilegeW32();
+		static BOOL EnableSeDebugPrivilegeW32(const DWORD processId);
 
 		// static external memory functions
 		static void PatchExecutionEW32(HANDLE processHandle, DWORD destination, BYTE* value, unsigned int size);
