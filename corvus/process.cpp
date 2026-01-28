@@ -517,9 +517,7 @@ namespace corvus::process
 	}
 
 	WindowsProcessWin32::WindowsProcessWin32(const DWORD processId)
-		: WindowsProcessBase(processId)
-	{
-		EnableSeDebugPrivilegeW32();
+		: WindowsProcessBase(processId) {
 	}
 #pragma endregion
 

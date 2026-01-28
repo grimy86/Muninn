@@ -34,6 +34,8 @@ namespace corvus::imgui
 
 	void RefreshProcessList()
 	{
+		corvus::process::WindowsProcessWin32::EnableSeDebugPrivilegeW32();
+
 		if (g_currentBackend == Backend::Win32)
 		{
 			if (!g_win32Loaded)
