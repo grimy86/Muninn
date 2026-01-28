@@ -34,8 +34,6 @@ namespace corvus::imgui
 
 	void RefreshProcessList()
 	{
-		corvus::process::WindowsProcessWin32::EnableSeDebugPrivilegeW32();
-
 		if (g_currentBackend == Backend::Win32)
 		{
 			if (!g_win32Loaded)
@@ -83,9 +81,17 @@ namespace corvus::imgui
 			static bool initialized = false;
 			if (!initialized)
 			{
+				corvus::process::WindowsProcessWin32::EnableSeDebugPrivilegeW32();
 				RefreshProcessList();
 				initialized = true;
 			}
+
+			// Show SeDebugPrivilege status
+			bool seDebugEnabled{
+				corvus::process::WindowsProcessBase::IsSeDebugPrivilegeEnabled() };
+			ImVec4 col = seDebugEnabled ? ImVec4(0, 1, 0, 1) : ImVec4(1, 0, 0, 1);
+			ImGui::Text("SeDebugPrivilege:"); ImGui::SameLine();
+			ImGui::TextColored(col, "\xE2\x97\x8F"); // UTF-8 bytes for ●
 
 			// Backend toggle
 			bool useNt = (g_currentBackend == Backend::Nt);
@@ -94,7 +100,6 @@ namespace corvus::imgui
 				g_currentBackend = useNt ? Backend::Nt : Backend::Win32;
 				RefreshProcessList();
 			}
-			ImGui::Separator();
 
 			// left nav bar
 			ImGui::BeginChild(
@@ -124,26 +129,30 @@ namespace corvus::imgui
 			ImGuiTreeNodeFlags_DefaultOpen |
 			ImGuiTreeNodeFlags_Framed |
 			ImGuiTreeNodeFlags_DrawLinesFull |
-			ImGuiTreeNodeFlags_NoTreePushOnOpen |
 			(g_currentView == View::Process ? ImGuiTreeNodeFlags_Selected : 0);
 
-		ImGui::TreeNodeEx("Process", flags);
+		// TreeNodeEx returns true if the node is open
+		bool open = ImGui::TreeNodeEx("Process", flags);
 
 		if (ImGui::IsItemClicked())
 			g_currentView = View::Process;
 
-		ImGui::Indent();
+		if (open)
+		{
+			ImGui::Indent();
 
-		if (ImGui::Selectable("Threads", g_currentView == View::Threads))
-			g_currentView = View::Threads;
+			if (ImGui::Selectable("Threads", g_currentView == View::Threads))
+				g_currentView = View::Threads;
 
-		if (ImGui::Selectable("Modules", g_currentView == View::Modules))
-			g_currentView = View::Modules;
+			if (ImGui::Selectable("Modules", g_currentView == View::Modules))
+				g_currentView = View::Modules;
 
-		if (ImGui::Selectable("Handles", g_currentView == View::Handles))
-			g_currentView = View::Handles;
+			if (ImGui::Selectable("Handles", g_currentView == View::Handles))
+				g_currentView = View::Handles;
 
-		ImGui::Unindent();
+			ImGui::Unindent();
+			ImGui::TreePop();
+		}
 	}
 
 	void DrawContentView()
@@ -320,16 +329,16 @@ namespace corvus::imgui
 		ImGui::TableSetupColumn("ImageFilePath");
 		ImGui::TableSetupColumn("PriorityClass");
 		ImGui::TableSetupColumn("ModuleBaseAddress");
-		ImGui::TableSetupColumn("PEBAddress");
+		ImGui::TableSetupColumn("PEBAddress (Ntdll)");
 		ImGui::TableSetupColumn("ProcessId");
 		ImGui::TableSetupColumn("ParentProcessId");
-		ImGui::TableSetupColumn("BasePriority");
+		ImGui::TableSetupColumn("BasePriority (Ntdll)");
 		ImGui::TableSetupColumn("ArchitectureType");
 		ImGui::TableSetupColumn("IsWow64");
-		ImGui::TableSetupColumn("IsProtectedProcess");
-		ImGui::TableSetupColumn("IsBackgroundProcess");
-		ImGui::TableSetupColumn("IsSecureProcess");
-		ImGui::TableSetupColumn("IsSubsystemProcess");
+		ImGui::TableSetupColumn("IsProtectedProcess (Ntdll)");
+		ImGui::TableSetupColumn("IsBackgroundProcess (Ntdll)");
+		ImGui::TableSetupColumn("IsSecureProcess (Ntdll)");
+		ImGui::TableSetupColumn("IsSubsystemProcess (Ntdll)");
 		ImGui::TableSetupColumn("HasVisibleWindow");
 		ImGui::TableHeadersRow();
 

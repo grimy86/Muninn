@@ -166,11 +166,13 @@ namespace corvus::process
 		static bool IsValidProcessId(const DWORD processId) noexcept;
 		static bool IsValidModuleBaseAddress(const DWORD moduleBaseAddress) noexcept;
 		static bool IsValidHandle(const HANDLE processHandle) noexcept;
+		static bool IsSeDebugPrivilegeEnabled() noexcept;
 
 		// static converters
 		static std::string ToString(const std::wstring& w) noexcept;
 		static const char* ToString(ArchitectureType arch) noexcept;
 		static const char* ToString(const HandleType& type) noexcept;
+		static std::wstring ToString(const DWORD& priorityClass) noexcept;
 	};
 #pragma endregion
 
@@ -183,6 +185,9 @@ namespace corvus::process
 		static void QueryHandlesW32(HANDLE hProcess, WindowsProcessWin32& proc);
 		static void QueryArchitectureW32(HANDLE hProcess, WindowsProcessWin32& proc);
 		static void QueryVisibleWindowW32(WindowsProcessWin32& proc);
+		static void QueryModuleBaseAddressW32(HANDLE hModuleSnapshot, WindowsProcessWin32& proc);
+		static void QueryImageFilePathW32(HANDLE hProcess, WindowsProcessWin32& proc);
+		static void QueryPriorityClassW32(HANDLE hProcess, WindowsProcessWin32& proc);
 
 	public:
 		WindowsProcessWin32() = delete;
@@ -192,7 +197,7 @@ namespace corvus::process
 		// static process functions
 		static std::vector<WindowsProcessWin32> GetProcessListW32();
 		static HANDLE OpenProcessHandleW32(const DWORD processId, const ACCESS_MASK accessMask);
-		static uintptr_t GetModuleBaseAddressW32(const DWORD& processId, const std::wstring& moduleName);
+		static uintptr_t GetModuleBaseAddressW32(HANDLE hModuleSnapshot, WindowsProcessWin32& proc);
 		static BOOL SuspendThreadW32(const DWORD threadId);
 		static BOOL ResumeThreadW32(const DWORD threadId);
 		static BOOL EnableSeDebugPrivilegeW32();

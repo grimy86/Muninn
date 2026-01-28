@@ -47,6 +47,50 @@ namespace corvus::process
 			handle != reinterpret_cast<HANDLE>(-1) &&
 			handle != INVALID_HANDLE_VALUE);
 	}
+	bool WindowsProcessBase::IsSeDebugPrivilegeEnabled() noexcept
+	{
+		HANDLE hToken = nullptr;
+		if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken))
+			return false;
+
+		DWORD size = 0;
+		GetTokenInformation(hToken, TokenPrivileges, nullptr, 0, &size);
+		if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+		{
+			CloseHandle(hToken);
+			return false;
+		}
+
+		std::vector<BYTE> buffer(size);
+		if (!GetTokenInformation(hToken, TokenPrivileges, buffer.data(), size, &size))
+		{
+			CloseHandle(hToken);
+			return false;
+		}
+
+		bool enabled = false;
+		PTOKEN_PRIVILEGES tPriv{
+			reinterpret_cast<PTOKEN_PRIVILEGES>(buffer.data()) };
+
+		for (DWORD i = 0; i < tPriv->PrivilegeCount; ++i)
+		{
+			LUID_AND_ATTRIBUTES laa = tPriv->Privileges[i];
+			WCHAR name[256] = {};
+			DWORD nameLen = _countof(name);
+
+			if (LookupPrivilegeNameW(nullptr, &laa.Luid, name, &nameLen))
+			{
+				if (_wcsicmp(name, SE_DEBUG_NAME) == 0)
+				{
+					enabled = (laa.Attributes & SE_PRIVILEGE_ENABLED) != 0;
+					break;
+				}
+			}
+		}
+
+		CloseHandle(hToken);
+		return enabled;
+	}
 
 	std::string WindowsProcessBase::ToString(const std::wstring& w) noexcept
 	{
@@ -100,6 +144,20 @@ namespace corvus::process
 		case HandleType::Key: return "Key";
 		case HandleType::Token: return "Token";
 		default: return "Unknown";
+		}
+	}
+
+	std::wstring WindowsProcessBase::ToString(const DWORD& priorityClass) noexcept
+	{
+		switch (priorityClass)
+		{
+		case NORMAL_PRIORITY_CLASS: return L"Normal";
+		case IDLE_PRIORITY_CLASS: return L"Idle";
+		case HIGH_PRIORITY_CLASS: return L"High";
+		case REALTIME_PRIORITY_CLASS: return L"Realtime";
+		case BELOW_NORMAL_PRIORITY_CLASS: return L"Below normal";
+		case ABOVE_NORMAL_PRIORITY_CLASS: return L"Above normal";
+		default: return L"Unknown";
 		}
 	}
 
@@ -286,6 +344,41 @@ namespace corvus::process
 		}
 	}
 
+	void WindowsProcessWin32::QueryModuleBaseAddressW32(HANDLE hModuleSnapshot, WindowsProcessWin32& proc)
+	{
+		uintptr_t moduleBaseAddress{};
+		MODULEENTRY32W mEntry{};
+		mEntry.dwSize = sizeof(MODULEENTRY32W);
+
+		if (!Module32First(hModuleSnapshot, &mEntry)) return;
+
+		do
+		{
+			if (mEntry.szModule == proc.m_name)
+			{
+				proc.m_moduleBaseAddress = reinterpret_cast<uintptr_t>(mEntry.modBaseAddr);
+			}
+		} while (Module32Next(hModuleSnapshot, &mEntry));
+	}
+
+	void WindowsProcessWin32::QueryImageFilePathW32(HANDLE hProcess, WindowsProcessWin32& proc)
+	{
+		std::wstring iFilePathBuffer;
+		iFilePathBuffer.resize(32768);
+		DWORD size = static_cast<DWORD>(iFilePathBuffer.size());
+
+		if (QueryFullProcessImageNameW(hProcess, 0, iFilePathBuffer.data(), &size)) {
+			iFilePathBuffer.resize(size);
+			proc.m_imageFilePath = iFilePathBuffer;
+		}
+	}
+
+	void WindowsProcessWin32::QueryPriorityClassW32(HANDLE hProcess, WindowsProcessWin32& proc)
+	{
+		DWORD pClass{ ::GetPriorityClass(hProcess) };
+		if (pClass) proc.m_priorityClass = ToString(pClass);
+	}
+
 	std::vector<WindowsProcessWin32> WindowsProcessWin32::GetProcessListW32()
 	{
 		ProcessQueryContext snapshotCtx{};
@@ -301,34 +394,53 @@ namespace corvus::process
 		{
 			do
 			{
-				if (!pEntry.th32ProcessID)
-					continue;
-
 				ProcessQueryContext processCtx{};
 				WindowsProcessWin32 proc{ pEntry.th32ProcessID };
 				proc.m_name = pEntry.szExeFile;
 				proc.m_parentProcessId = pEntry.th32ParentProcessID;
 
-				processCtx.hProcess = OpenProcessHandleW32(
+				HANDLE hProc{ OpenProcessHandleW32(
 					pEntry.th32ProcessID,
-					PROCESS_ALL_ACCESS);
-				if (!IsValidHandle(processCtx.hProcess)) continue;
+					PROCESS_ALL_ACCESS) };
+
+				if (!IsValidHandle(hProc))
+				{
+					hProc = OpenProcessHandleW32(
+						pEntry.th32ProcessID,
+						PROCESS_QUERY_INFORMATION | PROCESS_VM_READ);
+				}
+
+				if (!IsValidHandle(hProc))
+				{
+					hProc = OpenProcessHandleW32(
+						pEntry.th32ProcessID,
+						PROCESS_QUERY_LIMITED_INFORMATION);
+				}
+
+				if (!IsValidHandle(hProc)) continue;
+
+				processCtx.hProcess = hProc;
 
 				processCtx.hModuleSnapshot = CreateToolhelp32Snapshot(
 					TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32,
 					pEntry.th32ProcessID);
-				if (!IsValidHandle(processCtx.hModuleSnapshot)) continue;
+				if (!IsValidHandle(processCtx.hModuleSnapshot))
+					processCtx.hModuleSnapshot = nullptr;
 
 				processCtx.hThreadSnapshot = CreateToolhelp32Snapshot(
 					TH32CS_SNAPTHREAD,
 					pEntry.th32ProcessID);
-				if (!IsValidHandle(processCtx.hThreadSnapshot)) continue;
+				if (!IsValidHandle(processCtx.hThreadSnapshot))
+					processCtx.hThreadSnapshot = nullptr;
 
 				QueryModulesW32(processCtx.hProcess, processCtx.hModuleSnapshot, proc);
 				QueryThreadsW32(processCtx.hThreadSnapshot, proc);
 				QueryHandlesW32(processCtx.hProcess, proc);
 				QueryArchitectureW32(processCtx.hProcess, proc);
 				QueryVisibleWindowW32(proc);
+				QueryModuleBaseAddressW32(processCtx.hModuleSnapshot, proc);
+				QueryImageFilePathW32(processCtx.hProcess, proc);
+				QueryPriorityClassW32(processCtx.hProcess, proc);
 
 				result.push_back(proc);
 
@@ -342,35 +454,26 @@ namespace corvus::process
 		return OpenProcess(accessMask, FALSE, processId);
 	}
 
-	uintptr_t WindowsProcessWin32::GetModuleBaseAddressW32(const DWORD& processId, const std::wstring& moduleName)
+	uintptr_t WindowsProcessWin32::GetModuleBaseAddressW32(HANDLE hModuleSnapshot, WindowsProcessWin32& proc)
 	{
-		// Take a snapshot of 32 & 64-bit modules
-		HANDLE hSnapShotHandle{ CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, processId) };
 		uintptr_t moduleBaseAddress{};
-
-		if (!IsValidHandle(hSnapShotHandle))
+		MODULEENTRY32W mEntry{};
+		mEntry.dwSize = sizeof(MODULEENTRY32W);
+		if (!Module32First(hModuleSnapshot, &mEntry))
 		{
-			return moduleBaseAddress;
-		}
-
-		MODULEENTRY32 modEntry{};
-		modEntry.dwSize = sizeof(MODULEENTRY32);
-		if (!Module32First(hSnapShotHandle, &modEntry))
-		{
-			CloseHandle(hSnapShotHandle);
 			return moduleBaseAddress;
 		}
 
 		do
 		{
-			if (!_wcsicmp(modEntry.szModule, moduleName.c_str()))
+			if (mEntry.szModule != proc.m_name)
 			{
-				CloseHandle(hSnapShotHandle);
-				return reinterpret_cast<uintptr_t>(modEntry.modBaseAddr);
+				CloseHandle(hModuleSnapshot);
+				return reinterpret_cast<uintptr_t>(mEntry.modBaseAddr);
 			}
-		} while (Module32Next(hSnapShotHandle, &modEntry));
+		} while (Module32Next(hModuleSnapshot, &mEntry));
 
-		CloseHandle(hSnapShotHandle);
+		CloseHandle(hModuleSnapshot);
 		return moduleBaseAddress;
 	}
 
