@@ -38,10 +38,6 @@ namespace corvus::process
 	BOOL WindowsProcessBase::IsSubsystemProcess() const noexcept { return m_isSubsystemProcess; }
 	BOOL WindowsProcessBase::HasVisibleWindow() const noexcept { return m_hasVisibleWindow; }
 	ArchitectureType WindowsProcessBase::GetArchitectureType() const noexcept { return m_architectureType; }
-	const std::string WindowsProcessBase::GetNameUTF8() const noexcept { return ToString(m_name); }
-	const std::string WindowsProcessBase::GetImageFilePathUTF8() const noexcept { return ToString(m_imageFilePath); }
-	const std::string WindowsProcessBase::GetPriorityClassUTF8() const noexcept { return ToString(m_priorityClass); }
-	const std::string WindowsProcessBase::GetArchitectureTypeUTF8() const noexcept { return ToString(m_architectureType); }
 
 	bool WindowsProcessBase::IsValidProcessId(const DWORD processId) noexcept { return processId % 4 == 0; }
 	bool WindowsProcessBase::IsValidModuleBaseAddress(const DWORD moduleBaseAddress) noexcept { return moduleBaseAddress != ERROR_INVALID_ADDRESS; }
@@ -85,6 +81,24 @@ namespace corvus::process
 		case ArchitectureType::x64: return "x64";
 		case ArchitectureType::arm: return "ARM";
 		case ArchitectureType::arm64: return "ARM64";
+		default: return "Unknown";
+		}
+	}
+
+	const char* WindowsProcessBase::ToString(const HandleType& type) noexcept
+	{
+		switch (type)
+		{
+		case HandleType::Unknown: return "Unknown";
+		case HandleType::Process: return "Process";
+		case HandleType::Thread: return "Thread";
+		case HandleType::Mutant: return "Mutant";
+		case HandleType::Event: return "Event";
+		case HandleType::Section: return "Section";
+		case HandleType::Semaphore: return "Semaphore";
+		case HandleType::File: return "File";
+		case HandleType::Key: return "Key";
+		case HandleType::Token: return "Token";
 		default: return "Unknown";
 		}
 	}
@@ -287,7 +301,6 @@ namespace corvus::process
 		{
 			do
 			{
-				// PROCESS
 				if (!pEntry.th32ProcessID)
 					continue;
 

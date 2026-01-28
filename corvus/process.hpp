@@ -111,10 +111,6 @@ namespace corvus::process
 		virtual BOOL IsSubsystemProcess() const noexcept = 0;
 		virtual BOOL HasVisibleWindow() const noexcept = 0;
 		virtual ArchitectureType GetArchitectureType() const noexcept = 0;
-		virtual const std::string GetNameUTF8() const noexcept = 0;
-		virtual const std::string GetImageFilePathUTF8() const noexcept = 0;
-		virtual const std::string GetPriorityClassUTF8() const noexcept = 0;
-		virtual const std::string GetArchitectureTypeUTF8() const noexcept = 0;
 	};
 
 	class WindowsProcessBase : public IProcess
@@ -165,10 +161,6 @@ namespace corvus::process
 		BOOL IsSubsystemProcess() const noexcept override;
 		BOOL HasVisibleWindow() const noexcept override;
 		ArchitectureType GetArchitectureType() const noexcept override;
-		const std::string GetNameUTF8() const noexcept override;
-		const std::string GetImageFilePathUTF8() const noexcept override;
-		const std::string GetPriorityClassUTF8() const noexcept override;
-		const std::string GetArchitectureTypeUTF8() const noexcept override;
 
 		// static noexcept validators
 		static bool IsValidProcessId(const DWORD processId) noexcept;
@@ -178,6 +170,7 @@ namespace corvus::process
 		// static converters
 		static std::string ToString(const std::wstring& w) noexcept;
 		static const char* ToString(ArchitectureType arch) noexcept;
+		static const char* ToString(const HandleType& type) noexcept;
 	};
 #pragma endregion
 
