@@ -179,19 +179,20 @@ namespace corvus::imgui
 		ImGui::TableSetColumnIndex(3); ImGui::Text("0x%p", (void*)proc.GetModuleBaseAddress());
 		ImGui::TableSetColumnIndex(4); ImGui::Text("0x%p", (void*)proc.GetPEBAddress());
 		ImGui::TableSetColumnIndex(5); ImGui::Text("%lu", proc.GetProcessId());
-		ImGui::TableSetColumnIndex(6); ImGui::Text("%ld", proc.GetBasePriority());
-		ImGui::TableSetColumnIndex(7); ImGui::TextUnformatted(proc.GetArchitectureTypeUTF8().c_str());
-		ImGui::TableSetColumnIndex(8); ImGui::TextUnformatted(proc.IsWow64() ? "True" : "");
-		ImGui::TableSetColumnIndex(9); ImGui::TextUnformatted(proc.IsProtectedProcess() ? "True" : "");
-		ImGui::TableSetColumnIndex(10); ImGui::TextUnformatted(proc.IsBackgroundProcess() ? "True" : "");
-		ImGui::TableSetColumnIndex(11); ImGui::TextUnformatted(proc.IsSecureProcess() ? "True" : "");
-		ImGui::TableSetColumnIndex(12); ImGui::TextUnformatted(proc.IsSubsystemProcess() ? "True" : "");
-		ImGui::TableSetColumnIndex(13); ImGui::TextUnformatted(proc.HasVisibleWindow() ? "True" : "");
+		ImGui::TableSetColumnIndex(6); ImGui::Text("%lu", proc.GetParentProcessId());
+		ImGui::TableSetColumnIndex(7); ImGui::Text("%ld", proc.GetBasePriority());
+		ImGui::TableSetColumnIndex(8); ImGui::TextUnformatted(proc.GetArchitectureTypeUTF8().c_str());
+		ImGui::TableSetColumnIndex(9); ImGui::TextUnformatted(proc.IsWow64() ? "True" : "");
+		ImGui::TableSetColumnIndex(10); ImGui::TextUnformatted(proc.IsProtectedProcess() ? "True" : "");
+		ImGui::TableSetColumnIndex(11); ImGui::TextUnformatted(proc.IsBackgroundProcess() ? "True" : "");
+		ImGui::TableSetColumnIndex(12); ImGui::TextUnformatted(proc.IsSecureProcess() ? "True" : "");
+		ImGui::TableSetColumnIndex(13); ImGui::TextUnformatted(proc.IsSubsystemProcess() ? "True" : "");
+		ImGui::TableSetColumnIndex(14); ImGui::TextUnformatted(proc.HasVisibleWindow() ? "True" : "");
 	}
 
 	void DrawProcessTable()
 	{
-		if (!ImGui::BeginTable("Windows Processes", 14,
+		if (!ImGui::BeginTable("Windows Processes", 15,
 			ImGuiTableFlags_RowBg |
 			ImGuiTableFlags_Borders |
 			ImGuiTableFlags_Resizable))
@@ -203,6 +204,7 @@ namespace corvus::imgui
 		ImGui::TableSetupColumn("ModuleBaseAddress");
 		ImGui::TableSetupColumn("PEBAddress");
 		ImGui::TableSetupColumn("ProcessId");
+		ImGui::TableSetupColumn("ParentProcessId");
 		ImGui::TableSetupColumn("BasePriority");
 		ImGui::TableSetupColumn("ArchitectureType");
 		ImGui::TableSetupColumn("IsWow64");

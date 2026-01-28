@@ -1,5 +1,6 @@
 #pragma once
 #include <windows.h>
+#include <ProcessSnapshot.h>
 #include <vector>
 #include <string>
 #include <stdexcept>
@@ -7,10 +8,10 @@
 
 namespace corvus::process
 {
+#pragma region Structures
 	enum class ArchitectureType : uint8_t // BYTE
 	{
 		Unknown,
-		Native,
 		x86,
 		x64,
 		arm,
@@ -74,6 +75,18 @@ namespace corvus::process
 		USHORT objectTypeIndex{}; // 16 bits
 	};
 
+	struct ProcessQueryContext
+	{
+		HANDLE hProcess{ nullptr }; // 32 bits, 64 bits
+		HANDLE hProcessSnapshot{ nullptr }; // 32 bits, 64 bits
+		HANDLE hModuleSnapshot{ nullptr }; // 32 bits, 64 bits
+		HANDLE hThreadSnapshot{ nullptr }; // 32 bits, 64 bits
+
+		~ProcessQueryContext();
+	};
+#pragma endregion
+
+#pragma region Interface & Base
 	class IProcess
 	{
 	public:
@@ -89,6 +102,7 @@ namespace corvus::process
 		virtual uintptr_t GetModuleBaseAddress() const noexcept = 0;
 		virtual uintptr_t GetPEBAddress() const noexcept = 0;
 		virtual DWORD GetProcessId() const noexcept = 0;
+		virtual DWORD GetParentProcessId() const noexcept = 0;
 		virtual LONG GetBasePriority() const noexcept = 0;
 		virtual BOOL IsWow64() const noexcept = 0;
 		virtual BOOL IsProtectedProcess() const noexcept = 0;
@@ -119,6 +133,7 @@ namespace corvus::process
 		uintptr_t m_moduleBaseAddress{}; // x86: 32 bits, x64: 64 bits
 		uintptr_t m_pebAddress{}; // x86: 32 bits, x64: 64 bits
 		DWORD m_processId{}; // 32 bits
+		DWORD m_parentProcessId{}; // 32 bits
 		LONG m_basePriority{}; // 32 bits
 		BOOL m_isWow64{}; // 32 bits
 		BOOL m_isProtectedProcess{}; // 32 bits
@@ -141,6 +156,7 @@ namespace corvus::process
 		uintptr_t GetModuleBaseAddress() const noexcept override;
 		uintptr_t GetPEBAddress() const noexcept override;
 		DWORD GetProcessId() const noexcept override;
+		DWORD GetParentProcessId() const noexcept override;
 		LONG GetBasePriority() const noexcept override;
 		BOOL IsWow64() const noexcept override;
 		BOOL IsProtectedProcess() const noexcept override;
@@ -163,17 +179,17 @@ namespace corvus::process
 		static std::string ToString(const std::wstring& w) noexcept;
 		static const char* ToString(ArchitectureType arch) noexcept;
 	};
+#pragma endregion
 
+#pragma region Implementations
 	class WindowsProcessWin32 : public WindowsProcessBase
 	{
 	private:
-		void QueryNameW32();
-		void QueryModulesW32();
-		void QueryThreadsW32();
-		void QueryHandlesW32();
-		void QueryArchitectureTypeW32();
-		void QueryWow64W32();
-		void QueryVisibleWindowW32();
+		static void QueryModulesW32(HANDLE hProcess, const HANDLE& hModuleSnapshot, WindowsProcessWin32& proc);
+		static void QueryThreadsW32(HANDLE hThreadSnapshot, WindowsProcessWin32& proc);
+		static void QueryHandlesW32(HANDLE hProcess, WindowsProcessWin32& proc);
+		static void QueryArchitectureW32(HANDLE hProcess, WindowsProcessWin32& proc);
+		static void QueryVisibleWindowW32(WindowsProcessWin32& proc);
 
 	public:
 		WindowsProcessWin32() = delete;
@@ -246,4 +262,5 @@ namespace corvus::process
 		static HANDLE OpenProcessHandleNt(const DWORD processId, const ACCESS_MASK accessMask);
 		static DWORD GetQSIBuffferSizeNt(const SYSTEM_INFORMATION_CLASS sInfoClass);
 	};
+#pragma endregion
 }
