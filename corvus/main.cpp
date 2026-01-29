@@ -104,14 +104,18 @@ int __stdcall WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, LPSTR cmdline,
 	ImGui_ImplOpenGL3_Init();
 
 	// Init Fonts
-	corvus::imgui::g_mainFont =
-		io.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/CascadiaCode.ttf");
+	//corvus::imgui::g_mainFont =
+	//	io.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/CascadiaCode.ttf");
 
 	// Our state
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 	// Main loop
 	bool done = false;
+
+	// Corvus specific
+	corvus::process::WindowsProcessWin32::EnableSeDebugPrivilegeW32();
+	SetPriorityClass(GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS);
 
 	while (!done) {
 		// Poll and handle messages (inputs, window resize, etc.)

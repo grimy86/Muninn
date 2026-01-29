@@ -1,6 +1,7 @@
 ﻿#include "process.hpp"
 #include <TlHelp32.h>
 #include <Psapi.h>
+#include <sstream>
 #pragma comment(lib, "ntdll.lib")
 
 namespace corvus::process
@@ -115,7 +116,6 @@ namespace corvus::process
 
 		return result.c_str();
 	}
-
 	const char* WindowsProcessBase::ToString(ArchitectureType arch) noexcept
 	{
 		switch (arch)
@@ -128,26 +128,7 @@ namespace corvus::process
 		default: return "Unknown";
 		}
 	}
-
-	const char* WindowsProcessBase::ToString(const HandleType& type) noexcept
-	{
-		switch (type)
-		{
-		case HandleType::Unknown: return "Unknown";
-		case HandleType::Process: return "Process";
-		case HandleType::Thread: return "Thread";
-		case HandleType::Mutant: return "Mutant";
-		case HandleType::Event: return "Event";
-		case HandleType::Section: return "Section";
-		case HandleType::Semaphore: return "Semaphore";
-		case HandleType::File: return "File";
-		case HandleType::Key: return "Key";
-		case HandleType::Token: return "Token";
-		default: return "Unknown";
-		}
-	}
-
-	std::wstring WindowsProcessBase::ToString(const DWORD& priorityClass) noexcept
+	const std::wstring WindowsProcessBase::ToString(const DWORD& priorityClass) noexcept
 	{
 		switch (priorityClass)
 		{
@@ -159,6 +140,238 @@ namespace corvus::process
 		case ABOVE_NORMAL_PRIORITY_CLASS: return L"Above normal";
 		default: return L"Unknown";
 		}
+	}
+
+	const char* DecodeAccessBits( DWORD access,	const AccessBit* bits, size_t count) noexcept
+	{
+		static std::string buffer;
+		buffer.clear();
+
+		bool first = true;
+		for (size_t i = 0; i < count; ++i)
+		{
+			if (access & bits[i].bit)
+			{
+				if (!first)
+					buffer += " | ";
+				buffer += bits[i].name;
+				first = false;
+			}
+		}
+
+		return first ? "NONE" : buffer.c_str();
+	}
+	const char* DecodeProcessAccess(DWORD access) noexcept
+	{
+		static const AccessBit bits[] = {
+			{ PROCESS_TERMINATE,                 "PROCESS_TERMINATE" },
+			{ PROCESS_CREATE_THREAD,             "PROCESS_CREATE_THREAD" },
+			{ PROCESS_SET_SESSIONID,             "PROCESS_SET_SESSIONID" },
+			{ PROCESS_VM_OPERATION,              "PROCESS_VM_OPERATION" },
+			{ PROCESS_VM_READ,                   "PROCESS_VM_READ" },
+			{ PROCESS_VM_WRITE,                  "PROCESS_VM_WRITE" },
+			{ PROCESS_DUP_HANDLE,                "PROCESS_DUP_HANDLE" },
+			{ PROCESS_CREATE_PROCESS,            "PROCESS_CREATE_PROCESS" },
+			{ PROCESS_SET_QUOTA,                 "PROCESS_SET_QUOTA" },
+			{ PROCESS_SET_INFORMATION,           "PROCESS_SET_INFORMATION" },
+			{ PROCESS_QUERY_INFORMATION,         "PROCESS_QUERY_INFORMATION" },
+			{ PROCESS_SUSPEND_RESUME,             "PROCESS_SUSPEND_RESUME" },
+			{ PROCESS_QUERY_LIMITED_INFORMATION, "PROCESS_QUERY_LIMITED_INFORMATION" },
+
+			{ DELETE,        "DELETE" },
+			{ READ_CONTROL,  "READ_CONTROL" },
+			{ WRITE_DAC,     "WRITE_DAC" },
+			{ WRITE_OWNER,   "WRITE_OWNER" },
+			{ SYNCHRONIZE,   "SYNCHRONIZE" },
+		};
+
+		if ((access & PROCESS_ALL_ACCESS) == PROCESS_ALL_ACCESS)
+		{
+			return "PROCESS_ALL_ACCESS";
+		}
+
+		return DecodeAccessBits(access, bits, std::size(bits));
+	}
+	const char* DecodeThreadAccess(DWORD access) noexcept
+	{
+		static const AccessBit bits[] = {
+			{ THREAD_TERMINATE,                 "THREAD_TERMINATE" },
+			{ THREAD_SUSPEND_RESUME,            "THREAD_SUSPEND_RESUME" },
+			{ THREAD_GET_CONTEXT,               "THREAD_GET_CONTEXT" },
+			{ THREAD_SET_CONTEXT,               "THREAD_SET_CONTEXT" },
+			{ THREAD_SET_INFORMATION,           "THREAD_SET_INFORMATION" },
+			{ THREAD_QUERY_INFORMATION,         "THREAD_QUERY_INFORMATION" },
+			{ THREAD_SET_THREAD_TOKEN,          "THREAD_SET_THREAD_TOKEN" },
+			{ THREAD_IMPERSONATE,               "THREAD_IMPERSONATE" },
+			{ THREAD_DIRECT_IMPERSONATION,      "THREAD_DIRECT_IMPERSONATION" },
+			{ THREAD_QUERY_LIMITED_INFORMATION, "THREAD_QUERY_LIMITED_INFORMATION" },
+
+			{ DELETE,        "DELETE" },
+			{ READ_CONTROL,  "READ_CONTROL" },
+			{ WRITE_DAC,     "WRITE_DAC" },
+			{ WRITE_OWNER,   "WRITE_OWNER" },
+			{ SYNCHRONIZE,   "SYNCHRONIZE" },
+		};
+
+		if ((access & THREAD_ALL_ACCESS) == THREAD_ALL_ACCESS)
+		{
+			return "THREAD_ALL_ACCESS";
+		}
+
+		return DecodeAccessBits(access, bits, std::size(bits));
+	}
+	const char* DecodeSectionAccess(DWORD access) noexcept
+	{
+		static const AccessBit bits[] = {
+			{ SECTION_QUERY,        "SECTION_QUERY" },
+			{ SECTION_MAP_READ,     "SECTION_MAP_READ" },
+			{ SECTION_MAP_WRITE,    "SECTION_MAP_WRITE" },
+			{ SECTION_MAP_EXECUTE,  "SECTION_MAP_EXECUTE" },
+			{ SECTION_EXTEND_SIZE,  "SECTION_EXTEND_SIZE" },
+
+			{ DELETE,        "DELETE" },
+			{ READ_CONTROL,  "READ_CONTROL" },
+			{ WRITE_DAC,     "WRITE_DAC" },
+			{ WRITE_OWNER,   "WRITE_OWNER" },
+			{ SYNCHRONIZE,   "SYNCHRONIZE" },
+		};
+
+		if ((access & SECTION_ALL_ACCESS) == SECTION_ALL_ACCESS)
+		{
+			return "SECTION_ALL_ACCESS";
+		}
+
+		return DecodeAccessBits(access, bits, std::size(bits));
+	}
+	const char* DecodeEventAccess(DWORD access) noexcept
+	{
+		static const AccessBit bits[] = {
+			{ EVENT_MODIFY_STATE, "EVENT_MODIFY_STATE" },
+
+			{ DELETE,        "DELETE" },
+			{ READ_CONTROL,  "READ_CONTROL" },
+			{ WRITE_DAC,     "WRITE_DAC" },
+			{ WRITE_OWNER,   "WRITE_OWNER" },
+			{ SYNCHRONIZE,   "SYNCHRONIZE" },
+		};
+
+		if ((access & EVENT_ALL_ACCESS) == EVENT_ALL_ACCESS)
+		{
+			return "EVENT_ALL_ACCESS";
+		}
+
+		return DecodeAccessBits(access, bits, std::size(bits));
+	}
+	const char* DecodeMutantAccess(DWORD access) noexcept
+	{
+		static const AccessBit bits[] = {
+			{ MUTANT_QUERY_STATE, "MUTANT_QUERY_STATE" },
+
+			{ DELETE,        "DELETE" },
+			{ READ_CONTROL,  "READ_CONTROL" },
+			{ WRITE_DAC,     "WRITE_DAC" },
+			{ WRITE_OWNER,   "WRITE_OWNER" },
+			{ SYNCHRONIZE,   "SYNCHRONIZE" },
+		};
+
+		if ((access & MUTANT_ALL_ACCESS) == MUTANT_ALL_ACCESS)
+		{
+			return "MUTANT_ALL_ACCESS";
+		}
+
+		return DecodeAccessBits(access, bits, std::size(bits));
+	}
+	const char* DecodeSemaphoreAccess(DWORD access) noexcept
+	{
+		static const AccessBit bits[] = {
+			{ SEMAPHORE_MODIFY_STATE, "SEMAPHORE_MODIFY_STATE" },
+
+			{ DELETE,        "DELETE" },
+			{ READ_CONTROL,  "READ_CONTROL" },
+			{ WRITE_DAC,     "WRITE_DAC" },
+			{ WRITE_OWNER,   "WRITE_OWNER" },
+			{ SYNCHRONIZE,   "SYNCHRONIZE" },
+		};
+
+		if ((access & SEMAPHORE_ALL_ACCESS) == SEMAPHORE_ALL_ACCESS)
+		{
+			return "SEMAPHORE_ALL_ACCESS";
+		}
+
+		return DecodeAccessBits(access, bits, std::size(bits));
+	}
+	const char* WindowsProcessBase::DecodeHandleAccess(PSS_OBJECT_TYPE type, DWORD access) noexcept
+	{
+		/* winnt.h
+		#define PROCESS_TERMINATE                 0x0001
+		#define PROCESS_CREATE_THREAD             0x0002
+		#define PROCESS_SET_SESSIONID             0x0004
+		#define PROCESS_VM_OPERATION              0x0008
+		#define PROCESS_VM_READ                   0x0010
+		#define PROCESS_VM_WRITE                  0x0020
+		#define PROCESS_DUP_HANDLE                0x0040
+		#define PROCESS_CREATE_PROCESS            0x0080
+		#define PROCESS_SET_QUOTA                 0x0100
+		#define PROCESS_SET_INFORMATION           0x0200
+		#define PROCESS_QUERY_INFORMATION         0x0400
+		#define PROCESS_SUSPEND_RESUME             0x0800
+		#define PROCESS_QUERY_LIMITED_INFORMATION  0x1000
+		#define PROCESS_ALL_ACCESS (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0xFFFF)
+
+		#define DELETE          0x00010000
+		#define READ_CONTROL    0x00020000
+		#define WRITE_DAC       0x00040000
+		#define WRITE_OWNER     0x00080000
+		#define SYNCHRONIZE     0x00100000
+		#define STANDARD_RIGHTS_REQUIRED 0x000F0000
+		#define STANDARD_RIGHTS_ALL      0x001F0000
+
+		#define THREAD_TERMINATE                 0x0001
+		#define THREAD_SUSPEND_RESUME            0x0002
+		#define THREAD_GET_CONTEXT               0x0008
+		#define THREAD_SET_CONTEXT               0x0010
+		#define THREAD_QUERY_INFORMATION         0x0040
+		#define THREAD_SET_INFORMATION           0x0020
+		#define THREAD_SET_THREAD_TOKEN          0x0080
+		#define THREAD_IMPERSONATE               0x0100
+		#define THREAD_DIRECT_IMPERSONATION      0x0200
+		#define THREAD_QUERY_LIMITED_INFORMATION 0x0800
+		#define THREAD_ALL_ACCESS (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0xFFFF)
+
+		#define SECTION_QUERY        0x0001
+		#define SECTION_MAP_WRITE    0x0002
+		#define SECTION_MAP_READ     0x0004
+		#define SECTION_MAP_EXECUTE  0x0008
+		#define SECTION_EXTEND_SIZE  0x0010
+		#define SECTION_ALL_ACCESS   (STANDARD_RIGHTS_REQUIRED | 0x1F)
+
+		#define EVENT_MODIFY_STATE  0x0002
+		#define EVENT_ALL_ACCESS    (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x3)
+
+		#define MUTANT_QUERY_STATE  0x0001
+		#define MUTANT_ALL_ACCESS   (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x1)
+
+		#define SEMAPHORE_MODIFY_STATE  0x0002
+		#define SEMAPHORE_ALL_ACCESS    (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x3)
+		*/
+
+		if (!access) return "";
+
+		switch (type)
+		{
+		case PSS_OBJECT_TYPE_PROCESS:   return DecodeProcessAccess(access);
+		case PSS_OBJECT_TYPE_THREAD:    return DecodeThreadAccess(access);
+		case PSS_OBJECT_TYPE_SECTION:   return DecodeSectionAccess(access);
+		case PSS_OBJECT_TYPE_EVENT:     return DecodeEventAccess(access);
+		case PSS_OBJECT_TYPE_MUTANT:    return DecodeMutantAccess(access);
+		case PSS_OBJECT_TYPE_SEMAPHORE: return DecodeSemaphoreAccess(access);
+		default: break;
+		}
+
+		// Unknown object type → return raw access mask
+		static char buffer[16];
+		std::snprintf(buffer, sizeof(buffer), "0x%08X", access);
+		return buffer;
 	}
 
 	WindowsProcessBase::WindowsProcessBase(const DWORD processId)
@@ -215,9 +428,7 @@ namespace corvus::process
 				thread.size = tEntry.dwSize;
 				thread.threadId = tEntry.th32ThreadID;
 				thread.ownerProcessId = tEntry.th32OwnerProcessID;
-				thread.basePriority = tEntry.tpBasePri;
-				thread.deltaPriority = tEntry.tpDeltaPri;
-				thread.flags = tEntry.dwFlags;
+				thread.basePriority = tEntry.tpBasePri; //KeQueryPriorityThread
 				proc.m_threads.push_back(thread);
 
 			} while (Thread32Next(hThreadSnapshot, &tEntry));
@@ -269,14 +480,33 @@ namespace corvus::process
 				break;
 
 			HandleEntry handle{};
-			handle.typeName = handleBuffer.TypeName ? handleBuffer.TypeName : L"";
+			handle.typeName = handleBuffer.TypeName ? handleBuffer.TypeName : L"Unknown";
 			handle.objectName = handleBuffer.ObjectName ? handleBuffer.ObjectName : L"";
 			handle.handle = handleBuffer.Handle;
 			handle.flags = handleBuffer.Flags;
-			handle.objectType = static_cast<HandleType>(handleBuffer.ObjectType);
 			handle.attributes = handleBuffer.Attributes;
 			handle.grantedAccess = handleBuffer.GrantedAccess;
 			handle.handleCount = handleBuffer.HandleCount;
+			handle.pssObjectType = handleBuffer.ObjectType;
+
+			switch (handle.pssObjectType)
+			{
+			case PSS_OBJECT_TYPE_PROCESS:
+				handle.targetProcessId = handleBuffer.TypeSpecificInformation.Process.ProcessId;
+				break;
+
+			case PSS_OBJECT_TYPE_THREAD:
+				handle.targetProcessId = handleBuffer.TypeSpecificInformation.Thread.ProcessId;
+				break;
+
+			case PSS_OBJECT_TYPE_MUTANT:
+				handle.targetProcessId = handleBuffer.TypeSpecificInformation.Mutant.OwnerProcessId;
+				break;
+
+			default:
+				handle.targetProcessId = 0; // not applicable
+				break;
+			}
 
 			proc.m_handles.push_back(handle);
 		}
@@ -475,6 +705,56 @@ namespace corvus::process
 
 		CloseHandle(hModuleSnapshot);
 		return moduleBaseAddress;
+	}
+
+	std::string WindowsProcessWin32::GetProcessNameW32(DWORD pid)
+	{
+		HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+		if (snapshot == INVALID_HANDLE_VALUE)
+			return {};
+
+		PROCESSENTRY32W pe{};
+		pe.dwSize = sizeof(pe);
+
+		if (Process32FirstW(snapshot, &pe))
+		{
+			do
+			{
+				if (pe.th32ProcessID == pid)
+				{
+					// Wide → UTF-8
+					int size = WideCharToMultiByte(
+						CP_UTF8,
+						0,
+						pe.szExeFile,
+						-1,
+						nullptr,
+						0,
+						nullptr,
+						nullptr
+					);
+
+					std::string result(size - 1, '\0');
+
+					WideCharToMultiByte(
+						CP_UTF8,
+						0,
+						pe.szExeFile,
+						-1,
+						result.data(),
+						size,
+						nullptr,
+						nullptr
+					);
+
+					CloseHandle(snapshot);
+					return result;
+				}
+			} while (Process32NextW(snapshot, &pe));
+		}
+
+		CloseHandle(snapshot);
+		return {};
 	}
 
 	BOOL  WindowsProcessWin32::SuspendThreadW32(const DWORD threadId)
@@ -783,11 +1063,9 @@ namespace corvus::process
 					handleEntry.typeName = L"Unknown";
 					handleEntry.handle =
 						reinterpret_cast<HANDLE>(sHandleInfo.HandleValue);
-					handleEntry.objectType = HandleType::Unknown;
 					handleEntry.attributes = sHandleInfo.HandleAttributes;
 					handleEntry.grantedAccess = sHandleInfo.GrantedAccess;
 					handleEntry.handleCount = pHandles->NumberOfHandles;
-					handleEntry.objectTypeIndex = sHandleInfo.ObjectTypeIndex;
 
 					wProcNt.m_handles.push_back(handleEntry);
 				}

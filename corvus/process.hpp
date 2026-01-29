@@ -53,8 +53,6 @@ namespace corvus::process
 		DWORD threadId{}; // 32 bits
 		DWORD ownerProcessId{}; // 32 bits
 		LONG basePriority{}; // 32 bits
-		LONG deltaPriority{}; // 32 bits
-		DWORD flags{}; // 32 bits
 
 		// Nt structure members
 		PVOID startAddress{};
@@ -68,11 +66,17 @@ namespace corvus::process
 		std::wstring objectName{}; // UTF-16 string (heap-allocated, size varies)
 		HANDLE handle{}; // x86: 32 bits, x64: 64 bits
 		DWORD flags{}; // 32 bits
-		HandleType objectType{}; // 32 bits
 		DWORD attributes{}; // 32 bits
 		DWORD grantedAccess{}; // 32 bits
 		DWORD handleCount{}; // 32 bits
-		USHORT objectTypeIndex{}; // 16 bits
+		DWORD targetProcessId{}; // 32 bits
+		PSS_OBJECT_TYPE pssObjectType{}; // 32 bits
+	};
+
+	struct AccessBit
+	{
+		DWORD bit;
+		const char* name;
 	};
 
 	struct ProcessQueryContext
@@ -171,8 +175,8 @@ namespace corvus::process
 		// static converters
 		static std::string ToString(const std::wstring& w) noexcept;
 		static const char* ToString(ArchitectureType arch) noexcept;
-		static const char* ToString(const HandleType& type) noexcept;
-		static std::wstring ToString(const DWORD& priorityClass) noexcept;
+		static const std::wstring ToString(const DWORD& priorityClass) noexcept;
+		static const char* DecodeHandleAccess(PSS_OBJECT_TYPE type, DWORD access) noexcept;
 	};
 #pragma endregion
 
@@ -198,6 +202,7 @@ namespace corvus::process
 		static std::vector<WindowsProcessWin32> GetProcessListW32();
 		static HANDLE OpenProcessHandleW32(const DWORD processId, const ACCESS_MASK accessMask);
 		static uintptr_t GetModuleBaseAddressW32(HANDLE hModuleSnapshot, WindowsProcessWin32& proc);
+		static std::string GetProcessNameW32(DWORD pid);
 		static BOOL SuspendThreadW32(const DWORD threadId);
 		static BOOL ResumeThreadW32(const DWORD threadId);
 		static BOOL EnableSeDebugPrivilegeW32();
