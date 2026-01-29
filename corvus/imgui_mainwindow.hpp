@@ -425,7 +425,7 @@ namespace corvus::imgui
 
 	void DrawModulesTable()
 	{
-		if (!ImGui::BeginTable("Modules", 9,
+		if (!ImGui::BeginTable("Modules", 8,
 			ImGuiTableFlags_RowBg |
 			ImGuiTableFlags_Borders |
 			ImGuiTableFlags_ScrollX |
@@ -435,7 +435,6 @@ namespace corvus::imgui
 
 		ImGui::TableSetupColumn("Name");
 		ImGui::TableSetupColumn("Path");
-		ImGui::TableSetupColumn("Size");
 		ImGui::TableSetupColumn("BaseAddress");
 		ImGui::TableSetupColumn("BaseSize");
 		ImGui::TableSetupColumn("EntryPoint");
