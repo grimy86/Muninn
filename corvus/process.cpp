@@ -429,7 +429,7 @@ namespace corvus::process
 				break;
 
 			HandleEntry handle{};
-			handle.typeName = handleBuffer.TypeName ? handleBuffer.TypeName : L"Unknown";
+			handle.typeName = handleBuffer.TypeName ? handleBuffer.TypeName : L"";
 			handle.objectName = handleBuffer.ObjectName ? handleBuffer.ObjectName : L"";
 			handle.handle = handleBuffer.Handle;
 			handle.flags = handleBuffer.Flags;
