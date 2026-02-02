@@ -82,6 +82,9 @@ namespace corvus::imgui
 			ImGuiSelectableFlags_SpanAllColumns))
 		{
 			g_selectedItem = &proc;
+			g_selectedItem->QueryThreads();
+			g_selectedItem->QueryModules();
+			g_selectedItem->QueryHandles();
 		}
 
 		ImGui::TableSetColumnIndex(1); ImGui::TextUnformatted(proc.GetNameA().c_str());
@@ -271,25 +274,22 @@ namespace corvus::imgui
 		if (ImGui::Begin("##mainWindow", nullptr, wndFlags))
 		{
 			// INFOBAR
-			ImGui::BeginChild("##infobar", ImVec2(0, 35.0f), false);
-			{
-				ImGui::Columns(2, nullptr, false);
+			ImGui::BeginChild("##infobar", ImVec2(0, 80.0f), false);
 
-				// Left side
+			if (ImGui::BeginTable("##infobar_table", 2))
+			{
+				ImGui::TableNextColumn();
 				ImVec4 dbgCol = g_IsSeDebugEnabled
 					? ImVec4(0, 1, 0, 1)
 					: ImVec4(1, 0, 0, 1);
 
 				ImGui::Text("SeDebugPrivilege:");
 				ImGui::SameLine();
-				ImGui::PushStyleColor(ImGuiCol_Text, dbgCol);
-				ImGui::Bullet();
-				ImGui::PopStyleColor();
-				ImGui::NewLine();
+				ImGui::TextColored(dbgCol, g_IsSeDebugEnabled ? "Enabled" : "Disabled");
+				ImGui::Spacing();
 				ImGui::Checkbox("Ntdll backend", &g_useNt);
-				ImGui::NextColumn();
 
-				// Right side
+				ImGui::TableNextColumn();
 				ImVec4 selCol = g_selectedItem
 					? ImVec4(0, 1, 0, 1)
 					: ImVec4(1, 0, 0, 1);
@@ -299,18 +299,38 @@ namespace corvus::imgui
 
 				if (g_selectedItem)
 				{
-					ImGui::TextColored(selCol, "%s (%d)",
+					ImGui::TextColored(
+						selCol,
+						"%s (%d)",
 						g_selectedItem->GetNameA().c_str(),
-						g_selectedItem->GetProcessId());
+						g_selectedItem->GetProcessId()
+					);
+					ImGui::Spacing();
+
+					if (ImGui::BeginTable("##procstats", 2,
+						ImGuiTableFlags_SizingFixedFit))
+					{
+						ImGui::TableNextRow();
+						ImGui::TableNextColumn(); ImGui::Text("Threads:");
+						ImGui::TableNextColumn(); ImGui::Text("%zu", g_selectedItem->GetThreads().size());
+						ImGui::TableNextRow();
+						ImGui::TableNextColumn(); ImGui::Text("Modules:");
+						ImGui::TableNextColumn(); ImGui::Text("%zu", g_selectedItem->GetModules().size());
+						ImGui::TableNextRow();
+						ImGui::TableNextColumn(); ImGui::Text("Handles:");
+						ImGui::TableNextColumn(); ImGui::Text("%zu", g_selectedItem->GetHandles().size());
+						ImGui::EndTable();
+					}
 				}
 				else
 				{
 					ImGui::TextColored(selCol, "None");
 				}
-
-				ImGui::Columns(1);
+				ImGui::EndTable();
 			}
+
 			ImGui::EndChild();
+
 
 			// NAVBAR
 			ImGui::BeginChild("##navbar", ImVec2(150.0f, 0), true);
