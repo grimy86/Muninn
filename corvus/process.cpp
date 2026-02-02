@@ -1,6 +1,8 @@
 ﻿#include "process.hpp"
 #include <TlHelp32.h>
 #include <Psapi.h>
+#include <locale>
+#include <codecvt>
 #include <sstream>
 #pragma comment(lib, "ntdll.lib")
 
@@ -30,7 +32,7 @@ namespace corvus::process
 	uintptr_t WindowsProcessBase::GetPEBAddress() const noexcept { return m_pebAddress; }
 	DWORD WindowsProcessBase::GetProcessId() const noexcept { return m_processId; }
 	DWORD WindowsProcessBase::GetParentProcessId() const noexcept { return m_parentProcessId; }
-	DWORD WindowsProcessBase::GetPriorityClass() const noexcept { return m_priorityClass; }
+	PriorityClass WindowsProcessBase::GetPriorityClass() const noexcept { return m_priorityClass; }
 	LONG WindowsProcessBase::GetBasePriority() const noexcept { return m_basePriority; }
 	BOOL WindowsProcessBase::IsWow64() const noexcept { return m_isWow64; }
 	BOOL WindowsProcessBase::IsProtectedProcess() const noexcept { return m_isProtectedProcess; }
@@ -39,8 +41,10 @@ namespace corvus::process
 	BOOL WindowsProcessBase::IsSubsystemProcess() const noexcept { return m_isSubsystemProcess; }
 	BOOL WindowsProcessBase::HasVisibleWindow() const noexcept { return m_hasVisibleWindow; }
 	ArchitectureType WindowsProcessBase::GetArchitectureType() const noexcept { return m_architectureType; }
-	const std::string& WindowsProcessBase::GetNameA() const noexcept { return ToString(m_name); }
-	const std::string& WindowsProcessBase::GetImageFilePathA() const noexcept { return ToString(m_imageFilePath); }
+
+	std::string WindowsProcessBase::GetNameA() const noexcept { return ToString(m_name); }
+	std::string WindowsProcessBase::GetImageFilePathA() const noexcept { return ToString(m_imageFilePath); }
+	std::string WindowsProcessBase::GetProcessIdA() const noexcept { return ToString(m_processId); }
 	const char* WindowsProcessBase::GetPriorityClassA() const noexcept { return ToString(m_priorityClass); }
 	const char* WindowsProcessBase::GetArchitectureTypeA() const noexcept { return ToString(m_architectureType); }
 
@@ -53,28 +57,42 @@ namespace corvus::process
 			handle != INVALID_HANDLE_VALUE);
 	}
 
-	std::string WindowsProcessBase::ToString(const std::wstring& w) noexcept
+	std::string WindowsProcessBase::ToString(const std::wstring& wstring) noexcept
 	{
-		if (w.empty())
-			return {};
+		if (wstring.empty())
+			return std::string();
 
-		int size = WideCharToMultiByte(
-			CP_UTF8, 0,
-			w.data(), (int)w.size(),
-			nullptr, 0,
-			nullptr, nullptr
+		// Get the required buffer size (including null terminator)
+		int size_needed = WideCharToMultiByte(
+			CP_UTF8,               // Code page (UTF-8 recommended)
+			0,                     // Conversion flags
+			wstring.c_str(),       // Source wide string
+			static_cast<int>(wstring.size()), // Number of chars to convert
+			nullptr,               // No output buffer yet
+			0,                     // Request buffer size
+			nullptr, nullptr       // Default chars / used flag
 		);
 
-		std::string result(size, '\0');
+		if (size_needed <= 0)
+			return std::string(); // Conversion failed
+
+		std::string result(size_needed, 0);
 
 		WideCharToMultiByte(
-			CP_UTF8, 0,
-			w.data(), (int)w.size(),
-			result.data(), size,
+			CP_UTF8,
+			0,
+			wstring.c_str(),
+			static_cast<int>(wstring.size()),
+			result.data(),
+			size_needed,
 			nullptr, nullptr
 		);
 
 		return result;
+	}
+	std::string WindowsProcessBase::ToString(DWORD processId) noexcept
+	{
+		return std::to_string(processId);
 	}
 	const char* WindowsProcessBase::ToString(ArchitectureType arch) noexcept
 	{
@@ -88,17 +106,18 @@ namespace corvus::process
 		default: return "Unknown";
 		}
 	}
-	const char* WindowsProcessBase::ToString(const DWORD& priorityClass) noexcept
+	const char* WindowsProcessBase::ToString(PriorityClass priorityClass) noexcept
 	{
 		switch (priorityClass)
 		{
-		case NORMAL_PRIORITY_CLASS: return "Normal";
-		case IDLE_PRIORITY_CLASS: return "Idle";
-		case HIGH_PRIORITY_CLASS: return "High";
-		case REALTIME_PRIORITY_CLASS: return "Realtime";
-		case BELOW_NORMAL_PRIORITY_CLASS: return "Below normal";
-		case ABOVE_NORMAL_PRIORITY_CLASS: return "Above normal";
-		default: return "Unknown";
+		case corvus::process::PriorityClass::Undefined: return "Undefined";
+		case corvus::process::PriorityClass::Normal: return "Normal";
+		case corvus::process::PriorityClass::Idle: return "Idle";
+		case corvus::process::PriorityClass::High: return "High";
+		case corvus::process::PriorityClass::Realtime: return "Realtime";
+		case corvus::process::PriorityClass::BelowNormal: return "Below normal";
+		case corvus::process::PriorityClass::AboveNormal: return "Above normal";
+		default: return "Undefined";
 		}
 	}
 	const char* DecodeAccessBits(DWORD access, const AccessBit* bits, size_t count) noexcept
@@ -289,7 +308,7 @@ namespace corvus::process
 	{
 		MODULEINFO mInfoBuffer{};
 		MODULEENTRY32W mEntry{};
-		mEntry.dwSize = sizeof(mEntry);
+		mEntry.dwSize = sizeof(MODULEENTRY32W);
 
 		if (!Module32FirstW(hModuleSnapshot, &mEntry)) return;
 		do
@@ -507,7 +526,7 @@ namespace corvus::process
 
 	void WindowsProcessWin32::QueryPriorityClassW32(HANDLE hProcess, WindowsProcessWin32& proc)
 	{
-		proc.m_priorityClass = ::GetPriorityClass(hProcess);
+		proc.m_priorityClass = static_cast<PriorityClass>(::GetPriorityClass(hProcess));
 	}
 
 	std::vector<WindowsProcessWin32> WindowsProcessWin32::GetProcessListW32()
@@ -977,7 +996,7 @@ namespace corvus::process
 						pProcessExtendedInfo->u.s.IsSubsystemProcess;
 
 					wProcNt.m_priorityClass =
-						procPriorityClassBuffer.PriorityClass;
+						static_cast<PriorityClass>(procPriorityClassBuffer.PriorityClass);
 				}
 
 				delete[] pImageFileNameBuffer;

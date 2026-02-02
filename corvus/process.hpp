@@ -32,6 +32,17 @@ namespace corvus::process
 		Token
 	};
 
+	enum class PriorityClass : DWORD
+	{
+		Undefined = 0x0,
+		Idle = IDLE_PRIORITY_CLASS,
+		Normal = NORMAL_PRIORITY_CLASS,
+		High = HIGH_PRIORITY_CLASS,
+		Realtime = REALTIME_PRIORITY_CLASS,
+		BelowNormal = BELOW_NORMAL_PRIORITY_CLASS,
+		AboveNormal = ABOVE_NORMAL_PRIORITY_CLASS
+	};
+
 	struct ModuleEntry
 	{
 		// Win32 structure members
@@ -106,7 +117,7 @@ namespace corvus::process
 		virtual uintptr_t GetPEBAddress() const noexcept = 0;
 		virtual DWORD GetProcessId() const noexcept = 0;
 		virtual DWORD GetParentProcessId() const noexcept = 0;
-		virtual DWORD GetPriorityClass() const noexcept = 0;
+		virtual PriorityClass GetPriorityClass() const noexcept = 0;
 		virtual LONG GetBasePriority() const noexcept = 0;
 		virtual BOOL IsWow64() const noexcept = 0;
 		virtual BOOL IsProtectedProcess() const noexcept = 0;
@@ -114,6 +125,7 @@ namespace corvus::process
 		virtual BOOL IsSecureProcess() const noexcept = 0;
 		virtual BOOL IsSubsystemProcess() const noexcept = 0;
 		virtual BOOL HasVisibleWindow() const noexcept = 0;
+		virtual ArchitectureType GetArchitectureType() const noexcept = 0;
 	};
 
 	class WindowsProcessBase : public IProcess
@@ -132,7 +144,7 @@ namespace corvus::process
 		uintptr_t m_pebAddress{}; // x86: 32 bits, x64: 64 bits
 		DWORD m_processId{}; // 32 bits
 		DWORD m_parentProcessId{}; // 32 bits
-		DWORD m_priorityClass{}; // 32 bits
+		PriorityClass m_priorityClass{}; // 32 bits
 		LONG m_basePriority{}; // 32 bits
 		BOOL m_isWow64{}; // 32 bits
 		BOOL m_isProtectedProcess{}; // 32 bits
@@ -155,7 +167,7 @@ namespace corvus::process
 		uintptr_t GetPEBAddress() const noexcept override;
 		DWORD GetProcessId() const noexcept override;
 		DWORD GetParentProcessId() const noexcept override;
-		DWORD GetPriorityClass() const noexcept override;
+		PriorityClass GetPriorityClass() const noexcept override;
 		LONG GetBasePriority() const noexcept override;
 		BOOL IsWow64() const noexcept override;
 		BOOL IsProtectedProcess() const noexcept override;
@@ -163,11 +175,11 @@ namespace corvus::process
 		BOOL IsSecureProcess() const noexcept override;
 		BOOL IsSubsystemProcess() const noexcept override;
 		BOOL HasVisibleWindow() const noexcept override;
-
-		// no overrides
 		ArchitectureType GetArchitectureType() const noexcept;
-		const std::string& GetNameA() const noexcept;
-		const std::string& GetImageFilePathA() const noexcept;
+
+		std::string GetNameA() const noexcept;
+		std::string GetImageFilePathA() const noexcept;
+		std::string GetProcessIdA() const noexcept;
 		const char* GetPriorityClassA() const noexcept;
 		const char* GetArchitectureTypeA() const noexcept;
 
@@ -177,9 +189,10 @@ namespace corvus::process
 		static bool IsValidHandle(const HANDLE processHandle) noexcept;
 
 		// static noexcept converters
-		static std::string ToString(const std::wstring& w) noexcept;
+		static std::string ToString(const std::wstring& wstring) noexcept;
+		static std::string ToString(DWORD processId) noexcept;
 		static const char* ToString(ArchitectureType arch) noexcept;
-		static const char* ToString(const DWORD& priorityClass) noexcept;
+		static const char* ToString(PriorityClass priorityClass) noexcept;
 		static const char* ToString(PSS_OBJECT_TYPE type, DWORD access) noexcept;
 	};
 #pragma endregion

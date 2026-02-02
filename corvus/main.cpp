@@ -97,7 +97,8 @@ int __stdcall WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, LPSTR cmdline,
 
 	// Setup scaling
 	ImGuiStyle& style = ImGui::GetStyle();
-	corvus::imgui::SetStyle(style, main_scale);
+	style.ScaleAllSizes(main_scale);
+	style.FontScaleDpi = main_scale;
 
 	// Setup Platform/Renderer backends
 	ImGui_ImplWin32_InitForOpenGL(hwnd);
@@ -112,10 +113,6 @@ int __stdcall WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, LPSTR cmdline,
 
 	// Main loop
 	bool done = false;
-
-	// Corvus specific
-	corvus::process::WindowsProcessWin32::EnableSeDebugPrivilegeW32();
-	corvus::process::WindowsProcessWin32::SetThreadPriorityW32(ABOVE_NORMAL_PRIORITY_CLASS);
 
 	while (!done) {
 		// Poll and handle messages (inputs, window resize, etc.)
