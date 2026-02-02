@@ -198,7 +198,8 @@ namespace corvus::process
 		static std::string ToString(DWORD processId) noexcept;
 		static const char* ToString(ArchitectureType arch) noexcept;
 		static const char* ToString(PriorityClass priorityClass) noexcept;
-		static const char* ToString(PSS_OBJECT_TYPE type, DWORD access) noexcept;
+		static const char* MapAccess(PSS_OBJECT_TYPE type, DWORD access) noexcept;
+		static const char* MapAttributes(DWORD attribute) noexcept;
 	};
 #pragma endregion
 
@@ -278,7 +279,8 @@ namespace corvus::process
 	class WindowsProcessNt : public WindowsProcessBase
 	{
 	private:
-		// void UpdateWindowsProcessNt();
+		std::wstring QueryObjectName(HANDLE h) noexcept;
+		std::wstring QueryObjectTypeName(HANDLE h) noexcept;
 
 	public:
 		WindowsProcessNt() = delete;
@@ -286,9 +288,9 @@ namespace corvus::process
 		~WindowsProcessNt() noexcept override = default;
 
 		// noexcept override setters
-		void QueryModules() noexcept override { return; }
-		void QueryThreads() noexcept override { return; }
-		void QueryHandles() noexcept override { return; }
+		void QueryModules() noexcept override;
+		void QueryThreads() noexcept override;
+		void QueryHandles() noexcept override;
 
 		// static process functions
 		static std::vector<WindowsProcessNt> GetProcessListNt();

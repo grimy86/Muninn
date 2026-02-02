@@ -1,9 +1,6 @@
 ﻿#include "process.hpp"
 #include <TlHelp32.h>
 #include <Psapi.h>
-#include <locale>
-#include <codecvt>
-#include <sstream>
 #pragma comment(lib, "ntdll.lib")
 
 namespace corvus::process
@@ -139,7 +136,7 @@ namespace corvus::process
 
 		return first ? "NONE" : buffer.c_str();
 	}
-	const char* WindowsProcessBase::ToString(PSS_OBJECT_TYPE type, DWORD access) noexcept
+	const char* WindowsProcessBase::MapAccess(PSS_OBJECT_TYPE type, DWORD access) noexcept
 	{
 		// No access
 		if (!access) return "";
@@ -293,6 +290,26 @@ namespace corvus::process
 		static char buffer[16];
 		std::snprintf(buffer, sizeof(buffer), "0x%08X", access);
 		return buffer;
+	}
+	const char* WindowsProcessBase::MapAttributes(DWORD attribute) noexcept
+	{
+		if (!attribute) return "";
+
+		static const AccessBit bits[] = {
+			{ OBJ_INHERIT, "OBJ_INHERIT"},
+			{ OBJ_PERMANENT, "OBJ_PERMANENT" },
+			{ OBJ_EXCLUSIVE, "OBJ_EXCLUSIVE" },
+			{ OBJ_CASE_INSENSITIVE, "OBJ_CASE_INSENSITIVE" },
+			{ OBJ_OPENIF, "OBJ_OPENIF" },
+			{ OBJ_OPENLINK, "OBJ_OPENLINK" },
+			{ OBJ_KERNEL_HANDLE, "OBJ_KERNEL_HANDLE" },
+			{ OBJ_FORCE_ACCESS_CHECK, "OBJ_FORCE_ACCESS_CHECK" },
+			{ OBJ_IGNORE_IMPERSONATED_DEVICEMAP, "OBJ_IGNORE_IMPERSONATED_DEVICEMAP" },
+			{ OBJ_DONT_REPARSE, "OBJ_DONT_REPARSE" },
+			{ OBJ_VALID_ATTRIBUTES, "OBJ_VALID_ATTRIBUTES" },
+		};
+
+		return DecodeAccessBits(attribute, bits, std::size(bits));
 	}
 
 	WindowsProcessBase::WindowsProcessBase(const DWORD processId)
@@ -875,18 +892,134 @@ namespace corvus::process
 #pragma endregion
 
 #pragma region Implementation: WindowsProcessNt
+	std::wstring WindowsProcessNt::QueryObjectName(HANDLE h) noexcept
+	{
+		if (!h) return L"";
+		HANDLE dupHandle = nullptr;
+
+		if (!DuplicateHandle(
+			OpenProcess(PROCESS_DUP_HANDLE, FALSE, m_processId),
+			h,
+			GetCurrentProcess(),
+			&dupHandle,
+			0,
+			FALSE,
+			DUPLICATE_SAME_ACCESS))
+		{
+			return L"";
+		}
+
+		std::wstring result;
+		ULONG size = 0;
+
+		// First call to query size
+		NtQueryObject(dupHandle, ObjectNameInformation, nullptr, 0, &size);
+		if (size)
+		{
+			auto* nameBuffer = reinterpret_cast<POBJECT_NAME_INFORMATION>(new BYTE[size]);
+			if (NT_SUCCESS(NtQueryObject(dupHandle, ObjectNameInformation, nameBuffer, size, nullptr)))
+			{
+				if (nameBuffer->Name.Buffer && nameBuffer->Name.Length > 0)
+				{
+					// Copy to std::wstring
+					result.assign(nameBuffer->Name.Buffer, nameBuffer->Name.Length / sizeof(WCHAR));
+				}
+			}
+			delete[] nameBuffer;
+		}
+
+		CloseHandle(dupHandle);
+		return result;
+	}
+
+	std::wstring WindowsProcessNt::QueryObjectTypeName(HANDLE h) noexcept
+	{
+		if (!h) return L"";
+
+		HANDLE dupHandle = nullptr;
+		if (!DuplicateHandle(
+			OpenProcess(PROCESS_DUP_HANDLE, FALSE, m_processId),
+			h,
+			GetCurrentProcess(),
+			&dupHandle,
+			0,
+			FALSE,
+			DUPLICATE_SAME_ACCESS))
+		{
+			return L"";
+		}
+
+		std::wstring result;
+		ULONG size = 0;
+
+		// First call to query size
+		NtQueryObject(dupHandle, ObjectTypeInformation, nullptr, 0, &size);
+		if (size)
+		{
+			auto* typeInfo = reinterpret_cast<POBJECT_TYPE_INFORMATION>(new BYTE[size]);
+			if (NT_SUCCESS(NtQueryObject(dupHandle, ObjectTypeInformation, typeInfo, size, nullptr)))
+			{
+				// Assign to result, not a local variable
+				if (typeInfo->TypeName.Buffer && typeInfo->TypeName.Length > 0)
+					result.assign(typeInfo->TypeName.Buffer, typeInfo->TypeName.Length / sizeof(WCHAR));
+			}
+			delete[] typeInfo;
+		}
+
+		CloseHandle(dupHandle);
+		return result;
+	}
+
+	void WindowsProcessNt::QueryModules() noexcept { return; }
+	void WindowsProcessNt::QueryThreads() noexcept { return; }
+	void WindowsProcessNt::QueryHandles() noexcept
+	{
+		DWORD requiredBufferSize{ GetQSIBuffferSizeNt(
+			SystemHandleInformation) + 0x1000 };
+		BYTE* hInfoBuffer = new BYTE[requiredBufferSize];
+		NTSTATUS ntStatus{ NtQuerySystemInformation(
+				SystemHandleInformation,
+				hInfoBuffer,
+				requiredBufferSize,
+				nullptr) };
+
+		if (!NT_SUCCESS(ntStatus))
+		{
+			delete[] hInfoBuffer;
+			return;
+		}
+
+		PSYSTEM_HANDLE_INFORMATION pHandles = reinterpret_cast<PSYSTEM_HANDLE_INFORMATION>(hInfoBuffer);
+
+		// Handle parsing
+		for (ULONG i = 0; i < pHandles->NumberOfHandles; ++i)
+		{
+			const SYSTEM_HANDLE_TABLE_ENTRY_INFO& sHandleInfo = pHandles->Handles[i];
+			if (static_cast<uintptr_t>(sHandleInfo.UniqueProcessId) != static_cast<uintptr_t>(m_processId))
+				continue;
+
+			HandleEntry handle{};
+			handle.handle = reinterpret_cast<HANDLE>(sHandleInfo.HandleValue);
+			handle.typeName = QueryObjectTypeName(handle.handle);
+			handle.objectName = QueryObjectName(handle.handle);
+			handle.attributes = sHandleInfo.HandleAttributes;
+			handle.grantedAccess = sHandleInfo.GrantedAccess;
+			m_handles.push_back(handle);
+		}
+
+		delete[] hInfoBuffer;
+	}
+
 	std::vector<WindowsProcessNt> WindowsProcessNt::GetProcessListNt()
 	{
+		ProcessQueryContext pqc{};
 		std::vector<WindowsProcessNt> result;
 
 		// Get required buffer sizes for NtQSI calls
 		const DWORD requiredSysProcInfoBufferSize{
-			GetQSIBuffferSizeNt(SystemProcessInformation) + 0x1000 };
-		const DWORD requiredExtHandleInfoBufferSize{
-			GetQSIBuffferSizeNt(SystemExtendedHandleInformation) + 0x1000 };
+			GetQSIBuffferSizeNt(SystemProcessInformation) };
 
 		BYTE* sysProcInfoBuffer = new BYTE[requiredSysProcInfoBufferSize];
-		BYTE* extHandleInfoBuffer = new BYTE[requiredExtHandleInfoBufferSize];
 
 		// Query system process information
 		NTSTATUS ntSysStatus{ NtQuerySystemInformation(
@@ -895,25 +1028,14 @@ namespace corvus::process
 			requiredSysProcInfoBufferSize,
 			nullptr) };
 
-		// Query handle information
-		NTSTATUS ntHandleStatus{ NtQuerySystemInformation(
-			SystemExtendedHandleInformation,
-			extHandleInfoBuffer,
-			requiredExtHandleInfoBufferSize,
-			nullptr) };
-
 		if (!NT_SUCCESS(ntSysStatus))
 		{
 			delete[] sysProcInfoBuffer;
-			delete[] extHandleInfoBuffer;
 			return result;
 		}
 
 		PSYSTEM_PROCESS_INFORMATION pSys =
 			reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(sysProcInfoBuffer);
-
-		PSYSTEM_HANDLE_INFORMATION_EX pHandles =
-			reinterpret_cast<PSYSTEM_HANDLE_INFORMATION_EX>(extHandleInfoBuffer);
 
 		while (pSys)
 		{
@@ -1016,31 +1138,6 @@ namespace corvus::process
 				wProcNt.m_threads.push_back(threadEntry);
 			}
 
-			// Handle parsing
-			if (NT_SUCCESS(ntHandleStatus))
-			{
-				for (ULONG i = 0; i < pHandles->NumberOfHandles; ++i)
-				{
-					const SYSTEM_HANDLE_TABLE_ENTRY_INFO_EX& sHandleInfo =
-						pHandles->Handles[i];
-
-					if (static_cast<uintptr_t>(sHandleInfo.UniqueProcessId) !=
-						static_cast<uintptr_t>(processId))
-						continue;
-
-					HandleEntry handleEntry{};
-					handleEntry.objectName = L"Unknown";
-					handleEntry.typeName = L"Unknown";
-					handleEntry.handle =
-						reinterpret_cast<HANDLE>(sHandleInfo.HandleValue);
-					handleEntry.attributes = sHandleInfo.HandleAttributes;
-					handleEntry.grantedAccess = sHandleInfo.GrantedAccess;
-					handleEntry.handleCount = pHandles->NumberOfHandles;
-
-					wProcNt.m_handles.push_back(handleEntry);
-				}
-			}
-
 			result.push_back(wProcNt);
 
 			// Advance to next process (ALWAYS)
@@ -1056,7 +1153,6 @@ namespace corvus::process
 		}
 
 		delete[] sysProcInfoBuffer;
-		delete[] extHandleInfoBuffer;
 		return result;
 	}
 
@@ -1086,20 +1182,19 @@ namespace corvus::process
 	DWORD WindowsProcessNt::GetQSIBuffferSizeNt(const SYSTEM_INFORMATION_CLASS sInfoClass)
 	{
 		DWORD requiredBufferSize{};
+		BYTE buffer[0x20];
 
 		NTSTATUS ntStatus{ NtQuerySystemInformation(
 			sInfoClass,
-			nullptr,
-			0,
+			buffer,
+			sizeof(buffer),
 			&requiredBufferSize) };
 
 		return requiredBufferSize;
 	}
 
 	WindowsProcessNt::WindowsProcessNt(const DWORD processId)
-		: WindowsProcessBase(processId)
-	{
-
+		: WindowsProcessBase(processId) {
 	}
 #pragma endregion
 }

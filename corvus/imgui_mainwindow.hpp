@@ -44,7 +44,7 @@ namespace corvus::imgui
 			"Arch","WOW64","Protected (Ntdll)","Background (Ntdll)","Secure (Ntdll)","Subsystem (Ntdll)","Visible" };
 	const char* tTableHeaders[]{ "ThreadId", "OwnerProcessId", "BasePriority", "StartAddress (Ntdll)", "ThreadState (Ntdll)", "WaitReason (Ntdll)" };
 	const char* mTableHeaders[]{ "ProcessId", "Name", "Path", "BaseAddress", "BaseSize", "EntryPoint", "GlobalLoadCount", "ProcessLoadCount" };
-	const char* hTableHeaders[]{ "TargetPID", "Type", "Name", "Handle", "Flags", "Attributes", "GrantedAccess", "DecodedGrantedAccess", "HandleCount" };
+	const char* hTableHeaders[]{ "TargetPID (Win32)", "Type", "Name", "Handle", "Flags (Win32)", "Attributes", "AttributesMap", "GrantedAccess", "GrantedAccessMap", "HandleCount (Win32)" };
 
 	void DrawNavBar()
 	{
@@ -82,9 +82,9 @@ namespace corvus::imgui
 			ImGuiSelectableFlags_SpanAllColumns))
 		{
 			g_selectedItem = &proc;
-			g_selectedItem->QueryThreads();
-			g_selectedItem->QueryModules();
-			g_selectedItem->QueryHandles();
+			if (g_selectedItem->GetThreads().size() <= 0) g_selectedItem->QueryThreads();
+			if (g_selectedItem->GetHandles().size() <= 0) g_selectedItem->QueryModules();
+			if (g_selectedItem->GetHandles().size() <= 0) g_selectedItem->QueryHandles();
 		}
 
 		ImGui::TableSetColumnIndex(1); ImGui::TextUnformatted(proc.GetNameA().c_str());
@@ -137,9 +137,10 @@ namespace corvus::imgui
 		ImGui::TableSetColumnIndex(3); ImGui::Text("0x%p", handle.handle);
 		ImGui::TableSetColumnIndex(4); ImGui::Text("%lu", handle.flags);
 		ImGui::TableSetColumnIndex(5); ImGui::Text("%lu", handle.attributes);
-		ImGui::TableSetColumnIndex(6); ImGui::Text("0x%08X", handle.grantedAccess);
-		ImGui::TableSetColumnIndex(7); ImGui::Text("%s", corvus::process::WindowsProcessBase::ToString(handle.pssObjectType, handle.grantedAccess));
-		ImGui::TableSetColumnIndex(8); ImGui::Text("%lu", handle.handleCount);
+		ImGui::TableSetColumnIndex(6); ImGui::Text("%s", corvus::process::WindowsProcessBase::MapAttributes(handle.attributes));
+		ImGui::TableSetColumnIndex(7); ImGui::Text("0x%08X", handle.grantedAccess);
+		ImGui::TableSetColumnIndex(8); ImGui::Text("%s", corvus::process::WindowsProcessBase::MapAccess(handle.pssObjectType, handle.grantedAccess));
+		ImGui::TableSetColumnIndex(9); ImGui::Text("%lu", handle.handleCount);
 	}
 
 	void DrawProcessTable()
@@ -231,7 +232,7 @@ namespace corvus::imgui
 
 	void DrawHandlesTable()
 	{
-		if (!ImGui::BeginTable("Handles", 9, tFlags)) return;
+		if (!ImGui::BeginTable("Handles", 10, tFlags)) return;
 		for (auto header : hTableHeaders)
 			ImGui::TableSetupColumn(header);
 		ImGui::TableHeadersRow();
