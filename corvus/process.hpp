@@ -198,7 +198,7 @@ namespace corvus::process
 		static std::string ToString(DWORD processId) noexcept;
 		static const char* ToString(ArchitectureType arch) noexcept;
 		static const char* ToString(PriorityClass priorityClass) noexcept;
-		static const char* MapAccess(PSS_OBJECT_TYPE type, DWORD access) noexcept;
+		static const char* MapAccess(std::wstring type, DWORD access) noexcept;
 		static const char* MapAttributes(DWORD attribute) noexcept;
 	};
 #pragma endregion

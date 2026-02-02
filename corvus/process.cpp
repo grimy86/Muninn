@@ -136,63 +136,58 @@ namespace corvus::process
 
 		return first ? "NONE" : buffer.c_str();
 	}
-	const char* WindowsProcessBase::MapAccess(PSS_OBJECT_TYPE type, DWORD access) noexcept
+	const char* WindowsProcessBase::MapAccess(std::wstring type, DWORD access) noexcept
 	{
 		// No access
 		if (!access) return "";
 
-		switch (type)
-		{
-		case PSS_OBJECT_TYPE_PROCESS:
+		if (type == L"Process")
 		{
 			static const AccessBit bits[] = {
-			{ PROCESS_TERMINATE,                 "PROCESS_TERMINATE" },
-			{ PROCESS_CREATE_THREAD,             "PROCESS_CREATE_THREAD" },
-			{ PROCESS_SET_SESSIONID,             "PROCESS_SET_SESSIONID" },
-			{ PROCESS_VM_OPERATION,              "PROCESS_VM_OPERATION" },
-			{ PROCESS_VM_READ,                   "PROCESS_VM_READ" },
-			{ PROCESS_VM_WRITE,                  "PROCESS_VM_WRITE" },
-			{ PROCESS_DUP_HANDLE,                "PROCESS_DUP_HANDLE" },
-			{ PROCESS_CREATE_PROCESS,            "PROCESS_CREATE_PROCESS" },
-			{ PROCESS_SET_QUOTA,                 "PROCESS_SET_QUOTA" },
-			{ PROCESS_SET_INFORMATION,           "PROCESS_SET_INFORMATION" },
-			{ PROCESS_QUERY_INFORMATION,         "PROCESS_QUERY_INFORMATION" },
-			{ PROCESS_SUSPEND_RESUME,             "PROCESS_SUSPEND_RESUME" },
+			{ PROCESS_TERMINATE, "PROCESS_TERMINATE" },
+			{ PROCESS_CREATE_THREAD, "PROCESS_CREATE_THREAD" },
+			{ PROCESS_SET_SESSIONID, "PROCESS_SET_SESSIONID" },
+			{ PROCESS_VM_OPERATION, "PROCESS_VM_OPERATION" },
+			{ PROCESS_VM_READ, "PROCESS_VM_READ" },
+			{ PROCESS_VM_WRITE, "PROCESS_VM_WRITE" },
+			{ PROCESS_DUP_HANDLE, "PROCESS_DUP_HANDLE" },
+			{ PROCESS_CREATE_PROCESS, "PROCESS_CREATE_PROCESS" },
+			{ PROCESS_SET_QUOTA, "PROCESS_SET_QUOTA" },
+			{ PROCESS_SET_INFORMATION, "PROCESS_SET_INFORMATION" },
+			{ PROCESS_QUERY_INFORMATION, "PROCESS_QUERY_INFORMATION" },
+			{ PROCESS_SUSPEND_RESUME, "PROCESS_SUSPEND_RESUME" },
 			{ PROCESS_QUERY_LIMITED_INFORMATION, "PROCESS_QUERY_LIMITED_INFORMATION" },
-
-			{ DELETE,        "DELETE" },
-			{ READ_CONTROL,  "READ_CONTROL" },
-			{ WRITE_DAC,     "WRITE_DAC" },
-			{ WRITE_OWNER,   "WRITE_OWNER" },
-			{ SYNCHRONIZE,   "SYNCHRONIZE" },
+			{ DELETE, "DELETE" },
+			{ READ_CONTROL, "READ_CONTROL" },
+			{ WRITE_DAC, "WRITE_DAC" },
+			{ WRITE_OWNER, "WRITE_OWNER" },
+			{ SYNCHRONIZE, "SYNCHRONIZE" },
 			};
 
 			if ((access & PROCESS_ALL_ACCESS) == PROCESS_ALL_ACCESS)
 			{
 				return "PROCESS_ALL_ACCESS";
 			}
-
 			return DecodeAccessBits(access, bits, std::size(bits));
 		}
-		case PSS_OBJECT_TYPE_THREAD:
+		if (type == L"Thread")
 		{
 			static const AccessBit bits[] = {
-			{ THREAD_TERMINATE,                 "THREAD_TERMINATE" },
-			{ THREAD_SUSPEND_RESUME,            "THREAD_SUSPEND_RESUME" },
-			{ THREAD_GET_CONTEXT,               "THREAD_GET_CONTEXT" },
-			{ THREAD_SET_CONTEXT,               "THREAD_SET_CONTEXT" },
-			{ THREAD_SET_INFORMATION,           "THREAD_SET_INFORMATION" },
-			{ THREAD_QUERY_INFORMATION,         "THREAD_QUERY_INFORMATION" },
-			{ THREAD_SET_THREAD_TOKEN,          "THREAD_SET_THREAD_TOKEN" },
-			{ THREAD_IMPERSONATE,               "THREAD_IMPERSONATE" },
-			{ THREAD_DIRECT_IMPERSONATION,      "THREAD_DIRECT_IMPERSONATION" },
+			{ THREAD_TERMINATE, "THREAD_TERMINATE" },
+			{ THREAD_SUSPEND_RESUME, "THREAD_SUSPEND_RESUME" },
+			{ THREAD_GET_CONTEXT, "THREAD_GET_CONTEXT" },
+			{ THREAD_SET_CONTEXT, "THREAD_SET_CONTEXT" },
+			{ THREAD_SET_INFORMATION, "THREAD_SET_INFORMATION" },
+			{ THREAD_QUERY_INFORMATION, "THREAD_QUERY_INFORMATION" },
+			{ THREAD_SET_THREAD_TOKEN, "THREAD_SET_THREAD_TOKEN" },
+			{ THREAD_IMPERSONATE, "THREAD_IMPERSONATE" },
+			{ THREAD_DIRECT_IMPERSONATION, "THREAD_DIRECT_IMPERSONATION" },
 			{ THREAD_QUERY_LIMITED_INFORMATION, "THREAD_QUERY_LIMITED_INFORMATION" },
-
-			{ DELETE,        "DELETE" },
-			{ READ_CONTROL,  "READ_CONTROL" },
-			{ WRITE_DAC,     "WRITE_DAC" },
-			{ WRITE_OWNER,   "WRITE_OWNER" },
-			{ SYNCHRONIZE,   "SYNCHRONIZE" },
+			{ DELETE, "DELETE" },
+			{ READ_CONTROL, "READ_CONTROL" },
+			{ WRITE_DAC, "WRITE_DAC" },
+			{ WRITE_OWNER, "WRITE_OWNER" },
+			{ SYNCHRONIZE, "SYNCHRONIZE" },
 			};
 
 			if ((access & THREAD_ALL_ACCESS) == THREAD_ALL_ACCESS)
@@ -202,20 +197,19 @@ namespace corvus::process
 
 			return DecodeAccessBits(access, bits, std::size(bits));
 		}
-		case PSS_OBJECT_TYPE_SECTION:
+		if (type == L"Section")
 		{
 			static const AccessBit bits[] = {
-			{ SECTION_QUERY,        "SECTION_QUERY" },
-			{ SECTION_MAP_READ,     "SECTION_MAP_READ" },
-			{ SECTION_MAP_WRITE,    "SECTION_MAP_WRITE" },
-			{ SECTION_MAP_EXECUTE,  "SECTION_MAP_EXECUTE" },
-			{ SECTION_EXTEND_SIZE,  "SECTION_EXTEND_SIZE" },
-
-			{ DELETE,        "DELETE" },
-			{ READ_CONTROL,  "READ_CONTROL" },
-			{ WRITE_DAC,     "WRITE_DAC" },
-			{ WRITE_OWNER,   "WRITE_OWNER" },
-			{ SYNCHRONIZE,   "SYNCHRONIZE" },
+			{ SECTION_QUERY, "SECTION_QUERY" },
+			{ SECTION_MAP_READ, "SECTION_MAP_READ" },
+			{ SECTION_MAP_WRITE, "SECTION_MAP_WRITE" },
+			{ SECTION_MAP_EXECUTE, "SECTION_MAP_EXECUTE" },
+			{ SECTION_EXTEND_SIZE, "SECTION_EXTEND_SIZE" },
+			{ DELETE, "DELETE" },
+			{ READ_CONTROL, "READ_CONTROL" },
+			{ WRITE_DAC, "WRITE_DAC" },
+			{ WRITE_OWNER, "WRITE_OWNER" },
+			{ SYNCHRONIZE, "SYNCHRONIZE" },
 			};
 
 			if ((access & SECTION_ALL_ACCESS) == SECTION_ALL_ACCESS)
@@ -225,65 +219,56 @@ namespace corvus::process
 
 			return DecodeAccessBits(access, bits, std::size(bits));
 		}
-		case PSS_OBJECT_TYPE_EVENT:
+		if (type == L"Event")
 		{
 			static const AccessBit bits[] = {
 			{ EVENT_MODIFY_STATE, "EVENT_MODIFY_STATE" },
-
-			{ DELETE,        "DELETE" },
-			{ READ_CONTROL,  "READ_CONTROL" },
-			{ WRITE_DAC,     "WRITE_DAC" },
-			{ WRITE_OWNER,   "WRITE_OWNER" },
-			{ SYNCHRONIZE,   "SYNCHRONIZE" },
+			{ DELETE, "DELETE" },
+			{ READ_CONTROL, "READ_CONTROL" },
+			{ WRITE_DAC, "WRITE_DAC" },
+			{ WRITE_OWNER, "WRITE_OWNER" },
+			{ SYNCHRONIZE, "SYNCHRONIZE" },
 			};
 
 			if ((access & EVENT_ALL_ACCESS) == EVENT_ALL_ACCESS)
 			{
 				return "EVENT_ALL_ACCESS";
 			}
-
 			return DecodeAccessBits(access, bits, std::size(bits));
 		}
-		case PSS_OBJECT_TYPE_MUTANT:
+		if (type == L"Mutant")
 		{
 			static const AccessBit bits[] = {
 			{ MUTANT_QUERY_STATE, "MUTANT_QUERY_STATE" },
-
-			{ DELETE,        "DELETE" },
-			{ READ_CONTROL,  "READ_CONTROL" },
-			{ WRITE_DAC,     "WRITE_DAC" },
-			{ WRITE_OWNER,   "WRITE_OWNER" },
-			{ SYNCHRONIZE,   "SYNCHRONIZE" },
+			{ DELETE, "DELETE" },
+			{ READ_CONTROL, "READ_CONTROL" },
+			{ WRITE_DAC, "WRITE_DAC" },
+			{ WRITE_OWNER, "WRITE_OWNER" },
+			{ SYNCHRONIZE, "SYNCHRONIZE" },
 			};
 
 			if ((access & MUTANT_ALL_ACCESS) == MUTANT_ALL_ACCESS)
 			{
 				return "MUTANT_ALL_ACCESS";
 			}
-
 			return DecodeAccessBits(access, bits, std::size(bits));
 		}
-		case PSS_OBJECT_TYPE_SEMAPHORE:
+		if (type == L"Semaphore")
 		{
 			static const AccessBit bits[] = {
 			{ SEMAPHORE_MODIFY_STATE, "SEMAPHORE_MODIFY_STATE" },
-
-			{ DELETE,        "DELETE" },
-			{ READ_CONTROL,  "READ_CONTROL" },
-			{ WRITE_DAC,     "WRITE_DAC" },
-			{ WRITE_OWNER,   "WRITE_OWNER" },
-			{ SYNCHRONIZE,   "SYNCHRONIZE" },
+			{ DELETE, "DELETE" },
+			{ READ_CONTROL, "READ_CONTROL" },
+			{ WRITE_DAC, "WRITE_DAC" },
+			{ WRITE_OWNER, "WRITE_OWNER" },
+			{ SYNCHRONIZE, "SYNCHRONIZE" },
 			};
 
 			if ((access & SEMAPHORE_ALL_ACCESS) == SEMAPHORE_ALL_ACCESS)
 			{
 				return "SEMAPHORE_ALL_ACCESS";
 			}
-
 			return DecodeAccessBits(access, bits, std::size(bits));
-		}
-		default:
-			break;
 		}
 
 		// Unknown object

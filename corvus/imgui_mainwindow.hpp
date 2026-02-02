@@ -139,7 +139,7 @@ namespace corvus::imgui
 		ImGui::TableSetColumnIndex(5); ImGui::Text("%lu", handle.attributes);
 		ImGui::TableSetColumnIndex(6); ImGui::Text("%s", corvus::process::WindowsProcessBase::MapAttributes(handle.attributes));
 		ImGui::TableSetColumnIndex(7); ImGui::Text("0x%08X", handle.grantedAccess);
-		ImGui::TableSetColumnIndex(8); ImGui::Text("%s", corvus::process::WindowsProcessBase::MapAccess(handle.pssObjectType, handle.grantedAccess));
+		ImGui::TableSetColumnIndex(8); ImGui::Text("%s", corvus::process::WindowsProcessBase::MapAccess(handle.typeName, handle.grantedAccess));
 		ImGui::TableSetColumnIndex(9); ImGui::Text("%lu", handle.handleCount);
 	}
 
