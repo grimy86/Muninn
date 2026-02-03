@@ -118,7 +118,6 @@ namespace corvus::process
 		virtual DWORD GetProcessId() const noexcept = 0;
 		virtual DWORD GetParentProcessId() const noexcept = 0;
 		virtual PriorityClass GetPriorityClass() const noexcept = 0;
-		virtual LONG GetBasePriority() const noexcept = 0;
 		virtual BOOL IsWow64() const noexcept = 0;
 		virtual BOOL IsProtectedProcess() const noexcept = 0;
 		virtual BOOL IsBackgroundProcess() const noexcept = 0;
@@ -150,7 +149,6 @@ namespace corvus::process
 		DWORD m_processId{}; // 32 bits
 		DWORD m_parentProcessId{}; // 32 bits
 		PriorityClass m_priorityClass{}; // 32 bits
-		LONG m_basePriority{}; // 32 bits
 		BOOL m_isWow64{}; // 32 bits
 		BOOL m_isProtectedProcess{}; // 32 bits
 		BOOL m_isBackgroundProcess{}; // 32 bits
@@ -173,7 +171,6 @@ namespace corvus::process
 		DWORD GetProcessId() const noexcept override;
 		DWORD GetParentProcessId() const noexcept override;
 		PriorityClass GetPriorityClass() const noexcept override;
-		LONG GetBasePriority() const noexcept override;
 		BOOL IsWow64() const noexcept override;
 		BOOL IsProtectedProcess() const noexcept override;
 		BOOL IsBackgroundProcess() const noexcept override;

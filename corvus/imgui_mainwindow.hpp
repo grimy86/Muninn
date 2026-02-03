@@ -40,7 +40,7 @@ namespace corvus::imgui
 		ImGuiTableFlags_NoHostExtendX |
 		ImGuiTableFlags_SizingFixedFit };
 
-	const char* pTableHeaders[]{ "PID", "Name","Path","Priority","Base","PEB (Ntdll)","ParentPID","BasePriority (Ntdll)",
+	const char* pTableHeaders[]{ "PID", "Name","Path","Priority","Base","PEB (Ntdll)","ParentPID",
 			"Arch","WOW64","Protected (Ntdll)","Background (Ntdll)","Secure (Ntdll)","Subsystem (Ntdll)","Visible" };
 	const char* tTableHeaders[]{ "ThreadId", "OwnerProcessId", "BasePriority", "StartAddress (Ntdll)", "ThreadState (Ntdll)", "WaitReason (Ntdll)" };
 	const char* mTableHeaders[]{ "ProcessId", "Name", "Path", "BaseAddress", "BaseSize", "EntryPoint", "GlobalLoadCount", "ProcessLoadCount" };
@@ -115,14 +115,13 @@ namespace corvus::imgui
 		ImGui::TableSetColumnIndex(4); ImGui::Text("0x%p", (void*)proc.GetModuleBaseAddress());
 		ImGui::TableSetColumnIndex(5); ImGui::Text("0x%p", (void*)proc.GetPEBAddress());
 		ImGui::TableSetColumnIndex(6); ImGui::Text("%lu", proc.GetParentProcessId());
-		ImGui::TableSetColumnIndex(7); ImGui::Text("%ld", proc.GetBasePriority());
-		ImGui::TableSetColumnIndex(8); ImGui::TextUnformatted(proc.GetArchitectureTypeA());
-		ImGui::TableSetColumnIndex(9); ImGui::TextUnformatted(proc.IsWow64() ? "True" : "");
-		ImGui::TableSetColumnIndex(10); ImGui::TextUnformatted(proc.IsProtectedProcess() ? "True" : "");
-		ImGui::TableSetColumnIndex(11); ImGui::TextUnformatted(proc.IsBackgroundProcess() ? "True" : "");
-		ImGui::TableSetColumnIndex(12); ImGui::TextUnformatted(proc.IsSecureProcess() ? "True" : "");
-		ImGui::TableSetColumnIndex(13); ImGui::TextUnformatted(proc.IsSubsystemProcess() ? "True" : "");
-		ImGui::TableSetColumnIndex(14); ImGui::TextUnformatted(proc.HasVisibleWindow() ? "True" : "");
+		ImGui::TableSetColumnIndex(7); ImGui::TextUnformatted(proc.GetArchitectureTypeA());
+		ImGui::TableSetColumnIndex(8); ImGui::TextUnformatted(proc.IsWow64() ? "True" : "");
+		ImGui::TableSetColumnIndex(9); ImGui::TextUnformatted(proc.IsProtectedProcess() ? "True" : "");
+		ImGui::TableSetColumnIndex(10); ImGui::TextUnformatted(proc.IsBackgroundProcess() ? "True" : "");
+		ImGui::TableSetColumnIndex(11); ImGui::TextUnformatted(proc.IsSecureProcess() ? "True" : "");
+		ImGui::TableSetColumnIndex(12); ImGui::TextUnformatted(proc.IsSubsystemProcess() ? "True" : "");
+		ImGui::TableSetColumnIndex(13); ImGui::TextUnformatted(proc.HasVisibleWindow() ? "True" : "");
 		ImGui::PopID();
 	}
 
@@ -167,7 +166,7 @@ namespace corvus::imgui
 
 	void DrawProcessTable()
 	{
-		if (!ImGui::BeginTable("Windows Processes", 15, tFlags)) return;
+		if (!ImGui::BeginTable("Windows Processes", 14, tFlags)) return;
 		for (auto header : pTableHeaders)
 			ImGui::TableSetupColumn(header);
 		ImGui::TableHeadersRow();
