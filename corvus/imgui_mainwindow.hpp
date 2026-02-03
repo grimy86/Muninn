@@ -256,8 +256,6 @@ namespace corvus::imgui
 
 		if (ImGui::Begin("##mainWindow", nullptr, wndFlags))
 		{
-			auto* selected = GetSelectedProcess();
-
 			// INFOBAR
 			ImGui::BeginChild("##infobar", ImVec2(0, 80.0f), false);
 
@@ -273,7 +271,16 @@ namespace corvus::imgui
 				ImGui::TextColored(dbgCol, g_IsSeDebugEnabled ? "Enabled" : "Disabled");
 				ImGui::Spacing();
 				ImGui::Checkbox("Ntdll backend", &g_useNt);
+				if (ImGui::Button("Refresh"))
+				{
+					g_listW32 = corvus::process::WindowsProcessWin32::GetProcessListW32();
+					g_listNt = corvus::process::WindowsProcessNt::GetProcessListNt();
 
+					auto* newSelected = GetSelectedProcess();
+					if (!newSelected) g_selectedPid = 0;
+				}
+
+				auto* selected = GetSelectedProcess();
 				ImGui::TableNextColumn();
 				ImVec4 selCol = selected
 					? ImVec4(0, 1, 0, 1)

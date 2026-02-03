@@ -13,9 +13,7 @@ namespace corvus::process
 	{
 		Unknown,
 		x86,
-		x64,
-		arm,
-		arm64
+		x64
 	};
 
 	enum class HandleType : uint8_t
@@ -204,6 +202,7 @@ namespace corvus::process
 	class WindowsProcessWin32 : public WindowsProcessBase
 	{
 	private:
+		// make these non-static
 		static void QueryArchitectureW32(HANDLE hProcess, WindowsProcessWin32& proc);
 		static void QueryVisibleWindowW32(WindowsProcessWin32& proc);
 		static void QueryImageFilePathW32(HANDLE hProcess, WindowsProcessWin32& proc);
@@ -283,6 +282,7 @@ namespace corvus::process
 		static void QueryImageFilePathNt(HANDLE hProc, WindowsProcessNt& proc);
 		static void QueryPriorityClassNt(HANDLE hProc, WindowsProcessNt& proc);
 		static void QueryModuleBaseAddressNt(HANDLE hProc, WindowsProcessNt& proc);
+		void QueryModules(HANDLE hProc) noexcept;
 
 	public:
 		WindowsProcessNt() = delete;
@@ -290,7 +290,7 @@ namespace corvus::process
 		~WindowsProcessNt() noexcept override = default;
 
 		// noexcept override setters
-		void QueryModules() noexcept override;
+		void QueryModules() noexcept override {};
 		// Ntdll exposes threads in SYSTEM_PROCESS_INFORMATION
 		void QueryThreads() noexcept override {};
 		void QueryHandles() noexcept override;
@@ -301,6 +301,20 @@ namespace corvus::process
 		// static Nt wrappers
 		static HANDLE OpenProcessHandleNt(const DWORD processId, const ACCESS_MASK accessMask);
 		static DWORD GetQSIBuffferSizeNt(const SYSTEM_INFORMATION_CLASS sInfoClass);
+
+		// templates
+		template <typename T>
+		T RVMNt(HANDLE hProc, uintptr_t baseAddress)
+		{
+			T result{};
+			NtReadVirtualMemory(
+				hProc,
+				reinterpret_cast<PVOID>(baseAddress),
+				&result,
+				sizeof(T),
+				nullptr);
+			return result;
+		}
 	};
 #pragma endregion
 }

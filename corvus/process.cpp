@@ -8,14 +8,10 @@ namespace corvus::process
 #pragma region Structures
 	ProcessQueryContext::~ProcessQueryContext()
 	{
-		if (hProcessSnapshot != INVALID_HANDLE_VALUE)
-			NtClose(hProcessSnapshot);
-		if (hModuleSnapshot != INVALID_HANDLE_VALUE)
-			NtClose(hModuleSnapshot);
-		if (hThreadSnapshot != INVALID_HANDLE_VALUE)
-			NtClose(hThreadSnapshot);
-		if (hProcess)
-			NtClose(hProcess);
+		if (hProcessSnapshot != INVALID_HANDLE_VALUE) NtClose(hProcessSnapshot);
+		if (hModuleSnapshot != INVALID_HANDLE_VALUE) NtClose(hModuleSnapshot);
+		if (hThreadSnapshot != INVALID_HANDLE_VALUE) NtClose(hThreadSnapshot);
+		if (hProcess) NtClose(hProcess);
 	}
 #pragma endregion
 
@@ -97,8 +93,6 @@ namespace corvus::process
 		case ArchitectureType::Unknown: return "Unknown";
 		case ArchitectureType::x86: return "x86";
 		case ArchitectureType::x64: return "x64";
-		case ArchitectureType::arm: return "ARM";
-		case ArchitectureType::arm64: return "ARM64";
 		default: return "Unknown";
 		}
 	}
@@ -495,12 +489,6 @@ namespace corvus::process
 			break;
 		case IMAGE_FILE_MACHINE_AMD64:
 			proc.m_architectureType = ArchitectureType::x64;
-			break;
-		case IMAGE_FILE_MACHINE_ARM:
-			proc.m_architectureType = ArchitectureType::arm;
-			break;
-		case IMAGE_FILE_MACHINE_ARM64:
-			proc.m_architectureType = ArchitectureType::arm64;
 			break;
 		default:
 			proc.m_architectureType = ArchitectureType::Unknown;
@@ -934,7 +922,21 @@ namespace corvus::process
 		return result;
 	}
 
-	void WindowsProcessNt::QueryModules() noexcept { return; }
+	void WindowsProcessNt::QueryModules(HANDLE hProc) noexcept
+	{
+		PEB peb{ RVMNt<PEB>(hProc, m_pebAddress) };
+		if (!peb.Ldr) return;
+
+		PEB_LDR_DATA pebLdr{ RVMNt<PEB_LDR_DATA>(hProc,
+			reinterpret_cast<uintptr_t>(peb.Ldr)) };
+		if (!pebLdr.InLoadOrderModuleList.Flink) return;
+
+		LDR_DATA_TABLE_ENTRY module{ RVMNt<LDR_DATA_TABLE_ENTRY>(hProc,
+			reinterpret_cast<uintptr_t>(pebLdr.InLoadOrderModuleList.Flink)) };
+
+		return;
+	}
+
 	void WindowsProcessNt::QueryHandles() noexcept
 	{
 		DWORD requiredBufferSize{ GetQSIBuffferSizeNt(
@@ -1107,6 +1109,7 @@ namespace corvus::process
 			QueryPriorityClassNt(hProc, wProcNt);
 			QueryArchitectureNt(hProc, wProcNt);
 			QueryModuleBaseAddressNt(hProc, wProcNt);
+			wProcNt.QueryModules(hProc);
 
 			// Threads
 			for (ULONG i = 0; i < procInfo->NumberOfThreads; ++i)
@@ -1121,7 +1124,6 @@ namespace corvus::process
 				threadEntry.basePriority = sThreadInfo.BasePriority;
 				threadEntry.startAddress = sThreadInfo.StartAddress;
 				threadEntry.threadState = sThreadInfo.ThreadState;
-
 				wProcNt.m_threads.push_back(threadEntry);
 			}
 			result.push_back(wProcNt);
