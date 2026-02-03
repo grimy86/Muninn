@@ -40,8 +40,8 @@ namespace corvus::imgui
 		ImGuiTableFlags_NoHostExtendX |
 		ImGuiTableFlags_SizingFixedFit };
 
-	const char* pTableHeaders[]{ "PID", "Name","Path","Priority","Base","PEB (Ntdll)","ParentPID",
-			"Arch","WOW64","Protected (Ntdll)","Background (Ntdll)","Secure (Ntdll)","Subsystem (Ntdll)","Visible" };
+	const char* pTableHeaders[]{ "PID", "Name","Path","Priority","ModuleBaseAddress","PEB (Ntdll)","ParentPID",
+			"Architecture","WOW64","Protected (Ntdll)","Background (Ntdll)","Secure (Ntdll)","Subsystem (Ntdll)","Visible" };
 	const char* tTableHeaders[]{ "ThreadId", "OwnerProcessId", "BasePriority", "StartAddress (Ntdll)", "ThreadState (Ntdll)", "WaitReason (Ntdll)" };
 	const char* mTableHeaders[]{ "ProcessId", "Name", "Path", "BaseAddress", "BaseSize", "EntryPoint", "GlobalLoadCount", "ProcessLoadCount" };
 	const char* hTableHeaders[]{ "TargetPID (Win32)", "Type", "Name", "Handle", "Flags (Win32)", "Attributes", "AttributesMap", "GrantedAccess", "GrantedAccessMap", "HandleCount (Win32)" };

@@ -206,9 +206,9 @@ namespace corvus::process
 	private:
 		static void QueryArchitectureW32(HANDLE hProcess, WindowsProcessWin32& proc);
 		static void QueryVisibleWindowW32(WindowsProcessWin32& proc);
-		static void QueryModuleBaseAddressW32(HANDLE hModuleSnapshot, WindowsProcessWin32& proc);
 		static void QueryImageFilePathW32(HANDLE hProcess, WindowsProcessWin32& proc);
 		static void QueryPriorityClassW32(HANDLE hProcess, WindowsProcessWin32& proc);
+		static void QueryModuleBaseAddressW32(HANDLE hModuleSnapshot, WindowsProcessWin32& proc);
 
 	public:
 		WindowsProcessWin32() = delete;
@@ -223,7 +223,6 @@ namespace corvus::process
 		// static process functions
 		static std::vector<WindowsProcessWin32> GetProcessListW32();
 		static HANDLE OpenProcessHandleW32(const DWORD processId, const ACCESS_MASK accessMask);
-		static uintptr_t GetModuleBaseAddressW32(HANDLE hModuleSnapshot, WindowsProcessWin32& proc);
 		static std::string GetProcessNameW32(DWORD pid);
 		static BOOL SuspendThreadW32(const DWORD threadId);
 		static BOOL ResumeThreadW32(const DWORD threadId);
@@ -286,7 +285,7 @@ namespace corvus::process
 
 		// noexcept override setters
 		void QueryModules() noexcept override;
-		void QueryThreads() noexcept override;
+		void QueryThreads() noexcept override {}; // Ntdll exposes threads in SYSTEM_PROCESS_INFORMATION
 		void QueryHandles() noexcept override;
 
 		// static process functions

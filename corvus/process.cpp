@@ -522,22 +522,6 @@ namespace corvus::process
 		}
 	}
 
-	void WindowsProcessWin32::QueryModuleBaseAddressW32(HANDLE hModuleSnapshot, WindowsProcessWin32& proc)
-	{
-		uintptr_t moduleBaseAddress{};
-		MODULEENTRY32W mEntry{};
-		mEntry.dwSize = sizeof(MODULEENTRY32W);
-
-		if (!Module32First(hModuleSnapshot, &mEntry)) return;
-
-		do
-		{
-			if (mEntry.szModule == proc.m_name)
-			{
-				proc.m_moduleBaseAddress = reinterpret_cast<uintptr_t>(mEntry.modBaseAddr);
-			}
-		} while (Module32Next(hModuleSnapshot, &mEntry));
-	}
 
 	void WindowsProcessWin32::QueryImageFilePathW32(HANDLE hProcess, WindowsProcessWin32& proc)
 	{
@@ -554,6 +538,24 @@ namespace corvus::process
 	void WindowsProcessWin32::QueryPriorityClassW32(HANDLE hProcess, WindowsProcessWin32& proc)
 	{
 		proc.m_priorityClass = static_cast<PriorityClass>(::GetPriorityClass(hProcess));
+	}
+
+	void WindowsProcessWin32::QueryModuleBaseAddressW32(HANDLE hModuleSnapshot, WindowsProcessWin32& proc)
+	{
+		if (!IsValidHandle(hModuleSnapshot)) return;
+
+		MODULEENTRY32W mEntry{};
+		mEntry.dwSize = sizeof(MODULEENTRY32W);
+
+		if (!Module32First(hModuleSnapshot, &mEntry)) return;
+		do
+		{
+			if (_wcsicmp(mEntry.szModule, proc.m_name.c_str()) == 0)
+			{
+				proc.m_moduleBaseAddress = reinterpret_cast<uintptr_t>(mEntry.modBaseAddr);
+				return;
+			}
+		} while (Module32Next(hModuleSnapshot, &mEntry));
 	}
 
 	std::vector<WindowsProcessWin32> WindowsProcessWin32::GetProcessListW32()
@@ -582,6 +584,8 @@ namespace corvus::process
 				if (!IsValidHandle(hProc)) continue;
 				pqc.hProcess = hProc;
 
+				pqc.hModuleSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, proc.m_processId);
+
 				QueryImageFilePathW32(pqc.hProcess, proc);
 				QueryModuleBaseAddressW32(pqc.hModuleSnapshot, proc);
 				QueryPriorityClassW32(pqc.hProcess, proc);
@@ -598,29 +602,6 @@ namespace corvus::process
 	HANDLE WindowsProcessWin32::OpenProcessHandleW32(const DWORD processId, const ACCESS_MASK accessMask)
 	{
 		return OpenProcess(accessMask, FALSE, processId);
-	}
-
-	uintptr_t WindowsProcessWin32::GetModuleBaseAddressW32(HANDLE hModuleSnapshot, WindowsProcessWin32& proc)
-	{
-		uintptr_t moduleBaseAddress{};
-		MODULEENTRY32W mEntry{};
-		mEntry.dwSize = sizeof(MODULEENTRY32W);
-		if (!Module32First(hModuleSnapshot, &mEntry))
-		{
-			return moduleBaseAddress;
-		}
-
-		do
-		{
-			if (mEntry.szModule != proc.m_name)
-			{
-				CloseHandle(hModuleSnapshot);
-				return reinterpret_cast<uintptr_t>(mEntry.modBaseAddr);
-			}
-		} while (Module32Next(hModuleSnapshot, &mEntry));
-
-		CloseHandle(hModuleSnapshot);
-		return moduleBaseAddress;
 	}
 
 	std::string WindowsProcessWin32::GetProcessNameW32(DWORD pid)
@@ -955,7 +936,6 @@ namespace corvus::process
 	}
 
 	void WindowsProcessNt::QueryModules() noexcept { return; }
-	void WindowsProcessNt::QueryThreads() noexcept { return; }
 	void WindowsProcessNt::QueryHandles() noexcept
 	{
 		DWORD requiredBufferSize{ GetQSIBuffferSizeNt(
@@ -1040,7 +1020,15 @@ namespace corvus::process
 				hProc,
 				ProcessBasicInformation,
 				&pExtendedInfo,
-				sizeof(pExtendedInfo),
+				sizeof(PROCESS_EXTENDED_BASIC_INFORMATION),
+				nullptr);
+
+			PVOID wow64Info = nullptr;
+			NTSTATUS ntWow64InfoStatus = NtQueryInformationProcess(
+				hProc,
+				ProcessWow64Information,
+				&wow64Info,
+				sizeof(PVOID),
 				nullptr);
 
 			PROCESS_PRIORITY_CLASS pPriorityClass{};
@@ -1048,11 +1036,12 @@ namespace corvus::process
 				hProc,
 				ProcessPriorityClass,
 				&pPriorityClass,
-				sizeof(pPriorityClass),
+				sizeof(PROCESS_PRIORITY_CLASS),
 				nullptr);
 
 			if (NT_SUCCESS(ntImageFileNameStatus) &&
 				NT_SUCCESS(ntProcExtendedInfoStatus) &&
+				NT_SUCCESS(ntWow64InfoStatus) &&
 				NT_SUCCESS(ntProcPriorityClassStatus))
 			{
 				PUNICODE_STRING pImageFileName{ reinterpret_cast<PUNICODE_STRING>(pImageFileNameBuffer) };
@@ -1065,15 +1054,28 @@ namespace corvus::process
 				wProcNt.m_isSecureProcess = pExtendedInfo.u.s.IsSecureProcess;
 				wProcNt.m_isSubsystemProcess = pExtendedInfo.u.s.IsSubsystemProcess;
 
+				// nullptr = native process, Wow64 pointer = 32-bit process
+				if (wow64Info != nullptr) wProcNt.m_architectureType = ArchitectureType::x86;
+				else wProcNt.m_architectureType = ArchitectureType::x64;
+
 				switch (pPriorityClass.PriorityClass)
 				{
 				case 0U: wProcNt.m_priorityClass = PriorityClass::Undefined;
+					break;
 				case 1U: wProcNt.m_priorityClass = PriorityClass::Idle;
+					break;
 				case 2U: wProcNt.m_priorityClass = PriorityClass::Normal;
+					break;
 				case 3U: wProcNt.m_priorityClass = PriorityClass::High;
+					break;
 				case 4U: wProcNt.m_priorityClass = PriorityClass::Realtime;
+					break;
 				case 5U: wProcNt.m_priorityClass = PriorityClass::BelowNormal;
+					break;
 				case 6U: wProcNt.m_priorityClass = PriorityClass::AboveNormal;
+					break;
+				default: wProcNt.m_priorityClass = PriorityClass::Undefined;
+					break;
 				}
 			}
 
