@@ -11,16 +11,12 @@ namespace Corvus::Backend
 
 namespace Corvus::Process
 {
-	class WindowsProcess
+	class WindowsProcess final
 	{
 	private:
 		DWORD m_processId{};
 		HANDLE m_processHandle{};
-		std::unique_ptr<Corvus::Backend::IProcessBackend> m_backend;
 		ProcessEntry m_processEntry{};
-		std::vector<ModuleEntry> m_modules{};
-		std::vector<ThreadEntry> m_threads{};
-		std::vector<HandleEntry> m_handles{};
 		BOOL m_processIdSet{ FALSE };
 		BOOL m_processHandleSet{ FALSE };
 
@@ -39,12 +35,7 @@ namespace Corvus::Process
 		WindowsProcess(const WindowsProcess&) = delete;
 		WindowsProcess& operator=(const WindowsProcess&) = delete;
 
-		BOOL Init(
-			const DWORD processId,
-			std::unique_ptr<Corvus::Backend::IProcessBackend> backend,
-			const ACCESS_MASK accessMask);
-
-		void SwitchBackend(std::unique_ptr<Corvus::Backend::IProcessBackend> backend);
+		BOOL Init(const DWORD processId, const ACCESS_MASK accessMask);
 
 		const DWORD GetProcessId() const noexcept;
 		const HANDLE GetProcessHandle() const noexcept;

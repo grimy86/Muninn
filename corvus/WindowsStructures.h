@@ -2,6 +2,7 @@
 #include <Windows.h>
 #include <ProcessSnapshot.h>
 #include <string>
+#include <vector>
 #include "ntdll.h"
 
 namespace Corvus::Process
@@ -81,6 +82,9 @@ namespace Corvus::Process
 
 	struct ProcessEntry
 	{
+		std::vector<ModuleEntry> modules{}; // (heap-allocated, size varies)
+		std::vector<ThreadEntry> threads{}; // (heap-allocated, size varies)
+		std::vector<HandleEntry> handles{}; // (heap-allocated, size varies)
 		std::wstring name{}; // UTF-16 string (heap-allocated, size varies)
 		std::wstring imageFilePath{}; // UTF-16 string (heap-allocated, size varies)
 		uintptr_t moduleBaseAddress{}; // x86: 32 bits, x64: 64 bits

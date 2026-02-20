@@ -16,6 +16,82 @@ namespace Corvus::Backend
 		return Corvus::Memory::CloseHandleNt(handle);
 	}
 
+	std::vector<Corvus::Process::ProcessEntry> BackendNt::QueryProcesses()
+	{
+		const DWORD bufferSize{ Corvus::Memory::GetQSIBufferSizeNt(SystemProcessInformation) };
+		BYTE* buffer = new BYTE[bufferSize];
+		NTSTATUS systemInfoStatus{ NtQuerySystemInformation(
+			SystemProcessInformation,
+			buffer,
+			bufferSize,
+			nullptr) };
+
+		if (!NT_SUCCESS(systemInfoStatus))
+		{
+			delete[] buffer;
+			return {};
+		}
+
+		std::vector<Corvus::Process::ProcessEntry> processList{};
+		PSYSTEM_PROCESS_INFORMATION pInfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(buffer);
+		while (pInfo)
+		{
+			Corvus::Process::ProcessEntry pEntry{};
+			pEntry.processId = static_cast<DWORD>(reinterpret_cast<uintptr_t>(pInfo->UniqueProcessId));
+			pEntry.parentProcessId = static_cast<DWORD>(reinterpret_cast<uintptr_t>(pInfo->InheritedFromUniqueProcessId));
+			pEntry.name = (pInfo->ImageName.Buffer) ? pInfo->ImageName.Buffer : L"";
+			QueryModuleBaseAddress(pEntry.processId, pEntry.name);
+
+			ACCESS_MASK accessMasks[]{
+				PROCESS_ALL_ACCESS,
+				PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
+				PROCESS_QUERY_LIMITED_INFORMATION
+			};
+
+			HANDLE hProc{};
+			for (ACCESS_MASK accessMask : accessMasks)
+			{
+				hProc = Corvus::Memory::OpenHandleNt(pEntry.processId, accessMask);
+				if (Corvus::Memory::IsValidHandle(hProc)) break;
+				else return{};
+			}
+
+			QueryExtendedProcessInfo(hProc);
+			QueryImageFilePathNt(hProc);
+			QueryPriorityClassNt(hProc);
+			QueryArchitectureNt(hProc);
+
+			// Threads
+			for (ULONG i = 0; i < pInfo->NumberOfThreads; ++i)
+			{
+				Corvus::Process::ThreadEntry threadEntry{};
+				const SYSTEM_THREAD_INFORMATION& sThreadInfo = pInfo->Threads[i];
+
+				threadEntry.structureSize = sizeof(SYSTEM_THREAD_INFORMATION);
+				threadEntry.threadId = static_cast<DWORD>(
+					reinterpret_cast<uintptr_t>(sThreadInfo.ClientId.UniqueThread));
+				threadEntry.ownerProcessId = pEntry.processId;
+				threadEntry.basePriority = sThreadInfo.BasePriority;
+				threadEntry.startAddress = sThreadInfo.StartAddress;
+				threadEntry.threadState = sThreadInfo.ThreadState;
+				pEntry.threads.push_back(threadEntry);
+			}
+			processList.push_back(pEntry);
+			Corvus::Memory::CloseHandleNt(hProc);
+
+			// Advance to next process (ALWAYS)
+			if (pInfo->NextEntryOffset)
+			{
+				pInfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(
+					reinterpret_cast<BYTE*>(pInfo) + pInfo->NextEntryOffset);
+			}
+			else break;
+		}
+
+		delete[] buffer;
+		return processList;
+	}
+
 	Corvus::Process::ProcessEntry BackendNt::QueryProcessInfo(HANDLE hProcess, DWORD processId)
 	{
 		if (!Corvus::Memory::IsValidHandle(hProcess)) return {};
@@ -268,6 +344,12 @@ namespace Corvus::Backend
 				imageFileName->Length / sizeof(wchar_t));
 		}
 		return result;
+	}
+
+	// TO DO
+	uintptr_t BackendNt::QueryModuleBaseAddress(DWORD processId, const std::wstring& processName)
+	{
+		return 0;
 	}
 
 	Corvus::Process::PriorityClass BackendNt::QueryPriorityClassNt(HANDLE hProcess)

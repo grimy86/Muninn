@@ -17,6 +17,56 @@ namespace Corvus::Backend
 		return Corvus::Memory::CloseHandle32(handle);
 	}
 
+	std::vector<Corvus::Process::ProcessEntry> Backend32::QueryProcesses()
+	{
+		HANDLE hProcessSnapshot{ CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) };
+		if (!Corvus::Memory::IsValidHandle(hProcessSnapshot)) return {};
+
+		PROCESSENTRY32W pEntry32W{};
+		pEntry32W.dwSize = sizeof(PROCESSENTRY32W);
+
+		std::vector<Corvus::Process::ProcessEntry> processList{};
+		if (Process32FirstW(hProcessSnapshot, &pEntry32W))
+		{
+			do
+			{
+				Corvus::Process::ProcessEntry pEntry{};
+				pEntry.processId = pEntry32W.th32ProcessID;
+				pEntry.name = pEntry32W.szExeFile;
+				pEntry.parentProcessId = pEntry32W.th32ParentProcessID;
+				QueryModuleBaseAddress(pEntry.processId, pEntry.name);
+				QueryVisibleWindow(pEntry.processId);
+
+				ACCESS_MASK accessMasks[]
+				{
+					PROCESS_ALL_ACCESS,
+					PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
+					PROCESS_QUERY_LIMITED_INFORMATION
+				};
+
+				HANDLE hProc{};
+				for (ACCESS_MASK accessMask : accessMasks)
+				{
+					hProc = OpenBackendHandle(pEntry.processId, accessMask);
+					if (Corvus::Memory::IsValidHandle(hProc)) break;
+				}
+
+				HANDLE hModuleSnapshot{
+					CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32,
+						pEntry.processId) };
+
+				QueryImageFilePath(hProc);
+				QueryPriorityClass(hProc);
+				BOOL isWow64{ FALSE };
+				QueryArchitecture(hProc, isWow64);
+
+				if (Corvus::Memory::IsValidHandle(hProc))
+					CloseBackendHandle(hProc);
+			} while (Process32NextW(hProcessSnapshot, &pEntry32W));
+		}
+		return processList;
+	}
+
 	Corvus::Process::ProcessEntry Backend32::QueryProcessInfo(HANDLE hProcess, DWORD processId)
 	{
 		if (!Corvus::Memory::IsValidHandle(hProcess)) return {};
@@ -223,7 +273,7 @@ namespace Corvus::Backend
 		return iFilePathBuffer;
 	}
 
-	uintptr_t Backend32::QueryModuleBaseAddress(DWORD processId, const std::wstring& processName)
+	uintptr_t Backend32::QueryModuleBaseAddress(const DWORD processId, const std::wstring& processName)
 	{
 		MODULEENTRY32W mEntry{};
 		mEntry.dwSize = sizeof(MODULEENTRY32W);
@@ -255,7 +305,7 @@ namespace Corvus::Backend
 		return static_cast<Corvus::Process::PriorityClass>(::GetPriorityClass(hProcess));
 	}
 
-	bool Backend32::QueryVisibleWindow(DWORD processId)
+	bool Backend32::QueryVisibleWindow(const DWORD processId)
 	{
 		for (HWND hwnd = GetTopWindow(nullptr); hwnd; hwnd = GetNextWindow(hwnd, GW_HWNDNEXT))
 		{

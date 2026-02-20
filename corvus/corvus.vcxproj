@@ -34,6 +34,7 @@
     <ClCompile Include="BackendNt.cpp" />
     <ClCompile Include="Backend32.cpp" />
     <ClCompile Include="WindowsProcess.cpp" />
+    <ClCompile Include="WindowsSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imconfig.h">
@@ -60,6 +61,7 @@
     <ClInclude Include="WindowsStructures.h" />
     <ClInclude Include="WindowsProcess.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="WindowsSystem.h" />
     <ClInclude Include="WinUserService.hpp" />
   </ItemGroup>
   <ItemGroup>

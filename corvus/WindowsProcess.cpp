@@ -1,6 +1,7 @@
 ﻿#include "WindowsProcess.h"
 #include "IProcessBackend.h"
 #include "MemoryService.h"
+#include "MemoryServiceNt.h"
 #include <stdexcept>
 
 namespace Corvus::Process
@@ -8,7 +9,7 @@ namespace Corvus::Process
 	WindowsProcess::~WindowsProcess()
 	{
 		if (Corvus::Memory::IsValidHandle(m_processHandle))
-			m_backend->CloseBackendHandle(m_processHandle);
+			Corvus::Memory::CloseHandleNt(m_processHandle);
 	};
 
 	std::string WindowsProcess::ToString(const std::wstring& wstring)
@@ -260,7 +261,6 @@ namespace Corvus::Process
 
 	BOOL WindowsProcess::Init(
 		const DWORD processId,
-		std::unique_ptr<Corvus::Backend::IProcessBackend> backend,
 		const ACCESS_MASK accessMask)
 	{
 		if (m_processIdSet || m_processHandleSet) return FALSE;
@@ -269,25 +269,19 @@ namespace Corvus::Process
 		{
 			m_processId = processId;
 			m_processIdSet = TRUE;
-			m_backend = std::move(backend);
-			m_processHandle = m_backend->OpenBackendHandle(m_processId, accessMask);
+			m_processHandle = Corvus::Memory::OpenHandleNt(m_processId, accessMask);
 			m_processHandleSet = Corvus::Memory::IsValidHandle(m_processHandle) ? TRUE : FALSE;
 		}
 
 		return m_processHandleSet;
 	}
 
-	void WindowsProcess::SwitchBackend(std::unique_ptr<Corvus::Backend::IProcessBackend> backend)
-	{
-		m_backend = std::move(backend);
-	}
-
 	const DWORD WindowsProcess::GetProcessId() const noexcept { return m_processId; }
 	const HANDLE WindowsProcess::GetProcessHandle() const noexcept { return m_processHandle; }
 	const ProcessEntry& WindowsProcess::GetProcessEntry() const noexcept { return m_processEntry; }
-	const std::vector<ModuleEntry>& WindowsProcess::GetModules() const noexcept { return m_modules; }
-	const std::vector<ThreadEntry>& WindowsProcess::GetThreads() const noexcept { return m_threads; }
-	const std::vector<HandleEntry>& WindowsProcess::GetHandles() const noexcept { return m_handles; }
+	const std::vector<ModuleEntry>& WindowsProcess::GetModules() const noexcept { return m_processEntry.modules; }
+	const std::vector<ThreadEntry>& WindowsProcess::GetThreads() const noexcept { return m_processEntry.threads; }
+	const std::vector<HandleEntry>& WindowsProcess::GetHandles() const noexcept { return m_processEntry.handles; }
 
 	const std::string& WindowsProcess::GetProcessEntryNameA() const noexcept { return ToString(m_processEntry.name); }
 	const std::string& WindowsProcess::GetProcessEntryImageFilePathA() const noexcept { return ToString(m_processEntry.imageFilePath); }

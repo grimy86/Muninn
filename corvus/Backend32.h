@@ -3,11 +3,9 @@
 
 namespace Corvus::Backend
 {
-	class Backend32 : public IProcessBackend
+	class Backend32 final : public IProcessBackend
 	{
 	private:
-		Backend32() = delete;
-
 		std::wstring QueryImageFilePath(HANDLE hProcess);
 		static uintptr_t QueryModuleBaseAddress(DWORD processId, const std::wstring& processName);
 		static Corvus::Process::PriorityClass QueryPriorityClass(HANDLE hProcess);
@@ -15,10 +13,12 @@ namespace Corvus::Backend
 		static Corvus::Process::ArchitectureType QueryArchitecture(HANDLE hProcess, BOOL& isWow64);
 
 	public:
+		Backend32() = default;
 		~Backend32() override = default;
 
 		HANDLE OpenBackendHandle(const DWORD processId, const ACCESS_MASK accessMask) override;
 		BOOL CloseBackendHandle(HANDLE handle) override;
+		std::vector<Corvus::Process::ProcessEntry> QueryProcesses() override;
 		Corvus::Process::ProcessEntry QueryProcessInfo(HANDLE hProcess, DWORD processId) override;
 		std::vector<Corvus::Process::ModuleEntry> QueryModules(const Corvus::Process::WindowsProcess& Process) override;
 		std::vector<Corvus::Process::ThreadEntry> QueryThreads(const Corvus::Process::WindowsProcess& Process) override;

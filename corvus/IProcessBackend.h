@@ -11,13 +11,6 @@ namespace Corvus::Backend
 {
 	class IProcessBackend
 	{
-	protected:
-		virtual std::wstring QueryImageFilePath(HANDLE hProcess) = 0;
-		virtual uintptr_t QueryModuleBaseAddress(DWORD processId, const std::wstring& processName) = 0;
-		virtual Corvus::Process::PriorityClass QueryPriorityClass(HANDLE hProcess) = 0;
-		virtual bool QueryVisibleWindow(DWORD processId) = 0;
-		virtual Corvus::Process::ArchitectureType QueryArchitecture(HANDLE hProcess, BOOL& isWow64) = 0;
-
 	public:
 		IProcessBackend() = default;
 		virtual ~IProcessBackend() = default;
