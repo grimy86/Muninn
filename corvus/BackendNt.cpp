@@ -19,21 +19,17 @@ namespace Corvus::Backend
 	std::vector<Corvus::Process::ProcessEntry> BackendNt::QueryProcesses()
 	{
 		const DWORD bufferSize{ Corvus::Memory::GetQSIBufferSizeNt(SystemProcessInformation) };
-		BYTE* buffer = new BYTE[bufferSize];
+		std::unique_ptr<BYTE[]> buffer(new BYTE[bufferSize]);
 		NTSTATUS systemInfoStatus{ NtQuerySystemInformation(
 			SystemProcessInformation,
-			buffer,
+			buffer.get(),
 			bufferSize,
 			nullptr) };
 
-		if (!NT_SUCCESS(systemInfoStatus))
-		{
-			delete[] buffer;
-			return {};
-		}
+		if (!NT_SUCCESS(systemInfoStatus)) return {};
 
 		std::vector<Corvus::Process::ProcessEntry> processList{};
-		PSYSTEM_PROCESS_INFORMATION pInfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(buffer);
+		PSYSTEM_PROCESS_INFORMATION pInfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(buffer.get());
 		while (pInfo)
 		{
 			Corvus::Process::ProcessEntry pEntry{};
@@ -87,8 +83,6 @@ namespace Corvus::Backend
 			}
 			else break;
 		}
-
-		delete[] buffer;
 		return processList;
 	}
 

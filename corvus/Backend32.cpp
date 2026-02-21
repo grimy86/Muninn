@@ -37,7 +37,7 @@ namespace Corvus::Backend
 				QueryModuleBaseAddress(pEntry.processId, pEntry.name);
 				QueryVisibleWindow(pEntry.processId);
 
-				ACCESS_MASK accessMasks[]
+				const ACCESS_MASK accessMasks[]
 				{
 					PROCESS_ALL_ACCESS,
 					PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,

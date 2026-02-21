@@ -38,6 +38,9 @@
     <Filter Include="src\SDK\ObjectLayer\System">
       <UniqueIdentifier>{17084c4b-a3e6-41a9-a680-9cb7e0614893}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\GUI\Components">
+      <UniqueIdentifier>{b0cdc836-4b47-446b-91ae-7e8d588a455d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="imgui\imgui_widgets.cpp">
@@ -87,6 +90,12 @@
     </ClCompile>
     <ClCompile Include="WindowsSystem.cpp">
       <Filter>src\SDK\ObjectLayer\System</Filter>
+    </ClCompile>
+    <ClCompile Include="MainView.cpp">
+      <Filter>src\GUI\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="WindowsProcessView.cpp">
+      <Filter>src\GUI\Components</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -150,9 +159,6 @@
     <ClInclude Include="MemoryStructures.h">
       <Filter>src\SDK\ServiceLayer\MemoryService</Filter>
     </ClInclude>
-    <ClInclude Include="MainWindow.h">
-      <Filter>src\GUI</Filter>
-    </ClInclude>
     <ClInclude Include="WindowsProcess.h">
       <Filter>src\SDK\ObjectLayer\Process</Filter>
     </ClInclude>
@@ -161,6 +167,15 @@
     </ClInclude>
     <ClInclude Include="WindowsSystem.h">
       <Filter>src\SDK\ObjectLayer\System</Filter>
+    </ClInclude>
+    <ClInclude Include="MainView.h">
+      <Filter>src\GUI\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="GuiStructures.h">
+      <Filter>src\GUI\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowsProcessView.h">
+      <Filter>src\GUI\Components</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -9,6 +9,7 @@
 #include <tchar.h>
 #include <windows.h>
 #include "resource.h"
+#include "MainView.h"
 
 #if defined(_WIN64)
 #define ARCH_STR "x64"
@@ -137,7 +138,8 @@ int __stdcall WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, LPSTR cmdline,
 		ImGui::NewFrame();
 
 		// Corvus Entry-Point
-		//Corvus::imgui::ShowMainWindow();
+		Corvus::Gui::MainView::Init();
+		Corvus::Gui::MainView::DrawMainView();
 
 		// Rendering
 		ImGui::Render();
