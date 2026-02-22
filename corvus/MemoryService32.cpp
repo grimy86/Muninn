@@ -1,12 +1,12 @@
 #include "MemoryService32.h"
 #include "MemoryService.h"
 
-namespace Corvus::Memory
+namespace Corvus::Service
 {
 	HANDLE OpenHandle32(const DWORD processId, const ACCESS_MASK accessMask)
 	{
 		HANDLE hProcess{ OpenProcess(accessMask, FALSE, processId) };
-		if (Corvus::Memory::IsValidHandle(hProcess)) return hProcess;
+		if (Corvus::Service::IsValidHandle(hProcess)) return hProcess;
 		else return nullptr;
 	}
 
@@ -102,7 +102,7 @@ namespace Corvus::Memory
 	void PatchExecutionExt32(HANDLE processHandle, DWORD destination, BYTE* value, unsigned int size)
 	{
 		// Changes the protection on a region of committed pages in the virtual address space of a specified process.
-		// https://learn.microsoft.com/en-us/windows/win32/Memory/memory-protection-constants
+		// https://learn.microsoft.com/en-us/windows/win32/Service/memory-protection-constants
 
 		DWORD oldPageProtection;
 		VirtualProtectEx(processHandle, (void*)destination, size, PAGE_EXECUTE_READWRITE, &oldPageProtection);

@@ -2,7 +2,7 @@
 #include <WinUser.h>
 #include <string>
 
-namespace Corvus::WinUser
+namespace Corvus::Service
 {
 	BOOL ShowMessageBox(
 		const std::wstring& text,

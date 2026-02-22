@@ -3,7 +3,7 @@
 #include <string>
 #include "ntdll.h"
 
-namespace Corvus::Memory
+namespace Corvus::Service
 {
 	// Ntdll Services
 	HANDLE OpenHandleNt(const DWORD processId, const ACCESS_MASK accessMask);

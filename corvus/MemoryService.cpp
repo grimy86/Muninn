@@ -1,7 +1,7 @@
 #include "MemoryService.h"
 #include "MemoryService32.h"
 
-namespace Corvus::Memory
+namespace Corvus::Service
 {
 	bool IsValidProcessId(const DWORD processId) noexcept { return processId % 4 == 0; }
 	bool IsValidAddress(const DWORD address) noexcept { return address != ERROR_INVALID_ADDRESS; }

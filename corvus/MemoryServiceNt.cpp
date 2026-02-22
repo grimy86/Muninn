@@ -2,7 +2,7 @@
 #include "MemoryService.h"
 #pragma comment(lib, "ntdll.lib")
 
-namespace Corvus::Memory
+namespace Corvus::Service
 {
 	HANDLE OpenHandleNt(const DWORD processId, const ACCESS_MASK accessMask)
 	{

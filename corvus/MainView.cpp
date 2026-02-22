@@ -2,12 +2,12 @@
 #include "MainView.h"
 #include "WindowsProcessView.h"
 
-namespace Corvus::Gui
+namespace Corvus::UserInterface
 {
 	void MainView::Init()
 	{
 		s_viewport = ImGui::GetMainViewport();
-		s_isSeDebugEnabled = Corvus::Backend::Backend32::QuerySeDebugPrivilege32(GetCurrentProcess());
+		s_isSeDebugEnabled = Corvus::Data::Backend32::QuerySeDebugPrivilege32(GetCurrentProcess());
 		m_system.UpdateProcessList32();
 		m_system.UpdateProcessListNt();
 	}
@@ -39,8 +39,8 @@ namespace Corvus::Gui
 
 	void MainView::DrawNavBar()
 	{
-		bool open = ImGui::TreeNodeEx("Process", Corvus::Gui::g_tnFlags);
-		if (ImGui::IsItemClicked()) s_view = View::Process;
+		bool open = ImGui::TreeNodeEx("Process", Corvus::UserInterface::g_tnFlags);
+		if (ImGui::IsItemClicked()) s_view = View::Object;
 
 		if (open)
 		{
@@ -62,7 +62,7 @@ namespace Corvus::Gui
 	{
 		switch (s_view)
 		{
-		case View::Process:
+		case View::Object:
 			WindowsProcessView::DrawProcessView();
 			break;
 		case View::Threads:
@@ -82,7 +82,7 @@ namespace Corvus::Gui
 
 	void MainView::DrawMainView()
 	{
-		Corvus::Memory::SetThreadPriority32(ABOVE_NORMAL_PRIORITY_CLASS);
+		Corvus::Service::SetThreadPriority32(ABOVE_NORMAL_PRIORITY_CLASS);
 		ImGui::SetNextWindowPos(s_viewport->Pos, ImGuiCond_Always);
 		ImGui::SetNextWindowSize(s_viewport->Size, ImGuiCond_Always);
 

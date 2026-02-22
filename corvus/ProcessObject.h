@@ -1,39 +1,29 @@
 #pragma once
-#include "WindowsStructures.h"
+#include "ProcessStructures.h"
 #include <vector>
 #include <memory>
 
-#pragma region WindowsProcess
-namespace Corvus::Backend
+#pragma region ProcessObject
+namespace Corvus::Data
 {
-	class IProcessBackend;
+	class IWindowsBackend;
 }
 
-namespace Corvus::Process
+namespace Corvus::Object
 {
-	class WindowsProcess final
+	class ProcessObject final
 	{
 	private:
-		DWORD m_processId{};
-		HANDLE m_processHandle{};
 		ProcessEntry m_processEntry{};
+		HANDLE m_processHandle{};
 		BOOL m_processIdSet{ FALSE };
 		BOOL m_processHandleSet{ FALSE };
 
-		// converters
-		static std::string ToString(const std::wstring& wstring);
-		static std::string ToString(DWORD processId);
-		static const char* ToString(ArchitectureType arch);
-		static const char* ToString(PriorityClass priorityClass);
-		static const char* DecodeAccessBits(DWORD access, const AccessBit* bits, size_t count);
-		static const char* MapAccess(std::wstring type, DWORD access);
-		static const char* MapAttributes(DWORD attribute);
-
 	public:
-		WindowsProcess() = default;
-		~WindowsProcess();
-		WindowsProcess(const WindowsProcess&) = delete;
-		WindowsProcess& operator=(const WindowsProcess&) = delete;
+		ProcessObject() = default;
+		~ProcessObject();
+		ProcessObject(const ProcessObject&) = delete;
+		ProcessObject& operator=(const ProcessObject&) = delete;
 
 		BOOL Init(const DWORD processId, const ACCESS_MASK accessMask);
 

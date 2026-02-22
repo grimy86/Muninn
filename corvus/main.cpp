@@ -106,7 +106,7 @@ int __stdcall WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, LPSTR cmdline,
 
 	// Init Fonts
 	//Corvus::imgui::g_mainFont =
-	//	io.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/CascadiaCode.ttf");
+	//	io.Fonts->AddFontFromFileTTF("C:/System/Fonts/CascadiaCode.ttf");
 
 	// Our state
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
@@ -138,8 +138,8 @@ int __stdcall WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, LPSTR cmdline,
 		ImGui::NewFrame();
 
 		// Corvus Entry-Point
-		Corvus::Gui::MainView::Init();
-		Corvus::Gui::MainView::DrawMainView();
+		// Corvus::UserInterface::MainView::Init();
+		// Corvus::UserInterface::MainView::DrawMainView();
 
 		// Rendering
 		ImGui::Render();

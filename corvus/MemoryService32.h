@@ -2,7 +2,7 @@
 #include <Windows.h>
 #include <vector>
 
-namespace Corvus::Memory
+namespace Corvus::Service
 {
 	HANDLE OpenHandle32(const DWORD processId, const ACCESS_MASK accessMask);
 	BOOL CloseHandle32(HANDLE handle);

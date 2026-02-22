@@ -1,10 +1,10 @@
 #pragma once
 
-namespace Corvus::Gui
+namespace Corvus::UserInterface
 {
 	enum class View
 	{
-		Process,
+		Object,
 		Threads,
 		Modules,
 		Handles

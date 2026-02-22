@@ -1,9 +1,9 @@
 #pragma once
-#include "MemoryStructures.h"
+#include "ServiceStructures.h"
 #include <Windows.h>
 #include <string>
 
-namespace Corvus::Memory
+namespace Corvus::Service
 {
 	// Validators
 	bool IsValidProcessId(const DWORD processId) noexcept;

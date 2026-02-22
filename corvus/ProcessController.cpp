@@ -1,22 +1,22 @@
-#include "WindowsSystem.h"
-#include "IProcessBackend.h"
+#include "ProcessController.h"
+#include "IWindowsBackend.h"
 #include "MemoryService.h"
 
-namespace Corvus::System
+namespace Corvus::Controller
 {
-	WindowsSystem& WindowsSystem::GetInstance() noexcept
+	ProcessController& ProcessController::GetInstance() noexcept
 	{
-		static WindowsSystem instance;
+		static ProcessController instance;
 		return instance;
 	}
 
-	const std::vector<Corvus::Process::ProcessEntry>&
-		WindowsSystem::GetProcessList(BOOL useNt) const noexcept
+	const std::vector<Corvus::Object::ProcessEntry>&
+		ProcessController::GetProcessList(BOOL useNt) const noexcept
 	{
 		return useNt ? m_processesNt : m_processes32;
 	}
 
-	BOOL WindowsSystem::UpdateProcessList32()
+	BOOL ProcessController::UpdateProcessList32()
 	{
 		if (!m_processes32.empty())
 			m_processes32.clear();
@@ -25,7 +25,7 @@ namespace Corvus::System
 		return !m_processes32.empty() ? TRUE : FALSE;
 	}
 
-	BOOL WindowsSystem::UpdateProcessListNt()
+	BOOL ProcessController::UpdateProcessListNt()
 	{
 		if (!m_processesNt.empty())
 			m_processesNt.clear();
@@ -34,11 +34,11 @@ namespace Corvus::System
 		return !m_processesNt.empty() ? TRUE : FALSE;
 	}
 
-	BOOL WindowsSystem::UpdateModuleList32()
+	BOOL ProcessController::UpdateModuleList32()
 	{
-		for (Corvus::Process::ProcessEntry& pEntry : m_processes32)
+		for (Corvus::Object::ProcessEntry& pEntry : m_processes32)
 		{
-			if (!Corvus::Memory::IsValidProcessId(pEntry.processId))
+			if (!Corvus::Service::IsValidProcessId(pEntry.processId))
 				continue;
 
 			const ACCESS_MASK accessMasks[]
@@ -49,14 +49,14 @@ namespace Corvus::System
 			};
 
 			HANDLE hProcess{};
-			Corvus::Process::WindowsProcess winProc{};
+			Corvus::Object::ProcessObject winProc{};
 			for (const ACCESS_MASK accessMask : accessMasks)
 			{
 				if (!winProc.Init(pEntry.processId, accessMask))
 					continue;
 			}
 
-			if (!Corvus::Memory::IsValidHandle(winProc.GetProcessHandle()))
+			if (!Corvus::Service::IsValidHandle(winProc.GetProcessHandle()))
 				continue;
 
 			pEntry.modules = m_backend32.QueryModules(winProc);

@@ -1,7 +1,7 @@
 #pragma once
 #include <math.h>
 
-namespace Corvus::Math
+namespace Corvus::Object
 {
 	class Vector
 	{

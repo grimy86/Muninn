@@ -4,21 +4,21 @@
 #include "WindowsProcess.h"
 #pragma comment(lib, "ntdll.lib")
 
-namespace Corvus::Backend
+namespace Corvus::Data
 {
 	HANDLE BackendNt::OpenBackendHandle(const DWORD processId, const ACCESS_MASK accessMask)
 	{
-		return Corvus::Memory::OpenHandleNt(processId, accessMask);
+		return Corvus::Service::OpenHandleNt(processId, accessMask);
 	}
 
 	BOOL BackendNt::CloseBackendHandle(HANDLE handle)
 	{
-		return Corvus::Memory::CloseHandleNt(handle);
+		return Corvus::Service::CloseHandleNt(handle);
 	}
 
-	std::vector<Corvus::Process::ProcessEntry> BackendNt::QueryProcesses()
+	std::vector<Corvus::Object::ProcessEntry> BackendNt::QueryProcesses()
 	{
-		const DWORD bufferSize{ Corvus::Memory::GetQSIBufferSizeNt(SystemProcessInformation) };
+		const DWORD bufferSize{ Corvus::Service::GetQSIBufferSizeNt(SystemProcessInformation) };
 		std::unique_ptr<BYTE[]> buffer(new BYTE[bufferSize]);
 		NTSTATUS systemInfoStatus{ NtQuerySystemInformation(
 			SystemProcessInformation,
@@ -28,15 +28,15 @@ namespace Corvus::Backend
 
 		if (!NT_SUCCESS(systemInfoStatus)) return {};
 
-		std::vector<Corvus::Process::ProcessEntry> processList{};
+		std::vector<Corvus::Object::ProcessEntry> processList{};
 		PSYSTEM_PROCESS_INFORMATION pInfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(buffer.get());
 		while (pInfo)
 		{
-			Corvus::Process::ProcessEntry pEntry{};
+			Corvus::Object::ProcessEntry pEntry{};
 			pEntry.processId = static_cast<DWORD>(reinterpret_cast<uintptr_t>(pInfo->UniqueProcessId));
 			pEntry.parentProcessId = static_cast<DWORD>(reinterpret_cast<uintptr_t>(pInfo->InheritedFromUniqueProcessId));
-			pEntry.name = (pInfo->ImageName.Buffer) ? pInfo->ImageName.Buffer : L"";
-			QueryModuleBaseAddress(pEntry.processId, pEntry.name);
+			pEntry.processName = (pInfo->ImageName.Buffer) ? pInfo->ImageName.Buffer : L"";
+			QueryModuleBaseAddress(pEntry.processId, pEntry.processName);
 
 			ACCESS_MASK accessMasks[]{
 				PROCESS_ALL_ACCESS,
@@ -47,8 +47,8 @@ namespace Corvus::Backend
 			HANDLE hProc{};
 			for (ACCESS_MASK accessMask : accessMasks)
 			{
-				hProc = Corvus::Memory::OpenHandleNt(pEntry.processId, accessMask);
-				if (Corvus::Memory::IsValidHandle(hProc)) break;
+				hProc = Corvus::Service::OpenHandleNt(pEntry.processId, accessMask);
+				if (Corvus::Service::IsValidHandle(hProc)) break;
 				else return{};
 			}
 
@@ -60,7 +60,7 @@ namespace Corvus::Backend
 			// Threads
 			for (ULONG i = 0; i < pInfo->NumberOfThreads; ++i)
 			{
-				Corvus::Process::ThreadEntry threadEntry{};
+				Corvus::Object::ThreadEntry threadEntry{};
 				const SYSTEM_THREAD_INFORMATION& sThreadInfo = pInfo->Threads[i];
 
 				threadEntry.structureSize = sizeof(SYSTEM_THREAD_INFORMATION);
@@ -73,7 +73,7 @@ namespace Corvus::Backend
 				pEntry.threads.push_back(threadEntry);
 			}
 			processList.push_back(pEntry);
-			Corvus::Memory::CloseHandleNt(hProc);
+			Corvus::Service::CloseHandleNt(hProc);
 
 			// Advance to next process (ALWAYS)
 			if (pInfo->NextEntryOffset)
@@ -86,12 +86,12 @@ namespace Corvus::Backend
 		return processList;
 	}
 
-	Corvus::Process::ProcessEntry BackendNt::QueryProcessInfo(HANDLE hProcess, DWORD processId)
+	Corvus::Object::ProcessEntry BackendNt::QueryProcessInfo(HANDLE hProcess, DWORD processId)
 	{
-		if (!Corvus::Memory::IsValidHandle(hProcess)) return {};
-		Corvus::Process::ProcessEntry pEntry{};
+		if (!Corvus::Service::IsValidHandle(hProcess)) return {};
+		Corvus::Object::ProcessEntry pEntry{};
 
-		const DWORD bufferSize{ Corvus::Memory::GetQSIBufferSizeNt(SystemProcessInformation) };
+		const DWORD bufferSize{ Corvus::Service::GetQSIBufferSizeNt(SystemProcessInformation) };
 		BYTE* pInfoBuffer = new BYTE[bufferSize];
 		NTSTATUS ntSysStatus{ NtQuerySystemInformation(
 			SystemProcessInformation,
@@ -106,13 +106,13 @@ namespace Corvus::Backend
 		}
 
 		PSYSTEM_PROCESS_INFORMATION pInfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(pInfoBuffer);
-		std::vector<Corvus::Process::ProcessEntry> processes;
+		std::vector<Corvus::Object::ProcessEntry> processes;
 		while (pInfo)
 		{
 			DWORD uniqueProcessId = static_cast<DWORD>(reinterpret_cast<uintptr_t>(pInfo->UniqueProcessId));
 			if (uniqueProcessId == processId)
 			{
-				pEntry.name = (pInfo->ImageName.Buffer) ? pInfo->ImageName.Buffer : L"";
+				pEntry.processName = (pInfo->ImageName.Buffer) ? pInfo->ImageName.Buffer : L"";
 				pEntry.imageFilePath = QueryImageFilePathNt(hProcess);
 				pEntry.priorityClass = QueryPriorityClassNt(hProcess);
 				pEntry.architectureType = QueryArchitectureNt(hProcess);
@@ -122,7 +122,7 @@ namespace Corvus::Backend
 				pEntry.parentProcessId =
 					static_cast<DWORD>(reinterpret_cast<uintptr_t>(
 						pInfoExtended.BasicInfo.InheritedFromUniqueProcessId));
-				pEntry.pebAddress =
+				pEntry.pebBaseAddress =
 					reinterpret_cast<uintptr_t>(pInfoExtended.BasicInfo.PebBaseAddress);
 				pEntry.isWow64 = pInfoExtended.u.s.IsWow64Process;
 				pEntry.isProtectedProcess = pInfoExtended.u.s.IsProtectedProcess;
@@ -145,33 +145,33 @@ namespace Corvus::Backend
 		return pEntry;
 	}
 
-	std::vector<Corvus::Process::ModuleEntry> BackendNt::QueryModules(const Corvus::Process::WindowsProcess& Process)
+	std::vector<Corvus::Object::ModuleEntry> BackendNt::QueryModules(const Corvus::Object::ProcessObject& Object)
 	{
-		HANDLE hProcess{ Process.GetProcessHandle() };
-		if (!Corvus::Memory::IsValidHandle(hProcess)) return {};
+		HANDLE hProcess{ Object.GetProcessHandle() };
+		if (!Corvus::Service::IsValidHandle(hProcess)) return {};
 
 		PROCESS_EXTENDED_BASIC_INFORMATION pInfo{ QueryExtendedProcessInfo(hProcess) };
-		uintptr_t pebAddress{ reinterpret_cast<uintptr_t>(pInfo.BasicInfo.PebBaseAddress) };
-		if (!Corvus::Memory::IsValidAddress(pebAddress)) return {};
+		uintptr_t pebBaseAddress{ reinterpret_cast<uintptr_t>(pInfo.BasicInfo.PebBaseAddress) };
+		if (!Corvus::Service::IsValidAddress(pebBaseAddress)) return {};
 
 		PEB peb{};
-		if (!NT_SUCCESS(Corvus::Memory::ReadVirtualMemoryNt<PEB>(hProcess, pebAddress, peb))) return {};
+		if (!NT_SUCCESS(Corvus::Service::ReadVirtualMemoryNt<PEB>(hProcess, pebBaseAddress, peb))) return {};
 		if (!peb.Ldr) return {};
 
 		uintptr_t ldrAddr{ reinterpret_cast<uintptr_t>(peb.Ldr) };
-		if (!Corvus::Memory::IsValidAddress(ldrAddr)) return {};
+		if (!Corvus::Service::IsValidAddress(ldrAddr)) return {};
 
 		PEB_LDR_DATA ldr{};
-		if (!NT_SUCCESS(Corvus::Memory::ReadVirtualMemoryNt<PEB_LDR_DATA>(hProcess, ldrAddr, ldr))) return {};
+		if (!NT_SUCCESS(Corvus::Service::ReadVirtualMemoryNt<PEB_LDR_DATA>(hProcess, ldrAddr, ldr))) return {};
 		if (!ldr.InLoadOrderModuleList.Flink) return {};
 
 		uintptr_t listHead{ ldrAddr + offsetof(PEB_LDR_DATA, InLoadOrderModuleList) };
-		if (!Corvus::Memory::IsValidAddress(listHead)) return {};
+		if (!Corvus::Service::IsValidAddress(listHead)) return {};
 
 		uintptr_t currentLink{ reinterpret_cast<uintptr_t>(ldr.InLoadOrderModuleList.Flink) };
-		if (!Corvus::Memory::IsValidAddress(currentLink)) return {};
+		if (!Corvus::Service::IsValidAddress(currentLink)) return {};
 
-		std::vector<Corvus::Process::ModuleEntry> modules{};
+		std::vector<Corvus::Object::ModuleEntry> modules{};
 		size_t sanityCounter = 0;
 		while (currentLink && currentLink != listHead)
 		{
@@ -181,34 +181,34 @@ namespace Corvus::Backend
 			// first remote module = fLink - ILOL offset
 			uintptr_t entryAddr{ currentLink - offsetof(LDR_DATA_TABLE_ENTRY, InLoadOrderLinks) };
 			LDR_DATA_TABLE_ENTRY entry{};
-			if (!NT_SUCCESS(Corvus::Memory::ReadVirtualMemoryNt<LDR_DATA_TABLE_ENTRY>(hProcess, entryAddr, entry)))
+			if (!NT_SUCCESS(Corvus::Service::ReadVirtualMemoryNt<LDR_DATA_TABLE_ENTRY>(hProcess, entryAddr, entry)))
 				break;
 
-			Corvus::Process::ModuleEntry mEntry{};
+			Corvus::Object::ModuleEntry mEntry{};
 			mEntry.baseAddress = reinterpret_cast<uintptr_t>(entry.DllBase);
 			mEntry.moduleBaseSize = entry.SizeOfImage;
 			mEntry.entryPoint = entry.EntryPoint;
 			mEntry.globalLoadCount = entry.ObsoleteLoadCount;
 			mEntry.processLoadCount = 0;
 			mEntry.processId = reinterpret_cast<DWORD>(pInfo.BasicInfo.UniqueProcessId);
-			mEntry.moduleName = Corvus::Memory::ReadRemoteUnicodeStringNt(hProcess, entry.BaseDllName);
-			mEntry.modulePath = Corvus::Memory::ReadRemoteUnicodeStringNt(hProcess, entry.FullDllName);
+			mEntry.moduleName = Corvus::Service::ReadRemoteUnicodeStringNt(hProcess, entry.BaseDllName);
+			mEntry.modulePath = Corvus::Service::ReadRemoteUnicodeStringNt(hProcess, entry.FullDllName);
 			modules.push_back(std::move(mEntry));
 
 			uintptr_t next = reinterpret_cast<uintptr_t>(entry.InLoadOrderLinks.Flink);
-			if (!Corvus::Memory::IsValidAddress(next) || next == currentLink) break;
+			if (!Corvus::Service::IsValidAddress(next) || next == currentLink) break;
 			else currentLink = next;
 		};
 		return modules;
 	};
 
-	std::vector<Corvus::Process::ThreadEntry> BackendNt::QueryThreads(const Corvus::Process::WindowsProcess& Process)
+	std::vector<Corvus::Object::ThreadEntry> BackendNt::QueryThreads(const Corvus::Object::ProcessObject& Object)
 	{
-		HANDLE hProcess{ Process.GetProcessHandle() };
-		DWORD processId{ Process.GetProcessId() };
-		if (!Corvus::Memory::IsValidHandle(hProcess)) return {};
+		HANDLE hProcess{ Object.GetProcessHandle() };
+		DWORD processId{ Object.GetProcessId() };
+		if (!Corvus::Service::IsValidHandle(hProcess)) return {};
 
-		const DWORD bufferSize{ Corvus::Memory::GetQSIBufferSizeNt(SystemProcessInformation) };
+		const DWORD bufferSize{ Corvus::Service::GetQSIBufferSizeNt(SystemProcessInformation) };
 		BYTE* pInfoBuffer = new BYTE[bufferSize];
 		NTSTATUS ntSysStatus{ NtQuerySystemInformation(
 			SystemProcessInformation,
@@ -225,7 +225,7 @@ namespace Corvus::Backend
 		PSYSTEM_PROCESS_INFORMATION pInfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(pInfoBuffer);
 		if (!pInfo) return {};
 
-		std::vector<Corvus::Process::ThreadEntry> threads{};
+		std::vector<Corvus::Object::ThreadEntry> threads{};
 		while (pInfo)
 		{
 			DWORD pInfoProcessId{ static_cast<DWORD>(
@@ -236,7 +236,7 @@ namespace Corvus::Backend
 				// Threads
 				for (ULONG i = 0; i < pInfo->NumberOfThreads; ++i)
 				{
-					Corvus::Process::ThreadEntry threadEntry{};
+					Corvus::Object::ThreadEntry threadEntry{};
 					const SYSTEM_THREAD_INFORMATION& sThreadInfo = pInfo->Threads[i];
 
 					threadEntry.structureSize = sizeof(SYSTEM_THREAD_INFORMATION);
@@ -261,13 +261,13 @@ namespace Corvus::Backend
 		return threads;
 	}
 
-	std::vector<Corvus::Process::HandleEntry> BackendNt::QueryHandles(const Corvus::Process::WindowsProcess& Process)
+	std::vector<Corvus::Object::HandleEntry> BackendNt::QueryHandles(const Corvus::Object::ProcessObject& Object)
 	{
-		HANDLE hProcess{ Process.GetProcessHandle() };
-		DWORD processId{ Process.GetProcessId() };
-		if (!Corvus::Memory::IsValidHandle(hProcess)) return {};
+		HANDLE hProcess{ Object.GetProcessHandle() };
+		DWORD processId{ Object.GetProcessId() };
+		if (!Corvus::Service::IsValidHandle(hProcess)) return {};
 
-		DWORD requiredBufferSize{ Corvus::Memory::GetQSIBufferSizeNt(
+		DWORD requiredBufferSize{ Corvus::Service::GetQSIBufferSizeNt(
 			SystemHandleInformation) + 0x1000 };
 		BYTE* hInfoBuffer = new BYTE[requiredBufferSize];
 		NTSTATUS ntStatus{ NtQuerySystemInformation(
@@ -285,14 +285,14 @@ namespace Corvus::Backend
 		PSYSTEM_HANDLE_INFORMATION pHandles = reinterpret_cast<PSYSTEM_HANDLE_INFORMATION>(hInfoBuffer);
 
 		// Pre-allocate memory
-		std::vector<Corvus::Process::HandleEntry> handles(2000);
+		std::vector<Corvus::Object::HandleEntry> handles(2000);
 		for (ULONG i = 0; i < pHandles->NumberOfHandles; ++i)
 		{
 			const SYSTEM_HANDLE_TABLE_ENTRY_INFO& sHandleInfo = pHandles->Handles[i];
 			if (static_cast<uintptr_t>(sHandleInfo.UniqueProcessId) != static_cast<uintptr_t>(processId))
 				continue;
 
-			Corvus::Process::HandleEntry handle{};
+			Corvus::Object::HandleEntry handle{};
 			handle.handle = reinterpret_cast<HANDLE>(sHandleInfo.HandleValue);
 			handle.typeName = QueryObjectTypeNameNt(handle.handle, sHandleInfo.UniqueProcessId);
 			handle.objectName = QueryObjectNameNt(handle.handle, sHandleInfo.UniqueProcessId);
@@ -346,7 +346,7 @@ namespace Corvus::Backend
 		return 0;
 	}
 
-	Corvus::Process::PriorityClass BackendNt::QueryPriorityClassNt(HANDLE hProcess)
+	Corvus::Object::UserProcessBasePriorityClass BackendNt::QueryPriorityClassNt(HANDLE hProcess)
 	{
 		PROCESS_PRIORITY_CLASS pPriorityClass{};
 		NTSTATUS ntProcPriorityClassStatus{ NtQueryInformationProcess(
@@ -356,22 +356,22 @@ namespace Corvus::Backend
 			sizeof(PROCESS_PRIORITY_CLASS),
 			nullptr) };
 		if (!NT_SUCCESS(ntProcPriorityClassStatus))
-			return Corvus::Process::PriorityClass::Undefined;
+			return Corvus::Object::UserProcessBasePriorityClass::Undefined;
 
-		switch (pPriorityClass.PriorityClass)
+		switch (pPriorityClass.UserProcessBasePriorityClass)
 		{
-		case 0U: return Corvus::Process::PriorityClass::Undefined;
-		case 1U: return Corvus::Process::PriorityClass::Idle;
-		case 2U: return Corvus::Process::PriorityClass::Normal;
-		case 3U: return Corvus::Process::PriorityClass::High;
-		case 4U: return Corvus::Process::PriorityClass::Realtime;
-		case 5U: return Corvus::Process::PriorityClass::BelowNormal;
-		case 6U: return Corvus::Process::PriorityClass::AboveNormal;
-		default: return Corvus::Process::PriorityClass::Undefined;
+		case 0U: return Corvus::Object::UserProcessBasePriorityClass::Undefined;
+		case 1U: return Corvus::Object::UserProcessBasePriorityClass::Idle;
+		case 2U: return Corvus::Object::UserProcessBasePriorityClass::Normal;
+		case 3U: return Corvus::Object::UserProcessBasePriorityClass::High;
+		case 4U: return Corvus::Object::UserProcessBasePriorityClass::Realtime;
+		case 5U: return Corvus::Object::UserProcessBasePriorityClass::BelowNormal;
+		case 6U: return Corvus::Object::UserProcessBasePriorityClass::AboveNormal;
+		default: return Corvus::Object::UserProcessBasePriorityClass::Undefined;
 		}
 	}
 
-	Corvus::Process::ArchitectureType BackendNt::QueryArchitectureNt(HANDLE hProcess)
+	Corvus::Object::ArchitectureType BackendNt::QueryArchitectureNt(HANDLE hProcess)
 	{
 		PVOID wow64Info{};
 		NTSTATUS ntWow64InfoStatus{ NtQueryInformationProcess(
@@ -382,20 +382,20 @@ namespace Corvus::Backend
 			nullptr) };
 
 		if (!NT_SUCCESS(ntWow64InfoStatus))
-			return Corvus::Process::ArchitectureType::Unknown;
+			return Corvus::Object::ArchitectureType::Unknown;
 
 		// nullptr = native process, Wow64 pointer = 32-bit process
 		return (wow64Info != nullptr) ?
-			Corvus::Process::ArchitectureType::x86 :
-			Corvus::Process::ArchitectureType::x64;
+			Corvus::Object::ArchitectureType::x86 :
+			Corvus::Object::ArchitectureType::x64;
 	}
 
 	// fix dup handle bug later
 	std::wstring BackendNt::QueryObjectNameNt(HANDLE hObject, DWORD processId)
 	{
-		if (!Corvus::Memory::IsValidHandle(hObject)) return L"";
+		if (!Corvus::Service::IsValidHandle(hObject)) return L"";
 		HANDLE localProcessHandle{ OpenProcess(processId, FALSE, PROCESS_DUP_HANDLE) };
-		if (!Corvus::Memory::IsValidHandle(localProcessHandle)) return L"";
+		if (!Corvus::Service::IsValidHandle(localProcessHandle)) return L"";
 
 		HANDLE dupHandle{};
 		if (!DuplicateHandle(
@@ -407,7 +407,7 @@ namespace Corvus::Backend
 			FALSE,
 			DUPLICATE_SAME_ACCESS))
 		{
-			Corvus::Memory::CloseHandleNt(localProcessHandle);
+			Corvus::Service::CloseHandleNt(localProcessHandle);
 			return L"";
 		}
 
@@ -415,8 +415,8 @@ namespace Corvus::Backend
 		NtQueryObject(dupHandle, ObjectNameInformation, nullptr, 0, &size);
 		if (!size)
 		{
-			Corvus::Memory::CloseHandleNt(localProcessHandle);
-			Corvus::Memory::CloseHandleNt(dupHandle);
+			Corvus::Service::CloseHandleNt(localProcessHandle);
+			Corvus::Service::CloseHandleNt(dupHandle);
 			return L"";
 		}
 
@@ -432,17 +432,17 @@ namespace Corvus::Backend
 		}
 
 		delete[] nameBuffer;
-		Corvus::Memory::CloseHandleNt(localProcessHandle);
-		Corvus::Memory::CloseHandleNt(dupHandle);
+		Corvus::Service::CloseHandleNt(localProcessHandle);
+		Corvus::Service::CloseHandleNt(dupHandle);
 		return result;
 	}
 
 	std::wstring BackendNt::QueryObjectTypeNameNt(HANDLE hObject, DWORD processId)
 	{
-		if (!Corvus::Memory::IsValidHandle(hObject)) return L"";
+		if (!Corvus::Service::IsValidHandle(hObject)) return L"";
 		// Fix this later
 		HANDLE localProcessHandle{ OpenProcess(processId, FALSE, PROCESS_DUP_HANDLE) };
-		if (!Corvus::Memory::IsValidHandle(localProcessHandle)) return L"";
+		if (!Corvus::Service::IsValidHandle(localProcessHandle)) return L"";
 
 		HANDLE dupHandle{};
 		if (!DuplicateHandle(
@@ -454,7 +454,7 @@ namespace Corvus::Backend
 			FALSE,
 			DUPLICATE_SAME_ACCESS))
 		{
-			Corvus::Memory::CloseHandleNt(localProcessHandle);
+			Corvus::Service::CloseHandleNt(localProcessHandle);
 			return L"";
 		}
 
@@ -462,8 +462,8 @@ namespace Corvus::Backend
 		NtQueryObject(dupHandle, ObjectTypeInformation, nullptr, 0, &size);
 		if (!size)
 		{
-			Corvus::Memory::CloseHandleNt(localProcessHandle);
-			Corvus::Memory::CloseHandleNt(dupHandle);
+			Corvus::Service::CloseHandleNt(localProcessHandle);
+			Corvus::Service::CloseHandleNt(dupHandle);
 			return L"";
 		}
 
@@ -477,8 +477,8 @@ namespace Corvus::Backend
 		}
 
 		delete[] typeInfo;
-		Corvus::Memory::CloseHandleNt(localProcessHandle);
-		Corvus::Memory::CloseHandleNt(dupHandle);
+		Corvus::Service::CloseHandleNt(localProcessHandle);
+		Corvus::Service::CloseHandleNt(dupHandle);
 		return result;
 	}
 }
