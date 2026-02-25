@@ -1,154 +1,100 @@
 #include "WindowsProviderNt.h"
-#include "MemoryServiceNt.h"
+#include "MemoryService.h"
 #pragma comment(lib, "ntdll.lib")
 
 namespace Corvus::Data
 {
-	HANDLE WindowsProviderNt::OpenProcessHandle(const DWORD processId, const ACCESS_MASK accessMask)
+
+	HANDLE OpenProcessHandleNt(const DWORD processId, const ACCESS_MASK accessMask)
 	{
-		return Corvus::Service::OpenHandleNt(processId, accessMask);
+		OBJECT_ATTRIBUTES objectAttributes{};
+		objectAttributes.Length = sizeof(OBJECT_ATTRIBUTES);
+
+		CLIENT_ID clientId{};
+		clientId.UniqueProcess = reinterpret_cast<HANDLE>(processId);
+		clientId.UniqueThread = nullptr;
+
+		HANDLE pHandle{ nullptr };
+		NTSTATUS status{ NtOpenProcess(&pHandle, accessMask, &objectAttributes, &clientId) };
+		if (NT_SUCCESS(status) && IsValidHandle(pHandle)) return pHandle;
+		else return nullptr;
 	}
 
-	BOOL WindowsProviderNt::CloseProcessHandle(HANDLE handle)
+	BOOL CloseProcessHandleNt(HANDLE handle)
 	{
-		return Corvus::Service::CloseHandleNt(handle);
+		return NT_SUCCESS(NtClose(handle));
 	}
 
-	std::vector<Corvus::Object::ProcessEntry> WindowsProviderNt::QueryProcesses()
+	PROCESS_EXTENDED_BASIC_INFORMATION GetProcessInformation(HANDLE hProcess)
 	{
-		const DWORD bufferSize{ Corvus::Service::GetQSIBufferSizeNt(SystemProcessInformation) };
-		std::unique_ptr<BYTE[]> buffer(new BYTE[bufferSize]);
-		NTSTATUS systemInfoStatus{ NtQuerySystemInformation(
-			SystemProcessInformation,
-			buffer.get(),
-			bufferSize,
+		if (!IsValidHandle(hProcess)) return {};
+
+		PROCESS_EXTENDED_BASIC_INFORMATION pInfo{};
+		NTSTATUS status{ NtQueryInformationProcess(
+			hProcess,
+			ProcessBasicInformation,
+			&pInfo,
+			sizeof(PROCESS_EXTENDED_BASIC_INFORMATION),
 			nullptr) };
 
-		if (!NT_SUCCESS(systemInfoStatus)) return {};
-
-		std::vector<Corvus::Object::ProcessEntry> processList{};
-		PSYSTEM_PROCESS_INFORMATION pInfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(buffer.get());
-		while (pInfo)
-		{
-			Corvus::Object::ProcessEntry pEntry{};
-			pEntry.processId = static_cast<DWORD>(reinterpret_cast<uintptr_t>(pInfo->UniqueProcessId));
-			pEntry.parentProcessId = static_cast<DWORD>(reinterpret_cast<uintptr_t>(pInfo->InheritedFromUniqueProcessId));
-			pEntry.processName = (pInfo->ImageName.Buffer) ? pInfo->ImageName.Buffer : L"";
-			QueryModuleBaseAddress(pEntry.processId, pEntry.processName);
-
-			ACCESS_MASK accessMasks[]{
-				PROCESS_ALL_ACCESS,
-				PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
-				PROCESS_QUERY_LIMITED_INFORMATION
-			};
-
-			HANDLE hProc{};
-			for (ACCESS_MASK accessMask : accessMasks)
-			{
-				hProc = Corvus::Service::OpenHandleNt(pEntry.processId, accessMask);
-				if (Corvus::Service::IsValidHandle(hProc)) break;
-				else return{};
-			}
-
-			QueryExtendedProcessInfo(hProc);
-			QueryImageFilePathNt(hProc);
-			QueryPriorityClassNt(hProc);
-			QueryArchitectureNt(hProc);
-
-			// Threads
-			for (ULONG i = 0; i < pInfo->NumberOfThreads; ++i)
-			{
-				Corvus::Object::ThreadEntry threadEntry{};
-				const SYSTEM_THREAD_INFORMATION& sThreadInfo = pInfo->Threads[i];
-
-				threadEntry.structureSize = sizeof(SYSTEM_THREAD_INFORMATION);
-				threadEntry.threadId = static_cast<DWORD>(
-					reinterpret_cast<uintptr_t>(sThreadInfo.ClientId.UniqueThread));
-				threadEntry.ownerProcessId = pEntry.processId;
-				threadEntry.basePriority = sThreadInfo.BasePriority;
-				threadEntry.startAddress = sThreadInfo.StartAddress;
-				threadEntry.threadState = sThreadInfo.ThreadState;
-				pEntry.threads.push_back(threadEntry);
-			}
-			processList.push_back(pEntry);
-			Corvus::Service::CloseHandleNt(hProc);
-
-			// Advance to next process (ALWAYS)
-			if (pInfo->NextEntryOffset)
-			{
-				pInfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(
-					reinterpret_cast<BYTE*>(pInfo) + pInfo->NextEntryOffset);
-			}
-			else break;
-		}
-		return processList;
+		if (!NT_SUCCESS(status)) return {};
+		else return pInfo;
 	}
 
-	Corvus::Object::ProcessEntry WindowsProviderNt::QueryProcessInfo(HANDLE hProcess, DWORD processId)
+	std::wstring GetImageFileNameNt(HANDLE hProcess)
 	{
-		if (!Corvus::Service::IsValidHandle(hProcess)) return {};
-		Corvus::Object::ProcessEntry pEntry{};
+		if (!IsValidHandle(hProcess)) return {};
 
-		const DWORD bufferSize{ Corvus::Service::GetQSIBufferSizeNt(SystemProcessInformation) };
-		BYTE* pInfoBuffer = new BYTE[bufferSize];
-		NTSTATUS ntSysStatus{ NtQuerySystemInformation(
-			SystemProcessInformation,
-			pInfoBuffer,
-			bufferSize,
+		BYTE imageFileNameBuffer[_MAX_PATH]{};
+		NTSTATUS status{ NtQueryInformationProcess(
+			hProcess,
+			ProcessImageFileName,
+			imageFileNameBuffer,
+			sizeof(imageFileNameBuffer),
 			nullptr) };
+		if (!NT_SUCCESS(status)) return L"";
 
-		if (!NT_SUCCESS(ntSysStatus))
+		std::wstring imageFileName{};
+		PUNICODE_STRING pImageFileName{ reinterpret_cast<PUNICODE_STRING>(imageFileNameBuffer) };
+		if (pImageFileName->Buffer && pImageFileName->Length)
 		{
-			delete[] pInfoBuffer;
-			return {};
+			imageFileName.assign(pImageFileName->Buffer,
+				pImageFileName->Length / sizeof(wchar_t));
 		}
-
-		PSYSTEM_PROCESS_INFORMATION pInfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(pInfoBuffer);
-		std::vector<Corvus::Object::ProcessEntry> processes;
-		while (pInfo)
-		{
-			DWORD uniqueProcessId = static_cast<DWORD>(reinterpret_cast<uintptr_t>(pInfo->UniqueProcessId));
-			if (uniqueProcessId == processId)
-			{
-				pEntry.processName = (pInfo->ImageName.Buffer) ? pInfo->ImageName.Buffer : L"";
-				pEntry.imageFilePath = QueryImageFilePathNt(hProcess);
-				pEntry.priorityClass = QueryPriorityClassNt(hProcess);
-				pEntry.architectureType = QueryArchitectureNt(hProcess);
-
-				PROCESS_EXTENDED_BASIC_INFORMATION pInfoExtended{
-					WindowsProviderNt::QueryExtendedProcessInfo(hProcess) };
-				pEntry.parentProcessId =
-					static_cast<DWORD>(reinterpret_cast<uintptr_t>(
-						pInfoExtended.BasicInfo.InheritedFromUniqueProcessId));
-				pEntry.pebBaseAddress =
-					reinterpret_cast<uintptr_t>(pInfoExtended.BasicInfo.PebBaseAddress);
-				pEntry.isWow64 = pInfoExtended.u.s.IsWow64Process;
-				pEntry.isProtectedProcess = pInfoExtended.u.s.IsProtectedProcess;
-				pEntry.isBackgroundProcess = pInfoExtended.u.s.IsBackground;
-				pEntry.isSubsystemProcess = pInfoExtended.u.s.IsSubsystemProcess;
-
-				break;
-			}
-
-			// Advance to next process (ALWAYS)
-			if (pInfo->NextEntryOffset)
-			{
-				pInfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(
-					reinterpret_cast<BYTE*>(pInfo) + pInfo->NextEntryOffset);
-			}
-			else break;
-		}
-
-		delete[] pInfoBuffer;
-		return pEntry;
+		return imageFileName;
 	}
+
+	std::wstring GetImageFileNameWin32Nt(HANDLE hProcess)
+	{
+		if (!IsValidHandle(hProcess)) return {};
+
+		BYTE imageFileNameBuffer[_MAX_PATH]{};
+		NTSTATUS status{ NtQueryInformationProcess(
+			hProcess,
+			ProcessImageFileNameWin32,
+			imageFileNameBuffer,
+			sizeof(imageFileNameBuffer),
+			nullptr) };
+		if (!NT_SUCCESS(status)) return L"";
+
+		std::wstring imageFileName{};
+		PUNICODE_STRING pImageFileName{ reinterpret_cast<PUNICODE_STRING>(imageFileNameBuffer) };
+		if (pImageFileName->Buffer && pImageFileName->Length)
+		{
+			imageFileName.assign(pImageFileName->Buffer,
+				pImageFileName->Length / sizeof(wchar_t));
+		}
+		return imageFileName;
+	}
+
+
 
 	std::vector<Corvus::Object::ModuleEntry> WindowsProviderNt::QueryModules(const Corvus::Object::ProcessObject& Object)
 	{
 		HANDLE hProcess{ Object.GetProcessHandle() };
 		if (!Corvus::Service::IsValidHandle(hProcess)) return {};
 
-		PROCESS_EXTENDED_BASIC_INFORMATION pInfo{ QueryExtendedProcessInfo(hProcess) };
+		PROCESS_EXTENDED_BASIC_INFORMATION pInfo{ GetExtendedProcessInfo(hProcess) };
 		uintptr_t pebBaseAddress{ reinterpret_cast<uintptr_t>(pInfo.BasicInfo.PebBaseAddress) };
 		if (!Corvus::Service::IsValidAddress(pebBaseAddress)) return {};
 
@@ -303,70 +249,12 @@ namespace Corvus::Data
 		return handles;
 	}
 
-	PROCESS_EXTENDED_BASIC_INFORMATION WindowsProviderNt::QueryExtendedProcessInfo(HANDLE hProcess)
-	{
-		PROCESS_EXTENDED_BASIC_INFORMATION pInfo{};
-		NTSTATUS ntProcExtendedInfoStatus = NtQueryInformationProcess(
-			hProcess,
-			ProcessBasicInformation,
-			&pInfo,
-			sizeof(PROCESS_EXTENDED_BASIC_INFORMATION),
-			nullptr);
-		if (!NT_SUCCESS(ntProcExtendedInfoStatus)) return {};
-		else return pInfo;
-	}
 
-	std::wstring WindowsProviderNt::QueryImageFilePathNt(HANDLE hProcess)
-	{
-		BYTE imageFileNameBuffer[512]{};
-		NTSTATUS ntImageFileNameStatus{ NtQueryInformationProcess(
-			hProcess,
-			ProcessImageFileName,
-			imageFileNameBuffer,
-			sizeof(imageFileNameBuffer),
-			nullptr) };
-		if (!NT_SUCCESS(ntImageFileNameStatus)) return L"";
-
-		PUNICODE_STRING imageFileName = reinterpret_cast<PUNICODE_STRING>(imageFileNameBuffer);
-		std::wstring result{};
-		if (imageFileName->Buffer && imageFileName->Length)
-		{
-			result.assign(
-				imageFileName->Buffer,
-				imageFileName->Length / sizeof(wchar_t));
-		}
-		return result;
-	}
 
 	// TO DO
 	uintptr_t WindowsProviderNt::QueryModuleBaseAddress(DWORD processId, const std::wstring& processName)
 	{
 		return 0;
-	}
-
-	Corvus::Object::UserProcessBasePriorityClass WindowsProviderNt::QueryPriorityClassNt(HANDLE hProcess)
-	{
-		PROCESS_PRIORITY_CLASS pPriorityClass{};
-		NTSTATUS ntProcPriorityClassStatus{ NtQueryInformationProcess(
-			hProcess,
-			ProcessPriorityClass,
-			&pPriorityClass,
-			sizeof(PROCESS_PRIORITY_CLASS),
-			nullptr) };
-		if (!NT_SUCCESS(ntProcPriorityClassStatus))
-			return Corvus::Object::UserProcessBasePriorityClass::Undefined;
-
-		switch (pPriorityClass.UserProcessBasePriorityClass)
-		{
-		case 0U: return Corvus::Object::UserProcessBasePriorityClass::Undefined;
-		case 1U: return Corvus::Object::UserProcessBasePriorityClass::Idle;
-		case 2U: return Corvus::Object::UserProcessBasePriorityClass::Normal;
-		case 3U: return Corvus::Object::UserProcessBasePriorityClass::High;
-		case 4U: return Corvus::Object::UserProcessBasePriorityClass::Realtime;
-		case 5U: return Corvus::Object::UserProcessBasePriorityClass::BelowNormal;
-		case 6U: return Corvus::Object::UserProcessBasePriorityClass::AboveNormal;
-		default: return Corvus::Object::UserProcessBasePriorityClass::Undefined;
-		}
 	}
 
 	Corvus::Object::ArchitectureType WindowsProviderNt::QueryArchitectureNt(HANDLE hProcess)
@@ -479,4 +367,149 @@ namespace Corvus::Data
 		Corvus::Service::CloseHandleNt(dupHandle);
 		return result;
 	}
+
+	/*
+Corvus::Object::ProcessEntry QueryProcessInfo(HANDLE hProcess, DWORD processId)
+{
+	if (!IsValidHandle(hProcess)) return {};
+	Corvus::Object::ProcessEntry pEntry{};
+
+	const DWORD bufferSize{ GetQSIBufferSizeNt(SystemProcessInformation) };
+	BYTE* pInfoBuffer = new BYTE[bufferSize];
+	NTSTATUS ntSysStatus{ NtQuerySystemInformation(
+		SystemProcessInformation,
+		pInfoBuffer,
+		bufferSize,
+		nullptr) };
+
+	if (!NT_SUCCESS(ntSysStatus))
+	{
+		delete[] pInfoBuffer;
+		return {};
+	}
+
+	PSYSTEM_PROCESS_INFORMATION pInfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(pInfoBuffer);
+	std::vector<Corvus::Object::ProcessEntry> processes;
+	while (pInfo)
+	{
+		DWORD uniqueProcessId = static_cast<DWORD>(reinterpret_cast<uintptr_t>(pInfo->UniqueProcessId));
+		if (uniqueProcessId == processId)
+		{
+			pEntry.processName = (pInfo->ImageName.Buffer) ? pInfo->ImageName.Buffer : L"";
+			pEntry.imageFilePath = GetImageFileNameNt(hProcess);
+			pEntry.priorityClass = QueryPriorityClassNt(hProcess);
+			pEntry.architectureType = QueryArchitectureNt(hProcess);
+
+			PROCESS_EXTENDED_BASIC_INFORMATION pInfoExtended{
+				WindowsProviderNt::GetExtendedProcessInfo(hProcess) };
+			pEntry.parentProcessId =
+				static_cast<DWORD>(reinterpret_cast<uintptr_t>(
+					pInfoExtended.BasicInfo.InheritedFromUniqueProcessId));
+			pEntry.pebBaseAddress =
+				reinterpret_cast<uintptr_t>(pInfoExtended.BasicInfo.PebBaseAddress);
+			pEntry.isWow64 = pInfoExtended.u.s.IsWow64Process;
+			pEntry.isProtectedProcess = pInfoExtended.u.s.IsProtectedProcess;
+			pEntry.isBackgroundProcess = pInfoExtended.u.s.IsBackground;
+			pEntry.isSubsystemProcess = pInfoExtended.u.s.IsSubsystemProcess;
+
+			break;
+		}
+
+		// Advance to next process (ALWAYS)
+		if (pInfo->NextEntryOffset)
+		{
+			pInfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(
+				reinterpret_cast<BYTE*>(pInfo) + pInfo->NextEntryOffset);
+		}
+		else break;
+	}
+
+	delete[] pInfoBuffer;
+	return pEntry;
+}*/
+
+/*std::wstring ReadRemoteUnicodeStringNt(HANDLE hProcess, const UNICODE_STRING& unicodeString)
+{
+	if (!unicodeString.Buffer || !unicodeString.Length) return {};
+	std::wstring s(unicodeString.Length / sizeof(wchar_t), L'\0');
+
+	NtReadVirtualMemory(
+		hProcess,
+		reinterpret_cast<PVOID>(unicodeString.Buffer),
+		s.data(),
+		unicodeString.Length,
+		nullptr);
+
+	return s;
+}
+
+std::vector<Corvus::Object::ProcessEntry> WindowsProviderNt::QueryProcesses()
+{
+	const DWORD bufferSize{ Corvus::Service::GetQSIBufferSizeNt(SystemProcessInformation) };
+	std::unique_ptr<BYTE[]> buffer(new BYTE[bufferSize]);
+	NTSTATUS systemInfoStatus{ NtQuerySystemInformation(
+		SystemProcessInformation,
+		buffer.get(),
+		bufferSize,
+		nullptr) };
+
+	if (!NT_SUCCESS(systemInfoStatus)) return {};
+
+	std::vector<Corvus::Object::ProcessEntry> processList{};
+	PSYSTEM_PROCESS_INFORMATION pInfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(buffer.get());
+	while (pInfo)
+	{
+		Corvus::Object::ProcessEntry pEntry{};
+		pEntry.processId = static_cast<DWORD>(reinterpret_cast<uintptr_t>(pInfo->UniqueProcessId));
+		pEntry.parentProcessId = static_cast<DWORD>(reinterpret_cast<uintptr_t>(pInfo->InheritedFromUniqueProcessId));
+		pEntry.processName = (pInfo->ImageName.Buffer) ? pInfo->ImageName.Buffer : L"";
+		QueryModuleBaseAddress(pEntry.processId, pEntry.processName);
+
+		ACCESS_MASK accessMasks[]{
+			PROCESS_ALL_ACCESS,
+			PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
+			PROCESS_QUERY_LIMITED_INFORMATION
+		};
+
+		HANDLE hProc{};
+		for (ACCESS_MASK accessMask : accessMasks)
+		{
+			hProc = Corvus::Service::OpenHandleNt(pEntry.processId, accessMask);
+			if (Corvus::Service::IsValidHandle(hProc)) break;
+			else return{};
+		}
+
+		GetExtendedProcessInfo(hProc);
+		GetImageFileNameNt(hProc);
+		QueryPriorityClassNt(hProc);
+		QueryArchitectureNt(hProc);
+
+		// Threads
+		for (ULONG i = 0; i < pInfo->NumberOfThreads; ++i)
+		{
+			Corvus::Object::ThreadEntry threadEntry{};
+			const SYSTEM_THREAD_INFORMATION& sThreadInfo = pInfo->Threads[i];
+
+			threadEntry.structureSize = sizeof(SYSTEM_THREAD_INFORMATION);
+			threadEntry.threadId = static_cast<DWORD>(
+				reinterpret_cast<uintptr_t>(sThreadInfo.ClientId.UniqueThread));
+			threadEntry.ownerProcessId = pEntry.processId;
+			threadEntry.basePriority = sThreadInfo.BasePriority;
+			threadEntry.startAddress = sThreadInfo.StartAddress;
+			threadEntry.threadState = sThreadInfo.ThreadState;
+			pEntry.threads.push_back(threadEntry);
+		}
+		processList.push_back(pEntry);
+		Corvus::Service::CloseHandleNt(hProc);
+
+		// Advance to next process (ALWAYS)
+		if (pInfo->NextEntryOffset)
+		{
+			pInfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(
+				reinterpret_cast<BYTE*>(pInfo) + pInfo->NextEntryOffset);
+		}
+		else break;
+	}
+	return processList;
+}*/
 }

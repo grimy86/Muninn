@@ -26,20 +26,20 @@
     <Filter Include="src\SDK">
       <UniqueIdentifier>{ce5fa751-8d2e-474f-80d7-1990d85aa27a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\SDK\ObjectLayer">
-      <UniqueIdentifier>{65721ce7-6d26-47a2-afb4-8218a8697d5b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\SDK\AccessLayer">
-      <UniqueIdentifier>{9fee5d13-b8f2-4f0b-8c7e-6b713e4c4f0d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\SDK\AccessLayer\Services">
-      <UniqueIdentifier>{31d6fc37-0678-4fb1-960a-3b67e74fe44c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="src\SDK\ControllerLayer">
       <UniqueIdentifier>{fa70e3e2-1f89-4c49-85e6-4e7412af775f}</UniqueIdentifier>
     </Filter>
     <Filter Include="src\SDK\ControllerLayer\Services">
       <UniqueIdentifier>{cfe4a36d-e291-4120-8114-70a0fd90368f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\SDK\DataProvisionLayer">
+      <UniqueIdentifier>{9fee5d13-b8f2-4f0b-8c7e-6b713e4c4f0d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\SDK\DataProvisionLayer\Services">
+      <UniqueIdentifier>{31d6fc37-0678-4fb1-960a-3b67e74fe44c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\SDK\DTObjectLayer">
+      <UniqueIdentifier>{65721ce7-6d26-47a2-afb4-8218a8697d5b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -68,10 +68,10 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="WindowsProvider32.cpp">
-      <Filter>src\SDK\AccessLayer</Filter>
+      <Filter>src\SDK\DataProvisionLayer</Filter>
     </ClCompile>
     <ClCompile Include="WindowsProviderNt.cpp">
-      <Filter>src\SDK\AccessLayer</Filter>
+      <Filter>src\SDK\DataProvisionLayer</Filter>
     </ClCompile>
     <ClCompile Include="MainView.cpp">
       <Filter>src\UserInterface\ViewLayer</Filter>
@@ -85,20 +85,14 @@
     <ClCompile Include="ConverterService.cpp">
       <Filter>src\SDK\ControllerLayer\Services</Filter>
     </ClCompile>
-    <ClCompile Include="MemoryService32.cpp">
-      <Filter>src\SDK\AccessLayer\Services</Filter>
-    </ClCompile>
-    <ClCompile Include="MemoryServiceNt.cpp">
-      <Filter>src\SDK\AccessLayer\Services</Filter>
-    </ClCompile>
     <ClCompile Include="MemoryService.cpp">
-      <Filter>src\SDK\AccessLayer\Services</Filter>
+      <Filter>src\SDK\DataProvisionLayer\Services</Filter>
     </ClCompile>
     <ClCompile Include="SystemController.cpp">
       <Filter>src\SDK\ControllerLayer</Filter>
     </ClCompile>
     <ClCompile Include="MathObject.cpp">
-      <Filter>src\SDK\ObjectLayer</Filter>
+      <Filter>src\SDK\DTObjectLayer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -133,13 +127,13 @@
       <Filter>src\UserInterface\Resources</Filter>
     </ClInclude>
     <ClInclude Include="WindowsProvider32.h">
-      <Filter>src\SDK\AccessLayer</Filter>
+      <Filter>src\SDK\DataProvisionLayer</Filter>
     </ClInclude>
     <ClInclude Include="ntdll.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="WindowsProviderNt.h">
-      <Filter>src\SDK\AccessLayer</Filter>
+      <Filter>src\SDK\DataProvisionLayer</Filter>
     </ClInclude>
     <ClInclude Include="MainView.h">
       <Filter>src\UserInterface\ViewLayer</Filter>
@@ -150,7 +144,7 @@
     <ClInclude Include="WindowsProcessView.h">
       <Filter>src\UserInterface\ViewLayer</Filter>
     </ClInclude>
-    <ClInclude Include="WinUserService.hpp">
+    <ClInclude Include="WinUserService.h">
       <Filter>src\UserInterface\ViewLayer\Services</Filter>
     </ClInclude>
     <ClInclude Include="ProcessController.h">
@@ -159,23 +153,17 @@
     <ClInclude Include="ConverterService.h">
       <Filter>src\SDK\ControllerLayer\Services</Filter>
     </ClInclude>
-    <ClInclude Include="MemoryService32.h">
-      <Filter>src\SDK\AccessLayer\Services</Filter>
-    </ClInclude>
-    <ClInclude Include="MemoryServiceNt.h">
-      <Filter>src\SDK\AccessLayer\Services</Filter>
-    </ClInclude>
     <ClInclude Include="MemoryService.h">
-      <Filter>src\SDK\AccessLayer\Services</Filter>
+      <Filter>src\SDK\DataProvisionLayer\Services</Filter>
     </ClInclude>
     <ClInclude Include="SystemController.h">
       <Filter>src\SDK\ControllerLayer</Filter>
     </ClInclude>
     <ClInclude Include="MathObject.h">
-      <Filter>src\SDK\ObjectLayer</Filter>
+      <Filter>src\SDK\DTObjectLayer</Filter>
     </ClInclude>
     <ClInclude Include="WindowsStructures.h">
-      <Filter>src\SDK\ObjectLayer</Filter>
+      <Filter>src\SDK\DTObjectLayer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

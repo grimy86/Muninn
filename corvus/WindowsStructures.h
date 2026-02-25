@@ -49,18 +49,6 @@ namespace Corvus::Object
 		CompatDatabaseProcessed = 0b1UL << 31
 	};
 
-	enum class UserThreadBasePriority : LONG
-	{
-		Idle = THREAD_PRIORITY_IDLE, // -15 or THREAD_BASE_PRIORITY_IDLE
-		Lowest = THREAD_PRIORITY_LOWEST, // -2 or THREAD_BASE_PRIORITY_MIN
-		BelowNormal = THREAD_PRIORITY_BELOW_NORMAL, // -1 or (THREAD_PRIORITY_LOWEST + 1)
-		Normal = THREAD_PRIORITY_NORMAL, // 0
-		AboveNormal = THREAD_PRIORITY_ABOVE_NORMAL, // 1 or (THREAD_PRIORITY_HIGHEST - 1)
-		Highest = THREAD_PRIORITY_HIGHEST, // 2 or THREAD_BASE_PRIORITY_MAX
-		TimeCritical = THREAD_PRIORITY_TIME_CRITICAL, // 15 or THREAD_BASE_PRIORITY_LOWRT
-		Error = THREAD_PRIORITY_ERROR_RETURN, // 0x7FFFFFFF or (MAXLONG)
-	};
-
 	enum class KernelThreadBasePriority : KPRIORITY
 	{
 		Idle = 0L,
@@ -71,17 +59,6 @@ namespace Corvus::Object
 		Highest = 15L,
 		TimeCritical = 31L,
 		Unknown = 0xFF
-	};
-
-	enum class UserProcessBasePriorityClass : DWORD
-	{
-		Undefined = UNDEFINED_PRIORITY_CLASS, // 0x0
-		Normal = NORMAL_PRIORITY_CLASS, // 0x20
-		Idle = IDLE_PRIORITY_CLASS, // 0x40
-		High = HIGH_PRIORITY_CLASS, // 0x80
-		Realtime = REALTIME_PRIORITY_CLASS, // 0x100
-		BelowNormal = BELOW_NORMAL_PRIORITY_CLASS, // 0x4000
-		AboveNormal = ABOVE_NORMAL_PRIORITY_CLASS // 0x8000
 	};
 
 	/// <summary>
@@ -110,9 +87,9 @@ namespace Corvus::Object
 	};
 
 	/// <summary>
-	/// MODULEENTRY32W, Tlhelp32.h wrapper
-	/// <para> MODULEINFO, Psapi.h wrapper </para>
-	/// <para> LDR_DATA_TABLE_ENTRY, ntdll.h wrapper </para>
+	/// MODULEENTRY32W, Tlhelp32.h data
+	/// <para> MODULEINFO, Psapi.h data </para>
+	/// <para> LDR_DATA_TABLE_ENTRY, ntdll.h data </para>
 	/// </summary>
 	struct ModuleEntry
 	{
@@ -148,8 +125,8 @@ namespace Corvus::Object
 	};
 
 	/// <summary>
-	/// THREADENTRY32 @ Tlhelp32.h
-	/// <para> SYSTEM_EXTENDED_THREAD_INFORMATION @ ntdll.h </para>
+	/// THREADENTRY32 @ Tlhelp32.h data
+	/// <para> SYSTEM_EXTENDED_THREAD_INFORMATION @ ntdll.h data </para>
 	/// </summary>
 	struct ThreadEntry
 	{
@@ -183,8 +160,8 @@ namespace Corvus::Object
 	};
 
 	/// <summary>
-	/// PSS_HANDLE_ENTRY @ processsnapshot.h
-	/// <para> SYSTEM_HANDLE_TABLE_ENTRY_INFO @ ntdll.h </para>
+	/// PSS_HANDLE_ENTRY @ processsnapshot.h data
+	/// <para> SYSTEM_HANDLE_TABLE_ENTRY_INFO @ ntdll.h data </para>
 	/// </summary>
 	struct HandleEntry
 	{
@@ -205,6 +182,47 @@ namespace Corvus::Object
 		/// PSS_OBJECT_TYPE ObjectType field @ PSS_HANDLE_ENTRY
 		/// </summary>
 		UserHandleObjectType userHandleObjectType{};
+	};
+
+	/// <summary>
+	/// TOKEN_PRIVILEGES @ winnt.h data
+	/// <para> TOKEN_PRIVILEGES @ ntdll.h data </para>
+	/// </summary>
+	struct PrivilegeEntry
+	{
+		uint64_t TokenLuid;
+		DWORD TokenAttributes;
+	};
+
+	/// <summary>
+	/// Data for process access token information.
+	/// <para> OpenProcessToken() @ Processthreadsapi.h </para>
+	/// <para> GetTokenInformation() @ Securitybaseapi.h </para>
+	/// <para> NtOpenProcessToken() @ ntdll.h </para>
+	/// <para> NtQueryInformationToken() @ ntdll.h </para>
+	/// </summary>
+	struct AccessTokenEntry
+	{
+		/// <summary>
+		/// Returns token attributes and tokenLuid's for each privilege held by the token.
+		/// <para>Arg: TOKEN_INFORMATION_CLAS::TOKEN_PRIVILEGES </para>
+		/// </summary>
+		std::vector<PrivilegeEntry> TokenPrivileges{};
+
+		/// <summary>
+		/// Arg: TOKEN_INFORMATION_CLAS::TOKEN_STATISTICS
+		/// </summary>
+		DWORD SessionId{};
+
+		/// <summary>
+		/// Arg: TOKEN_INFORMATION_CLAS::TOKEN_STATISTICS
+		/// </summary>
+		DWORD TokenId{};
+
+		/// <summary>
+		/// Arg: TOKEN_INFORMATION_CLAS::TOKEN_STATISTICS
+		/// </summary>
+		DWORD AuthenticationId{};
 	};
 
 	/// <summary>
@@ -231,14 +249,9 @@ namespace Corvus::Object
 		/// UNICODE_STRING SystemInformation @ NtQueryInformationProcess()
 		/// <para> Arg: PROCESSINFOCLASS::ProcessImageFileName (27) </para>
 		/// </summary>
-		std::wstring kernelImageFilePath{};
+		std::wstring kernelImageFileName{};
 		uintptr_t pebBaseAddress{};
 		uintptr_t moduleBaseAddress{};
-
-		/// <summary>
-		/// LONG pcPriClassBase @ PROCESSENTRY32W
-		/// </summary>
-		UserProcessBasePriorityClass userProcessBasePriorityClass{};
 
 		/// <summary>
 		/// The starting priority of the process.
@@ -259,10 +272,11 @@ namespace Corvus::Object
 
 	struct ProcessObject
 	{
-		ProcessEntry processEntry{};
 		std::vector<ModuleEntry> moduleList{};
 		std::vector<ThreadEntry> threadList{};
 		std::vector<HandleEntry> handleList{};
+		ProcessEntry processEntry{};
+		AccessTokenEntry tokenList{};
 	};
 
 	struct SystemObject

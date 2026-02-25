@@ -2,17 +2,17 @@
 
 namespace Corvus::Controller
 {
-	const char* ToString(Corvus::Object::UserProcessBasePriorityClass p)
+	const char* GetPriorityClassA(Corvus::Object::UserProcessBasePriorityClass p)
 	{
 		switch (p)
 		{
-		case UserProcessBasePriorityClass::Undefined:   return "Undefined";
-		case UserProcessBasePriorityClass::Idle:        return "Idle";
-		case UserProcessBasePriorityClass::Normal:      return "Normal";
-		case UserProcessBasePriorityClass::High:        return "High";
-		case UserProcessBasePriorityClass::Realtime:    return "Realtime";
-		case UserProcessBasePriorityClass::BelowNormal: return "BelowNormal";
-		case UserProcessBasePriorityClass::AboveNormal: return "AboveNormal";
+		case Corvus::Object::UserProcessBasePriorityClass::Undefined:   return "Undefined";
+		case Corvus::Object::UserProcessBasePriorityClass::Idle:        return "Idle";
+		case Corvus::Object::UserProcessBasePriorityClass::Normal:      return "Normal";
+		case Corvus::Object::UserProcessBasePriorityClass::High:        return "High";
+		case Corvus::Object::UserProcessBasePriorityClass::Realtime:    return "Realtime";
+		case Corvus::Object::UserProcessBasePriorityClass::BelowNormal: return "BelowNormal";
+		case Corvus::Object::UserProcessBasePriorityClass::AboveNormal: return "AboveNormal";
 		}
 		return "Unknown";
 	}
