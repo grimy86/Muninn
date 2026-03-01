@@ -489,7 +489,7 @@ __pragma(warning(pop))
 		LARGE_INTEGER WriteTransferCount;
 		LARGE_INTEGER OtherTransferCount;
 		SYSTEM_THREAD_INFORMATION Threads[1]; // SystemProcessInformation
-		SYSTEM_EXTENDED_THREAD_INFORMATION Threads[1]; // SystemExtendedProcessinformation
+		SYSTEM_EXTENDED_THREAD_INFORMATION ThreadsEx[1]; // SystemExtendedProcessinformation
 		// SYSTEM_EXTENDED_THREAD_INFORMATION + SYSTEM_PROCESS_INFORMATION_EXTENSION // SystemFullProcessInformation
 	} SYSTEM_PROCESS_INFORMATION, * PSYSTEM_PROCESS_INFORMATION;
 

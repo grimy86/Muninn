@@ -4,13 +4,32 @@
 namespace Corvus::Data
 {
 	HANDLE OpenProcessHandleNt(DWORD processId, ACCESS_MASK accessMask);
-	BOOL CloseProcessHandleNt(HANDLE handle);
 
-	std::wstring ReadRemoteUnicodeStringNt(
+	BOOL CloseHandleNt(HANDLE handle);
+
+	HANDLE DuplicateHandleNt(HANDLE sourceHandle, DWORD processId);
+
+	DWORD GetQSIBufferSizeNt(const SYSTEM_INFORMATION_CLASS& infoClass);
+
+	std::wstring GetObjectNameNt(HANDLE hObject, DWORD processId);
+
+	std::wstring GetObjectTypeNameNt(HANDLE hObject, DWORD processId);
+
+	std::wstring GetRemoteUnicodeStringNt(
 		HANDLE hProcess,
 		const UNICODE_STRING& unicodeString);
 
 	PROCESS_EXTENDED_BASIC_INFORMATION GetProcessInformationNt(HANDLE hProcess);
+	BOOL GetProcessInformationObjectNt(HANDLE hProcess, Corvus::Object::ProcessEntry& processEntry);
+
+	/// <summary>
+	/// Assigns extended native process information to a process entry object reference.
+	/// </summary>
+	/// <param name="hProcess"> A handle to the process. </param>
+	/// <param name="processId"> The unique process identifier. </param>
+	/// <param name="processEntry"> A reference to the process entry object. </param>
+	/// <returns> TRUE if all values are sucessfully assigned. </returns>
+	BOOL GetProcessInformationObjectExtendedNt(HANDLE hProcess, DWORD processId, Corvus::Object::ProcessEntry& processEntry);
 	std::wstring GetImageFileNameNt(HANDLE hProcess);
 	std::wstring GetImageFileNameWin32Nt(HANDLE hProcess);
 
@@ -93,29 +112,72 @@ namespace Corvus::Data
 		HANDLE hProcess,
 		const PEB& peb);
 
-	std::vector<Corvus::Object::ModuleEntry> GetProcessModulesNt(
+	/// <summary>
+	/// Adds module entry objects to the list of module entry objects.
+	/// <para> Does not do any kind of validation on the list. </para>
+	/// </summary>
+	/// <param name="hProcess"> A handle to the process. </param>
+	/// <param name="processId"> The unique process identifier. </param>
+	/// <param name="peb"> A const reference to the PEB. </param>
+	/// <param name="modules"> A reference to the list of module entry objects. </param>
+	/// <returns> TRUE if all values are sucessfully assigned. </returns>
+	BOOL GetProcessModuleObjectsNt(
 		HANDLE hProcess,
 		DWORD processId,
-		const PEB& peb);
+		const PEB& peb,
+		std::vector<Corvus::Object::ModuleEntry>& modules);
 
 	std::vector<SYSTEM_THREAD_INFORMATION> GetProcessThreadsNt(
 		HANDLE hProcess,
 		DWORD processId);
 
-	std::vector<Corvus::Object::ThreadEntry> GetProcessThreadObjectsNt(
+	[[deprecated("Uses experimental NT structure: SYSTEM_EXTENDED_THREAD_INFORMATION @ SYSTEM_PROCESS_INFORMATION.")]]
+	std::vector<SYSTEM_EXTENDED_THREAD_INFORMATION> GetProcessThreadsExtendedNt(
 		HANDLE hProcess,
 		DWORD processId);
 
 	/// <summary>
-	/// Initializes the win32ThreadStartAddress.
+	/// Adds thread entry objects to the list of thread entry objects.
+	/// <para> Does not do any kind of validation on the list. </para>
+	/// </summary>
+	/// <param name="hProcess"> A handle to the process. </param>
+	/// <param name="processId"> The unique process identifier. </param>
+	/// <param name="threads"> A reference to the list of thread entry objects. </param>
+	/// <returns> TRUE if all values are sucessfully assigned. </returns>
+	BOOL GetProcessThreadObjectsNt(
+		HANDLE hProcess,
+		DWORD processId,
+		std::vector<Corvus::Object::ThreadEntry>& threads);
+
+	/// <summary>
+	/// Initializes the win32ThreadStartAddress and the  tebBaseAddress.
 	/// <para> EXPERIMENTAL @ SYSTEM_PROCESS_INFORMATION</para>
 	/// </summary>
 	/// <param name="hProcess"> A handle to the process. </param>
 	/// <param name="processId"> The unique process identifier. </param>
 	/// <returns> A list of ThreadEntry objects. </returns>
-	std::vector<Corvus::Object::ThreadEntry> GetExtendedProcessThreadObjectsNt(
+	[[deprecated("Uses experimental NT structure: SYSTEM_EXTENDED_THREAD_INFORMATION @ SYSTEM_PROCESS_INFORMATION.")]]
+	BOOL GetProcessThreadObjectsExtendedNt(
+		HANDLE hProcess,
+		DWORD processId,
+		std::vector<Corvus::Object::ThreadEntry>& threads);
+
+	std::vector<SYSTEM_HANDLE_TABLE_ENTRY_INFO> GetProcessHandlesNt(
 		HANDLE hProcess,
 		DWORD processId);
+
+	/// <summary>
+	/// Adds handle entry objects to the list of handle entry objects.
+	/// <para> Does not do any kind of validation on the list. </para>
+	/// </summary>
+	/// <param name="hProcess"> A handle to the process. </param>
+	/// <param name="processId"> The unique process identifier. </param>
+	/// <param name="handles"> A reference to the list of handle entry objects. </param>
+	/// <returns> TRUE if all values are sucessfully assigned. </returns>
+	BOOL GetProcessHandleObjectsNt(
+		HANDLE hProcess,
+		DWORD processId,
+		std::vector<Corvus::Object::HandleEntry>& handles);
 
 	/// <summary>
 	/// IF ProcessWow64Information is not NULL, the process is running under WoW64 and is a 32-bit process.
@@ -127,22 +189,8 @@ namespace Corvus::Data
 	/// </returns>
 	Corvus::Object::ArchitectureType GetArchitectureTypeNt(HANDLE hProcess);
 
-
-
-
-	DWORD GetQSIBufferSizeNt(const SYSTEM_INFORMATION_CLASS sInfoClass);
-	std::wstring GetRemoteUnicodeStringNt(HANDLE hProcess, const UNICODE_STRING& unicodeString);
-
-	uintptr_t GetModuleBaseAddressNt(DWORD processId, const std::wstring& processName);
-	Corvus::Object::ArchitectureType GetArchitectureTypeNt(HANDLE hProcess);
-	std::wstring GetObjectNameNt(HANDLE hObject, DWORD processId);
-	std::wstring GetObjectTypeNameNt(HANDLE hObject, DWORD processId);
-	BOOL GetModuleInformation(Corvus::Object::ProcessEntry& processEntry);
-	BOOL GetThreadInformation(Corvus::Object::ProcessEntry& processEntry);
-	BOOL GetHandleInformation(Corvus::Object::ProcessEntry& processEntry);
-
 	template <typename T>
-	NTSTATUS SetVirtualMemoryNt(HANDLE hProc, uintptr_t baseAddress, const T& value)
+	NTSTATUS WriteVirtualMemoryNt(HANDLE hProc, uintptr_t baseAddress, const T& value)
 	{
 		return WriteVirtualMemoryNt(
 			hProc,

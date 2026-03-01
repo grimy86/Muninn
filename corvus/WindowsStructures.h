@@ -169,7 +169,7 @@ namespace Corvus::Object
 		/// </summary>
 		std::wstring typeName{};
 		std::wstring objectName{};
-		uintptr_t handleValue{};
+		HANDLE handleValue{};
 		ACCESS_MASK grantedAccess{};
 
 		/// <summary>
