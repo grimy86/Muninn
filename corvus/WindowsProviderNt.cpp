@@ -81,28 +81,46 @@ namespace Corvus::Data
 
 	DWORD GetQSIBufferSizeNt(const SYSTEM_INFORMATION_CLASS& infoClass)
 	{
-		DWORD requiredBufferSize{};
+		ULONG requiredBufferSize{};
 		BYTE buffer[0x20];
 
-		NTSTATUS ntStatus{ NtQuerySystemInformation(
+		NtQuerySystemInformation(
 			infoClass,
 			buffer,
 			sizeof(buffer),
-			&requiredBufferSize) };
+			&requiredBufferSize);
+		if (!requiredBufferSize) return 0;
 
 		return requiredBufferSize;
 	}
 
-	std::wstring GetObjectNameNt(HANDLE objectHandle, DWORD processId)
+	DWORD GetQOBufferSizeNt(HANDLE& duplicateHandle, DWORD processId, const OBJECT_INFORMATION_CLASS& infoClass)
 	{
-		if (!IsValidHandle(objectHandle)) return L"";
+		if (!IsValidHandle(duplicateHandle)) return 0;
+		if (!IsValidProcessId(processId)) return 0;
+
+		ULONG requiredBufferSize{};
+		NtQueryObject(
+			duplicateHandle,
+			infoClass,
+			nullptr,
+			0,
+			&requiredBufferSize);
+		if (!requiredBufferSize) return 0;
+
+		return requiredBufferSize;
+	}
+
+	std::wstring GetObjectNameNt(HANDLE sourceHandle, DWORD processId)
+	{
+		if (!IsValidHandle(sourceHandle)) return L"";
 		if (!IsValidProcessId(processId)) return L"";
 
-		HANDLE duplicateHandle{ DuplicateHandleNt(objectHandle, processId) };
+		HANDLE duplicateHandle{ DuplicateHandleNt(sourceHandle, processId) };
 		if (!IsValidHandle(duplicateHandle)) return L"";
 
-		ULONG bufferSize{};
-		NtQueryObject(duplicateHandle, ObjectNameInformation, nullptr, 0, &bufferSize);
+		DWORD bufferSize{
+			GetQOBufferSizeNt(duplicateHandle, processId, ObjectNameInformation) };
 		if (!bufferSize)
 		{
 			CloseHandleNt(duplicateHandle);
@@ -111,7 +129,8 @@ namespace Corvus::Data
 
 		POBJECT_NAME_INFORMATION nameInfoBuffer{
 			reinterpret_cast<POBJECT_NAME_INFORMATION>(new BYTE[bufferSize]) };
-		NTSTATUS status{ NtQueryObject(duplicateHandle, ObjectNameInformation, nameInfoBuffer, bufferSize, nullptr) };
+		NTSTATUS status{ NtQueryObject(
+			duplicateHandle, ObjectNameInformation, nameInfoBuffer, bufferSize, nullptr) };
 		if (!NT_SUCCESS(status))
 		{
 			delete[] nameInfoBuffer;
@@ -128,16 +147,16 @@ namespace Corvus::Data
 		return result;
 	}
 
-	std::wstring GetObjectTypeNameNt(HANDLE objectHandle, DWORD processId)
+	std::wstring GetObjectTypeNameNt(HANDLE sourceHandle, DWORD processId)
 	{
-		if (!IsValidHandle(objectHandle)) return L"";
+		if (!IsValidHandle(sourceHandle)) return L"";
 		if (!IsValidProcessId(processId)) return L"";
 
-		HANDLE duplicateHandle{ DuplicateHandleNt(objectHandle, processId) };
+		HANDLE duplicateHandle{ DuplicateHandleNt(sourceHandle, processId) };
 		if (!IsValidHandle(duplicateHandle)) return L"";
 
-		ULONG bufferSize{};
-		NtQueryObject(duplicateHandle, ObjectTypeInformation, nullptr, 0, &bufferSize);
+		DWORD bufferSize{
+			GetQOBufferSizeNt(duplicateHandle, processId, ObjectTypeInformation) };
 		if (!bufferSize)
 		{
 			CloseHandleNt(duplicateHandle);
@@ -146,7 +165,8 @@ namespace Corvus::Data
 
 		POBJECT_TYPE_INFORMATION typeInfoBuffer{
 			reinterpret_cast<POBJECT_TYPE_INFORMATION>(new BYTE[bufferSize]) };
-		NTSTATUS status{ NT_SUCCESS(NtQueryObject(dupHandle, ObjectTypeInformation, typeInfoBuffer, bufferSize, nullptr)) };
+		NTSTATUS status{ NT_SUCCESS(NtQueryObject(
+			duplicateHandle, ObjectTypeInformation, typeInfoBuffer, bufferSize, nullptr)) };
 		if (!NT_SUCCESS(status))
 		{
 			delete[] typeInfoBuffer;

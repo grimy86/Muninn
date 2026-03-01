@@ -49,7 +49,7 @@ extern "C" {
 #define C_KERNEL_MODULE_FLAGS_RESERVED_FLAGS6            (3UL << 29)  // 2 bits (29-30)
 #define C_KERNEL_MODULE_FLAGS_COMPAT_DATABASE_PROCESSED  (1UL << 31)
 
-	enum C_NATIVE_THREAD_BASEPRIORITY
+	typedef enum _C_NATIVE_THREAD_BASEPRIORITY
 	{
 		C_NATIVE_THREAD_BASEPRIORITY_IDLE = 0L,
 		C_NATIVE_THREAD_BASEPRIORITY_LOWEST = 1L,
@@ -59,14 +59,14 @@ extern "C" {
 		C_NATIVE_THREAD_BASEPRIORITY_HIGHEST = 15L,
 		C_NATIVE_THREAD_BASEPRIORITY_TIMECRITICAL = 31L,
 		C_NATIVE_THREAD_BASEPRIORITY_UNKNOWN = 0xFF
-	};
+	} C_NATIVE_THREAD_BASEPRIORITY, * PC_NATIVE_THREAD_BASEPRIORITY;
 
 	/// <summary>
 	/// This is a specific structure for user object handles, not native handles.
 	/// <para> Native object handles, UCHAR ObjectTypeIndex @ OBJECT_TYPE_INFORMATION. </para>
 	/// <para> The ObjectTypeIndex may be subject to change accross Windows versions. </para>
 	/// </summary>
-	enum C_USER_HANDLE_OBJECT_TYPE
+	typedef enum _C_USER_HANDLE_OBJECT_TYPE
 	{
 		C_USER_HANDLE_OBJECT_TYPE_UNKNOWN = 0u,
 		C_USER_HANDLE_OBJECT_TYPE_PROCESS = 1u,
@@ -77,14 +77,14 @@ extern "C" {
 		// BUGBUG WINBLUE 571662 2013-12-31 GenghisK: #ifdef this for OS after
 		// WINBLUE
 		C_USER_HANDLE_OBJECT_TYPE_SEMAPHORE = 6u
-	};
+	} C_USER_HANDLE_OBJECT_TYPE, * PC_USER_HANDLE_OBJECT_TYPE;
 
-	enum C_ARCHITECTURE_TYPE
+	typedef enum C_ARCHITECTURE_TYPE
 	{
 		C_ARCHITECTURE_TYPE_UNKNOWN = 0u,
 		C_ARCHITECTURE_TYPE_X86 = 1u,
 		C_ARCHITECTURE_TYPE_X64 = 2u
-	};
+	} C_ARCHITECTURE_TYPE, * PC_ARCHITECTURE_TYPE;
 
 	/// <summary>
 	/// MODULEENTRY32W, Tlhelp32.h data

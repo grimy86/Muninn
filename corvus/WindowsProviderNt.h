@@ -7,13 +7,36 @@ namespace Corvus::Data
 
 	BOOL CloseHandleNt(HANDLE handle);
 
+	/// <summary>
+	/// Handles are per-process, duplicating allows us to safely query objects from another process.
+	/// </summary>
+	/// <param name="sourceHandle"> The source handle to duplicate.
+	/// This value is meaningful in the context of the source process. </param>
+	/// <param name="processId"> The unique process identifier. </param>
+	/// <returns></returns>
 	HANDLE DuplicateHandleNt(HANDLE sourceHandle, DWORD processId);
 
+	/// <summary>
+	/// Returns the required buffer size for a NtQuerySystemInformation() call.
+	/// </summary>
+	/// <param name="infoClass"> One of the values enumerated in SYSTEM_INFORMATION_CLASS,
+	/// which indicate the kind of system information to be retrieved. </param>
+	/// <returns></returns>
 	DWORD GetQSIBufferSizeNt(const SYSTEM_INFORMATION_CLASS& infoClass);
 
-	std::wstring GetObjectNameNt(HANDLE hObject, DWORD processId);
+	/// <summary>
+	/// Returns the required buffer size for a NtQueryObject() call.
+	/// </summary>
+	/// <param name="duplicateHandle"> A kernel handle reference to query information about.
+	/// The handle does not need to grant any specific access. </param>
+	/// <param name="processId"> The unique process identifier. </param>
+	/// <param name="infoClass"> One of the values enumerated in OBJECT_INFORMATION_CLASS,
+	/// which indicate the kind of object information to be retrieved. </param>
+	/// <returns></returns>
+	DWORD GetQOBufferSizeNt(HANDLE& duplicateHandle, DWORD processId, const OBJECT_INFORMATION_CLASS& infoClass);
 
-	std::wstring GetObjectTypeNameNt(HANDLE hObject, DWORD processId);
+	std::wstring GetObjectNameNt(HANDLE sourceHandle, DWORD processId);
+	std::wstring GetObjectTypeNameNt(HANDLE sourceHandle, DWORD processId);
 
 	std::wstring GetRemoteUnicodeStringNt(
 		HANDLE hProcess,
