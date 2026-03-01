@@ -165,6 +165,9 @@
     <ClInclude Include="WindowsStructures.h">
       <Filter>src\SDK\DTObjectLayer</Filter>
     </ClInclude>
+    <ClInclude Include="C_WindowsStructures.h">
+      <Filter>src\SDK\DTObjectLayer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resources.rc">

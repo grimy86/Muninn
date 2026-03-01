@@ -189,8 +189,8 @@ namespace Corvus::Object
 	/// </summary>
 	struct PrivilegeEntry
 	{
-		uint64_t TokenLuid;
-		DWORD TokenAttributes;
+		uint64_t TokenLuid{};
+		DWORD TokenAttributes{};
 	};
 
 	/// <summary>

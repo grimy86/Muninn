@@ -39,6 +39,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConverterService.h" />
+    <ClInclude Include="C_WindowsStructures.h" />
     <ClInclude Include="MemoryService.h" />
     <ClInclude Include="SystemController.h" />
     <ClInclude Include="UIStructures.h" />
