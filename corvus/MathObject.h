@@ -3,18 +3,20 @@
 
 namespace Corvus::Object
 {
-	class Vector
+	class Vector final
 	{
+	public:
 		float x{};
 		float y{};
 		float z{};
 
+		Vector operator-(const Vector& vector) const;
+
+		Vector ViewToVec() const;
+		Vector VecToView() const;
 		float CalcAngleBetweenVectors(const Vector& vector) const;
 		float VectorDotProduct(const Vector& vector) const;
 		float CalcVectorLength() const;
-		Vector ViewToVec() const;
-		Vector VecToView() const;
-		Vector operator-(const Vector& vector) const;
 		float RadiansToDegrees(float rad) const;
 		float DegreesToRadians(float deg) const;
 	};

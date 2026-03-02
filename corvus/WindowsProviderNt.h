@@ -23,7 +23,7 @@ namespace Corvus::Data
 	HANDLE OpenProcessTokenHandleNt(HANDLE hProcess, ACCESS_MASK accessMask);
 
 	template <typename T>
-	NTSTATUS WriteVirtualMemoryNt(HANDLE hProc, uintptr_t baseAddress, const T& value)
+	NTSTATUS WriteVirtualMemoryNt(HANDLE hProc, const uintptr_t baseAddress, const T& value)
 	{
 		return WriteVirtualMemoryNt(
 			hProc,
@@ -36,7 +36,7 @@ namespace Corvus::Data
 
 #pragma region READ
 	template <typename T>
-	NTSTATUS ReadVirtualMemoryNt(HANDLE hProc, uintptr_t baseAddress, T& out)
+	NTSTATUS ReadVirtualMemoryNt(HANDLE hProc, const uintptr_t baseAddress, const T& out)
 	{
 		return NtReadVirtualMemory(
 			hProc,
@@ -147,10 +147,6 @@ namespace Corvus::Data
 	/// <returns></returns>
 	uintptr_t GetModuleBaseAddressNt(HANDLE hProcess, const PEB& peb);
 
-	std::vector<LDR_DATA_TABLE_ENTRY> GetProcessModulesNt(
-		HANDLE hProcess,
-		const PEB& peb);
-
 	/// <summary>
 	/// IF ProcessWow64Information is not NULL, the process is running under WoW64 and is a 32-bit process.
 	/// <para> If it is NULL, the process is running natively and is a 64-bit process. </para>
@@ -160,6 +156,10 @@ namespace Corvus::Data
 	/// Corvus::Object::ArchitectureType
 	/// </returns>
 	Corvus::Object::ArchitectureType GetArchitectureTypeNt(HANDLE hProcess);
+
+	std::vector<LDR_DATA_TABLE_ENTRY> GetProcessModulesNt(
+		HANDLE hProcess,
+		const PEB& peb);
 
 	/// <summary>
 	/// Adds module entry objects to the list of module entry objects.
@@ -247,6 +247,5 @@ namespace Corvus::Data
 	/// <param name="tokenHandle"> A handle to the token. </param>
 	/// <returns> The session ID of the token. </returns>
 	DWORD GetProcessTokenSessionIdNt(HANDLE tokenHandle);
-
 #pragma endregion
 }

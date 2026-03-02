@@ -1,197 +1,193 @@
 #include "WindowsProvider32.h"
+#include "WindowsProviderNt.h"
 #include "MemoryService.h"
 #include <TlHelp32.h>
 #include <Psapi.h>
 
+#ifndef SUSPEND_THREAD_ERROR
+#define SUSPEND_THREAD_ERROR -1
+#endif // !SUSPEND_THREAD_ERROR
+
+#ifndef RESUME_THREAD_ERROR
+#define RESUME_THREAD_ERROR -1
+#endif // !RESUME_THREAD_ERROR
+
 namespace Corvus::Data
 {
 #pragma region WRITE
-	BOOL EnableSeDebugPrivilege32()
+	BOOL SetSeDebugPrivilege32(const HANDLE tokenHandle)
 	{
-		BOOL bRet{ FALSE };
-		HANDLE hToken{ nullptr };
+		if (!IsValidHandle(tokenHandle)) return FALSE;
+
 		LUID luid{};
+		BOOL status{
+			LookupPrivilegeValueW(nullptr, SE_DEBUG_NAME, &luid) };
+		if (!status) return FALSE;
 
-		if (OpenProcessToken(
-			GetCurrentProcess(),
-			TOKEN_ADJUST_PRIVILEGES,
-			&hToken))
-		{
-			if (LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &luid))
-			{
-				TOKEN_PRIVILEGES tPriv{};
-				tPriv.PrivilegeCount = 1;
-				tPriv.Privileges[0].Luid = luid;
-				tPriv.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+		TOKEN_PRIVILEGES privileges{};
+		privileges.PrivilegeCount = 1;
+		privileges.Privileges[0].Luid = luid;
+		privileges.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
 
-				bRet = AdjustTokenPrivileges(hToken,
-					FALSE,
-					&tPriv,
-					sizeof(TOKEN_PRIVILEGES),
-					nullptr,
-					nullptr);
-			}
-		}
+		status = AdjustTokenPrivileges(
+			tokenHandle,
+			FALSE,
+			&privileges,
+			sizeof(TOKEN_PRIVILEGES),
+			nullptr,
+			nullptr);
+		if (!status) return FALSE;
+		if (GetLastError() == ERROR_NOT_ALL_ASSIGNED)
+			return FALSE;
 
-		return bRet;
-	}
-
-	BOOL EnableSeDebugPrivilege32(const DWORD processId)
-	{
-		HANDLE hProc{ OpenProcessHandle(processId, PROCESS_ALL_ACCESS) };
-		if (!IsValidHandle(hProc)) return FALSE;
-
-		BOOL bRet{ FALSE };
-		HANDLE hToken{ nullptr };
-		LUID luid{};
-
-		if (OpenProcessToken(
-			hProc,
-			TOKEN_ADJUST_PRIVILEGES,
-			&hToken))
-		{
-			if (LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &luid))
-			{
-				TOKEN_PRIVILEGES tPriv{};
-				tPriv.PrivilegeCount = 1;
-				tPriv.Privileges[0].Luid = luid;
-				tPriv.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-
-				bRet = AdjustTokenPrivileges(hToken,
-					FALSE,
-					&tPriv,
-					sizeof(TOKEN_PRIVILEGES),
-					nullptr,
-					nullptr);
-			}
-		}
-
-		CloseProcessHandle(hProc);
-		return bRet;
-	}
-
-	BOOL SetThreadPriority32(int priorityMask)
-	{
-		return SetPriorityClass(GetCurrentProcess(), priorityMask);
-	}
-
-	BOOL  SuspendThread32(const DWORD threadId)
-	{
-		HANDLE hThread{ OpenThread(THREAD_SUSPEND_RESUME, FALSE, threadId) };
-		if (!hThread) return FALSE;
-		SuspendThread(hThread);
-		CloseProcessHandle(hThread);
 		return TRUE;
 	}
 
-	BOOL ResumeThread32(const DWORD threadId)
+	BOOL SetSeDebugPrivilege32(const HANDLE processHandle)
 	{
-		HANDLE hThread{ OpenThread(THREAD_SUSPEND_RESUME, FALSE, threadId) };
-		if (!hThread) return FALSE;
-		ResumeThread(hThread);
-		CloseProcessHandle(hThread);
+		HANDLE tokenHandle{
+			GetTokenHandle32(processHandle, TOKEN_ALL_ACCESS) };
+		if (!IsValidHandle(tokenHandle)) return FALSE;
+
+
+		LUID luid{};
+		BOOL status{
+			LookupPrivilegeValueW(nullptr, SE_DEBUG_NAME, &luid) };
+		if (!status) return FALSE;
+
+		TOKEN_PRIVILEGES privileges{};
+		privileges.PrivilegeCount = 1;
+		privileges.Privileges[0].Luid = luid;
+		privileges.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+		status = AdjustTokenPrivileges(
+			tokenHandle,
+			FALSE,
+			&privileges,
+			sizeof(TOKEN_PRIVILEGES),
+			nullptr,
+			nullptr);
+		if (!status) return FALSE;
+		if (GetLastError() == ERROR_NOT_ALL_ASSIGNED)
+			return FALSE;
+
 		return TRUE;
 	}
 
-	void PatchExecutionExt32(HANDLE processHandle, DWORD destination, BYTE* value, unsigned int size)
+	BOOL SetThreadPriority32(const DWORD priorityClass)
 	{
-		// Changes the protection on a region of committed pages in the virtual address space of a specified process.
-		// https://learn.microsoft.com/en-us/windows/win32/Service/memory-protection-constants
-
-		DWORD oldPageProtection;
-		VirtualProtectEx(processHandle, (void*)destination, size, PAGE_EXECUTE_READWRITE, &oldPageProtection);
-		WriteProcessMemory(processHandle, (void*)destination, value, size, nullptr);
+		return SetPriorityClass(GetCurrentProcess(), priorityClass);
 	}
 
-	void PatchExecutionInt32(DWORD destination, BYTE* value, unsigned int size)
+	BOOL SetThreadSuspended32(const DWORD threadId)
 	{
-		DWORD oldPageProtection;
-		VirtualProtect((void*)destination, size, PAGE_EXECUTE_READWRITE, &oldPageProtection);
-		memcpy((void*)destination, value, size);
-		VirtualProtect((void*)destination, size, oldPageProtection, &oldPageProtection);
+		HANDLE threadHandle{
+			OpenThread(THREAD_SUSPEND_RESUME, FALSE, threadId) };
+		if (!threadHandle) return FALSE;
+
+		DWORD suspendCount{ SuspendThread(threadHandle) };
+		if (suspendCount == SUSPEND_THREAD_ERROR)
+			return FALSE;
+
+		CloseHandleNt(threadHandle);
+		return TRUE;
 	}
 
-	void NopExecutionExt32(HANDLE processHandle, DWORD destination, unsigned int size)
+	BOOL SetThreadResumed32(const DWORD threadId)
 	{
-		// Filling an array with x86 NOP instructions (0x90)
-		BYTE* noOperationArray = new BYTE[size];
-		memset(noOperationArray, 0x90, size);
+		HANDLE threadHandle{
+			OpenThread(THREAD_SUSPEND_RESUME, FALSE, threadId) };
+		if (!threadHandle) return FALSE;
 
-		PatchExecutionExt32(processHandle, destination, noOperationArray, size);
-		delete[] noOperationArray;
-	}
+		DWORD suspendCount{ ResumeThread(threadHandle) };
+		if (suspendCount == RESUME_THREAD_ERROR)
+			return FALSE;
 
-	void NopExecutionInt32(DWORD destination, unsigned int size)
-	{
-		DWORD oldPageProtection;
-		VirtualProtect((void*)destination, size, PAGE_EXECUTE_READWRITE, &oldPageProtection);
-		memset((void*)destination, 0x90, size);
-		VirtualProtect((void*)destination, size, oldPageProtection, &oldPageProtection);
-	}
-
-	DWORD FindDMAAddyExt32(HANDLE processHandle, DWORD ptr, std::vector<DWORD> offsets)
-	{
-		DWORD addr{ ptr };
-		for (unsigned int i = 0; i < offsets.size(); ++i)
-		{
-			ReadProcessMemory(processHandle, (void*)addr, &addr, sizeof(addr), nullptr);
-			addr += offsets[i];
-		}
-		return addr;
-	}
-
-	DWORD FindDMAAddyInt32(DWORD ptr, std::vector<DWORD> offsets)
-	{
-		DWORD addr{ ptr };
-		for (unsigned int i = 0; i < offsets.size(); ++i)
-		{
-			addr = *(DWORD*)addr;
-			addr += offsets[i];
-		}
-		return addr;
+		CloseHandleNt(threadHandle);
+		return TRUE;
 	}
 #pragma endregion
 
 #pragma region READ
-	Corvus::Object::ProcessEntry QueryProcessInfo(HANDLE hProcess, DWORD processId)
+	HANDLE GetTokenHandle32(const HANDLE processHandle, const ACCESS_MASK accessMask)
 	{
-		if (!Corvus::Service::IsValidHandle(hProcess)) return {};
+		if (!IsValidHandle(processHandle)) return {};
 
-		HANDLE hProcessSnapshot{ CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) };
-		if (!Corvus::Service::IsValidHandle(hProcessSnapshot)) return {};
+		HANDLE tokenHandle{};
+		LUID luid{};
+		BOOL status{ OpenProcessToken(
+			processHandle,
+			accessMask,
+			&tokenHandle) };
+		if (!status) return {};
+		else return tokenHandle;
+	}
 
-		PROCESSENTRY32W pEntry32W{};
-		pEntry32W.dwSize = sizeof(PROCESSENTRY32W);
-		if (!Process32FirstW(hProcessSnapshot, &pEntry32W))
+	PROCESSENTRY32W GetProcessInformation32(const DWORD processId)
+	{
+		if (!IsValidProcessId(processId)) return {};
+
+		HANDLE snapshotHandle{
+			CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) };
+		if (!IsValidHandle(snapshotHandle)) return {};
+
+		PROCESSENTRY32W processEntry{};
+		processEntry.dwSize = sizeof(PROCESSENTRY32W);
+
+		if (!Process32FirstW(snapshotHandle, &processEntry))
 		{
-			Corvus::Service::CloseHandle32(hProcessSnapshot);
+			CloseHandleNt(snapshotHandle);
 			return {};
 		}
 
-		Corvus::Object::ProcessEntry pEntry{};
 		do
 		{
-			if (pEntry32W.th32ProcessID == processId)
+			if (processEntry.th32ProcessID == processId)
 			{
-				pEntry.processName = pEntry32W.szExeFile;
-				pEntry.imageFilePath = QueryImageFilePath(hProcess);
-				pEntry.parentProcessId = pEntry32W.th32ParentProcessID;
-				pEntry.moduleBaseAddress = QueryModuleBaseAddress(pEntry32W.th32ProcessID, pEntry32W.szExeFile);
-				pEntry.userProcessBasePriorityClass = QueryPriorityClass(hProcess);
-				pEntry.hasVisibleWindow = QueryVisibleWindow(pEntry32W.th32ProcessID);
-				BOOL isWow64{ FALSE };
-				pEntry.architectureType = QueryArchitecture(hProcess, isWow64);
-				pEntry.isWow64 = isWow64;
-
-				break;
+				CloseHandleNt(snapshotHandle);
+				return processEntry;
 			}
-		} while (Process32NextW(hProcessSnapshot, &pEntry32W));
+		} while (Process32NextW(snapshotHandle, &processEntry));
 
-		Corvus::Service::CloseHandle32(hProcessSnapshot);
-		return pEntry;
+		CloseHandleNt(snapshotHandle);
+		return {};
 	}
 
-	std::vector<Corvus::Object::ModuleEntry> QueryModules(const Corvus::Object::ProcessObject& Object)
+	BOOL GetProcessInformationObject32(
+		const HANDLE processHandle,
+		const DWORD processId,
+		Corvus::Object::ProcessEntry& processEntry)
+	{
+		if (!IsValidProcessId(processId)) return {};
+
+		HANDLE snapshotHandle{
+			CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) };
+		if (!IsValidHandle(snapshotHandle)) return {};
+
+		PROCESSENTRY32W processEntry32W{};
+		processEntry32W.dwSize = sizeof(PROCESSENTRY32W);
+		if (!Process32FirstW(snapshotHandle, &processEntry32W))
+		{
+			CloseHandleNt(snapshotHandle);
+			return {};
+		}
+
+		do
+		{
+			if (processEntry32W.th32ProcessID == processId)
+			{
+				processEntry.processName = processEntry32W.szExeFile;
+				processEntry.parentProcessId = processEntry32W.th32ParentProcessID;
+				CloseHandleNt(snapshotHandle);
+				break;
+			}
+		} while (Process32NextW(snapshotHandle, &processEntry32W));
+
+		CloseHandleNt(snapshotHandle);
+		return {};
+	}
+
+	std::vector<Corvus::Object::ModuleEntry> GetProcessModules32(const Corvus::Object::ProcessObject& Object)
 	{
 		HANDLE hProcess{ Object.GetProcessHandle() };
 		DWORD processId{ Object.GetProcessId() };
@@ -237,7 +233,7 @@ namespace Corvus::Data
 		return modules;
 	}
 
-	std::vector<Corvus::Object::ThreadEntry> QueryThreads(const Corvus::Object::ProcessObject& Object)
+	std::vector<Corvus::Object::ThreadEntry> GetProcessThreads32(const Corvus::Object::ProcessObject& Object)
 	{
 		HANDLE hProcess{ Object.GetProcessHandle() };
 		DWORD processId{ Object.GetProcessId() };
@@ -272,7 +268,7 @@ namespace Corvus::Data
 		return threads;
 	}
 
-	std::vector<Corvus::Object::HandleEntry> QueryHandles(const Corvus::Object::ProcessObject& Object)
+	std::vector<Corvus::Object::HandleEntry> GetProcessHandles32(const Corvus::Object::ProcessObject& Object)
 	{
 		HANDLE hProcess{ Object.GetProcessHandle() };
 		if (!Corvus::Service::IsValidHandle(hProcess)) return {};
@@ -347,7 +343,7 @@ namespace Corvus::Data
 		return handles;
 	}
 
-	std::wstring QueryImageFilePath(HANDLE hProcess)
+	std::wstring GetImageFileName32(HANDLE hProcess)
 	{
 		std::wstring iFilePathBuffer{};
 		iFilePathBuffer.resize(32768);
@@ -359,7 +355,7 @@ namespace Corvus::Data
 		return iFilePathBuffer;
 	}
 
-	uintptr_t QueryModuleBaseAddress(const DWORD processId, const std::wstring& processName)
+	uintptr_t GetModuleBaseAddress32(const DWORD processId, const std::wstring& processName)
 	{
 		MODULEENTRY32W mEntry{};
 		mEntry.dwSize = sizeof(MODULEENTRY32W);
@@ -386,7 +382,7 @@ namespace Corvus::Data
 		return 0;
 	}
 
-	bool QueryVisibleWindow(const DWORD processId)
+	bool GetWindowVisibility32(const DWORD processId)
 	{
 		for (HWND hwnd = GetTopWindow(nullptr); hwnd; hwnd = GetNextWindow(hwnd, GW_HWNDNEXT))
 		{
@@ -397,7 +393,7 @@ namespace Corvus::Data
 		return false;
 	}
 
-	Corvus::Object::ArchitectureType QueryArchitecture(HANDLE hProcess, BOOL& isWow64)
+	Corvus::Object::ArchitectureType GetProcessArchitecture32(HANDLE hProcess, BOOL& isWow64)
 	{
 		if (!Corvus::Service::IsValidHandle(hProcess)) return {};
 
@@ -424,7 +420,7 @@ namespace Corvus::Data
 		}
 	}
 
-	bool QuerySeDebugPrivilege32(HANDLE hProcess)
+	BOOL GetSeDebugPrivilege32(HANDLE hProcess)
 	{
 		if (!Corvus::Service::IsValidHandle(hProcess)) return false;
 		HANDLE hToken{};
@@ -469,7 +465,7 @@ namespace Corvus::Data
 		return enabled;
 	}
 
-	int QueryThreadPriority32(HANDLE hThread)
+	int GetThreadPriority32(HANDLE hThread)
 	{
 		return GetThreadPriority(hThread);
 	}
@@ -477,23 +473,23 @@ namespace Corvus::Data
 	/*
 	std::vector<Corvus::Object::ProcessEntry> WindowsProvider32::QueryProcesses()
 	{
-		HANDLE hProcessSnapshot{ CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) };
-		if (!Corvus::Service::IsValidHandle(hProcessSnapshot)) return {};
+		HANDLE snapshotHandle{ CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) };
+		if (!Corvus::Service::IsValidHandle(snapshotHandle)) return {};
 
-		PROCESSENTRY32W pEntry32W{};
-		pEntry32W.dwSize = sizeof(PROCESSENTRY32W);
+		PROCESSENTRY32W processEntry32W{};
+		processEntry32W.dwSize = sizeof(PROCESSENTRY32W);
 
 		std::vector<Corvus::Object::ProcessEntry> processList{};
-		if (Process32FirstW(hProcessSnapshot, &pEntry32W))
+		if (Process32FirstW(snapshotHandle, &processEntry32W))
 		{
 			do
 			{
-				Corvus::Object::ProcessEntry pEntry{};
-				pEntry.processId = pEntry32W.th32ProcessID;
-				pEntry.processName = pEntry32W.szExeFile;
-				pEntry.parentProcessId = pEntry32W.th32ParentProcessID;
-				QueryModuleBaseAddress(pEntry.processId, pEntry.processName);
-				QueryVisibleWindow(pEntry.processId);
+				Corvus::Object::ProcessEntry processEntry{};
+				processEntry.processId = processEntry32W.th32ProcessID;
+				processEntry.processName = processEntry32W.szExeFile;
+				processEntry.parentProcessId = processEntry32W.th32ParentProcessID;
+				GetModuleBaseAddress32(processEntry.processId, processEntry.processName);
+				GetWindowVisibility32(processEntry.processId);
 
 				const ACCESS_MASK accessMasks[]
 				{
@@ -502,25 +498,25 @@ namespace Corvus::Data
 					PROCESS_QUERY_LIMITED_INFORMATION
 				};
 
-				HANDLE hProc{};
+				HANDLE processHandle{};
 				for (ACCESS_MASK accessMask : accessMasks)
 				{
-					hProc = OpenProcessHandle(pEntry.processId, accessMask);
-					if (Corvus::Service::IsValidHandle(hProc)) break;
+					processHandle = OpenProcessHandle(processEntry.processId, accessMask);
+					if (Corvus::Service::IsValidHandle(processHandle)) break;
 				}
 
 				HANDLE hModuleSnapshot{
 					CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32,
-						pEntry.processId) };
+						processEntry.processId) };
 
-				QueryImageFilePath(hProc);
-				QueryPriorityClass(hProc);
+				GetImageFileName32(processHandle);
+				QueryPriorityClass(processHandle);
 				BOOL isWow64{ FALSE };
-				QueryArchitecture(hProc, isWow64);
+				GetProcessArchitecture32(processHandle, isWow64);
 
-				if (Corvus::Service::IsValidHandle(hProc))
-					CloseProcessHandle(hProc);
-			} while (Process32NextW(hProcessSnapshot, &pEntry32W));
+				if (Corvus::Service::IsValidHandle(processHandle))
+					CloseProcessHandle(processHandle);
+			} while (Process32NextW(snapshotHandle, &processEntry32W));
 		}
 		return processList;
 	}

@@ -2,9 +2,16 @@
 
 namespace Corvus::Object
 {
-	float Vector::CalcAngleBetweenVectors(const Vector& vector) const
+	Vector Vector::operator-(const Vector& vector) const
 	{
-		return RadiansToDegrees(acos(VectorDotProduct(vector) / (CalcVectorLength() * vector.CalcVectorLength())));
+		Vector vectorBetweenPoints //vector to enemy (dest(enemy) - source(player))
+		{
+			x - vector.x, //distance between x postions
+			y - vector.y, //distance between y positions
+			z - vector.z //distance between z positions
+		};
+
+		return vectorBetweenPoints;
 	}
 
 	Vector Vector::ViewToVec() const
@@ -16,33 +23,33 @@ namespace Corvus::Object
 		if (x >= 0.0f && x < 90.0f) // +x, -y
 		{
 			viewVector.y = -1.0f;
-			viewVector.x = tan(DegreesToRadians(x));
+			viewVector.x = tanf(DegreesToRadians(x));
 
 		}
 		else if (x >= 90.0f && x < 180.0f) // +x, +y
 		{
 			viewVector.x = 1.0f;
-			viewVector.y = tan(DegreesToRadians(x - 90.0f));
+			viewVector.y = tanf(DegreesToRadians(x - 90.0f));
 		}
 		else if (x >= 180.0f && x < 270.0f) // -x, +y
 		{
 			viewVector.y = 1.0f;
-			viewVector.x = -tan(DegreesToRadians(x - 180.0f));
+			viewVector.x = -tanf(DegreesToRadians(x - 180.0f));
 		}
 		else // -x, -y
 		{
 			viewVector.x = -1.0f;
-			viewVector.y = -tan(DegreesToRadians(x - 270.0f));
+			viewVector.y = -tanf(DegreesToRadians(x - 270.0f));
 		}
 
 		//Pitch angles
 		if (y >= 0.0f)
 		{
-			viewVector.z = tan(DegreesToRadians(y)) * sqrt((viewVector.x * viewVector.x) + (viewVector.y * viewVector.y));
+			viewVector.z = tanf(DegreesToRadians(y)) * sqrtf((viewVector.x * viewVector.x) + (viewVector.y * viewVector.y));
 		}
 		else
 		{
-			viewVector.z = -tan(DegreesToRadians(-y)) * sqrt((viewVector.x * viewVector.x) + (viewVector.y * viewVector.y));
+			viewVector.z = -tanf(DegreesToRadians(-y)) * sqrtf((viewVector.x * viewVector.x) + (viewVector.y * viewVector.y));
 		}
 		return viewVector;
 	}
@@ -80,6 +87,11 @@ namespace Corvus::Object
 		return aimAngles;
 	}
 
+	float Vector::CalcAngleBetweenVectors(const Vector& vector) const
+	{
+		return RadiansToDegrees(acosf(VectorDotProduct(vector) / (CalcVectorLength() * vector.CalcVectorLength())));
+	}
+
 	float Vector::VectorDotProduct(const Vector& vector) const
 	{
 		return (x * vector.x) + (y * vector.y) + (z * vector.z);
@@ -87,19 +99,7 @@ namespace Corvus::Object
 
 	float Vector::CalcVectorLength() const
 	{
-		return sqrt((x * x) + (y * y) + (z * z));
-	}
-
-	Vector Vector::operator-(const Vector& vector) const
-	{
-		Vector vectorBetweenPoints //vector to enemy (dest(enemy) - source(player))
-		{
-			x - vector.x, //distance between x postions
-			y - vector.y, //distance between y positions
-			z - vector.z //distance between z positions
-		};
-
-		return vectorBetweenPoints;
+		return sqrtf((x * x) + (y * y) + (z * z));
 	}
 
 	float Vector::RadiansToDegrees(float rad) const

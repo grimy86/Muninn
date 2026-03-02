@@ -1050,7 +1050,6 @@ namespace Corvus::Data
 		{ GetProcessTokenPriviligesNt(tokenHandle) };
 		if (priviligesBuffer.empty()) return FALSE;
 
-		std::vector<Corvus::Object::PrivilegeEntry> privileges{};
 		for (LUID_AND_ATTRIBUTES privilege : priviligesBuffer)
 		{
 			Corvus::Object::PrivilegeEntry privilegeEntry{};
