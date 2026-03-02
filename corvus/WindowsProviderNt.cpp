@@ -656,15 +656,21 @@ namespace Corvus::Data
 				break;
 
 			Corvus::Object::ModuleEntry moduleEntry{};
-			moduleEntry.moduleBaseAddress = reinterpret_cast<uintptr_t>(entry.DllBase);
-			moduleEntry.moduleBaseSize = entry.SizeOfImage;
-			moduleEntry.moduleEntryPoint = reinterpret_cast<uintptr_t>(entry.EntryPoint);
-			moduleEntry.processId = processId;
 			moduleEntry.moduleName = GetRemoteUnicodeStringNt(hProcess, entry.BaseDllName);
 			moduleEntry.modulePath = GetRemoteUnicodeStringNt(hProcess, entry.FullDllName);
+			moduleEntry.moduleEntryPoint
+				= reinterpret_cast<uintptr_t>(entry.EntryPoint);
+			moduleEntry.moduleBaseAddress
+				= reinterpret_cast<uintptr_t>(entry.DllBase);
+			moduleEntry.parentDllBaseAddress
+				= reinterpret_cast<uintptr_t>(entry.ParentDllBase);
+			moduleEntry.moduleImageSize = entry.SizeOfImage;
+			moduleEntry.processId = processId;
+			moduleEntry.tlsIndex = entry.TlsIndex;
 			modules.push_back(std::move(moduleEntry));
 
-			uintptr_t next = reinterpret_cast<uintptr_t>(entry.InLoadOrderLinks.Flink);
+			uintptr_t next =
+				reinterpret_cast<uintptr_t>(entry.InLoadOrderLinks.Flink);
 			if (!IsValidAddress(next) || next == currentLink) break;
 			else currentLink = next;
 		};

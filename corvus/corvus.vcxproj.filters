@@ -40,9 +40,6 @@
     <ClCompile Include="ProcessController.cpp">
       <Filter>SDK\ControllerLayer</Filter>
     </ClCompile>
-    <ClCompile Include="ConverterService.cpp">
-      <Filter>SDK\ControllerLayer\Services</Filter>
-    </ClCompile>
     <ClCompile Include="MemoryService.cpp">
       <Filter>SDK\DataProvisionLayer\Services</Filter>
     </ClCompile>
@@ -71,9 +68,6 @@
     </ClInclude>
     <ClInclude Include="ProcessController.h">
       <Filter>SDK\ControllerLayer</Filter>
-    </ClInclude>
-    <ClInclude Include="ConverterService.h">
-      <Filter>SDK\ControllerLayer\Services</Filter>
     </ClInclude>
     <ClInclude Include="MemoryService.h">
       <Filter>SDK\DataProvisionLayer\Services</Filter>

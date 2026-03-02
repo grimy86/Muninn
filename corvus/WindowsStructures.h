@@ -2,6 +2,7 @@
 #include <Windows.h>
 #include <string>
 #include <vector>
+#include <ProcessSnapshot.h>
 #include "ntdll.h"
 
 #ifndef UNDEFINED_PRIORITY_CLASS
@@ -113,7 +114,6 @@ namespace Corvus::Object
 		uintptr_t moduleEntryPoint{};
 		uintptr_t moduleBaseAddress{};
 		uintptr_t parentDllBaseAddress{};
-		SIZE_T moduleBaseSize{};
 
 		/// <summary>
 		/// Use KernelModuleFlags structure for mapping
@@ -146,9 +146,10 @@ namespace Corvus::Object
 		uintptr_t tebBaseAddress{};
 
 		/// <summary>
-		/// KPRIORITY BasePriority @ SYSTEM_THREAD_INFORMATION
+		/// LONG tpBasePri @ THREADENTRY32
+		/// <para> KPRIORITY BasePriority @ SYSTEM_THREAD_INFORMATION </para>
 		/// </summary>
-		NativeThreadBasePriority nativeThreadBasePriority{};
+		KPRIORITY nativeThreadBasePriority{};
 
 		/// <summary>
 		/// DWORD th32ThreadID @ THREADENTRY32

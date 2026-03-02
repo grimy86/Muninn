@@ -10,6 +10,7 @@ namespace Corvus::Controller
 	private:
 		ProcessController() = default;
 		HANDLE m_processHandle{};
+		HANDLE m_tokenHandle{};
 		ACCESS_MASK m_desiredAccessMask{};
 		Corvus::Object::ProcessObject m_process{};
 
