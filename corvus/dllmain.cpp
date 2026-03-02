@@ -19,6 +19,5 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 		// Code to run when the DLL is unloaded from a process
 		break;
 	}
-
 	return TRUE; // indicate successful load
 }

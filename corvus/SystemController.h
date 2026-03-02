@@ -15,8 +15,5 @@ namespace Corvus::Controller
 		SystemController& operator=(const SystemController&) = delete;
 		~SystemController() = default;
 		static SystemController& GetInstance() noexcept;
-
-		BOOL UpdateProcessList32();
-		BOOL UpdateProcessListNt();
 	};
 }

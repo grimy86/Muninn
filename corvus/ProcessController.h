@@ -15,7 +15,6 @@ namespace Corvus::Controller
 		Corvus::Object::ProcessObject m_processNt{};
 		HANDLE m_processHandle{};
 		HANDLE m_tokenHandle{};
-		ACCESS_MASK m_desiredAccessMask{};
 		ControllerState m_state{ ControllerState::Uninitialized };
 
 	public:
@@ -28,6 +27,9 @@ namespace Corvus::Controller
 
 		bool Initialize(
 			const DWORD processId,
-			const ACCESS_MASK accessMask);
+			const ACCESS_MASK processAccessMask,
+			const ACCESS_MASK tokenAccessMask);
+
+		bool Dispose();
 	};
 }

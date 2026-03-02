@@ -21,7 +21,7 @@ namespace Corvus::Data
 			handle != INVALID_HANDLE_VALUE);
 	}
 
-	bool IsValidLuid(const LUID luid)
+	bool IsValidLuid(const LUID luid) noexcept
 	{
 		return (luid.HighPart != 0 && luid.LowPart != 0);
 	}

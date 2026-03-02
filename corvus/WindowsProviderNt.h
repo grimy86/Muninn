@@ -25,7 +25,7 @@ namespace Corvus::Data
 	template <typename T>
 	NTSTATUS WriteVirtualMemoryNt(const HANDLE processHandle, const uintptr_t baseAddress, const T& value)
 	{
-		return WriteVirtualMemoryNt(
+		return NtWriteVirtualMemory(
 			processHandle,
 			reinterpret_cast<PVOID>(baseAddress),
 			&value,
@@ -36,7 +36,7 @@ namespace Corvus::Data
 
 #pragma region READ
 	template <typename T>
-	NTSTATUS ReadVirtualMemoryNt(const HANDLE processHandle, const uintptr_t baseAddress, const T& out)
+	NTSTATUS ReadVirtualMemoryNt(const HANDLE processHandle, const uintptr_t baseAddress, T& out)
 	{
 		return NtReadVirtualMemory(
 			processHandle,
