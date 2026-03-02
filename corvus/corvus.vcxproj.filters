@@ -14,9 +14,6 @@
     <Filter Include="SDK\ControllerLayer">
       <UniqueIdentifier>{fa70e3e2-1f89-4c49-85e6-4e7412af775f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="SDK\ControllerLayer\Services">
-      <UniqueIdentifier>{cfe4a36d-e291-4120-8114-70a0fd90368f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="SDK\DataProvisionLayer">
       <UniqueIdentifier>{9fee5d13-b8f2-4f0b-8c7e-6b713e4c4f0d}</UniqueIdentifier>
     </Filter>
@@ -83,6 +80,9 @@
     </ClInclude>
     <ClInclude Include="C_WindowsStructures.h">
       <Filter>SDK\DTObjectLayer</Filter>
+    </ClInclude>
+    <ClInclude Include="ControllerState.h">
+      <Filter>SDK\ControllerLayer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

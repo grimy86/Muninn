@@ -286,7 +286,7 @@ namespace Corvus::Object
 		std::vector<ThreadEntry> threadList{};
 		std::vector<HandleEntry> handleList{};
 		ProcessEntry processEntry{};
-		AccessToken tokenList{};
+		AccessToken accessToken{};
 	};
 
 	struct SystemObject

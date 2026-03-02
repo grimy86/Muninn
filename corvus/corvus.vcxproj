@@ -28,6 +28,7 @@
     <ClCompile Include="ProcessController.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ControllerState.h" />
     <ClInclude Include="C_WindowsStructures.h" />
     <ClInclude Include="MemoryService.h" />
     <ClInclude Include="SystemController.h" />
