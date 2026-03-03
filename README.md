@@ -26,7 +26,7 @@ It provides structured access to low-level Windows user-mode APIs, primarily:
 The project emphasizes architectural clarity, deterministic behavior, and explicit data modeling over convenience abstractions.
   
 ## Purpose
-Corvus exposes Windows data: process, thread, module, handle, token, etc. information through a layered internal design.
+Corvus exposes Windows data such as process, thread, module, handle, token, etc. information through a layered internal design.
 It bridges raw native system calls and structured C++ data models without introducing hidden side effects or runtime magic.
 
 The SDK is designed for:
@@ -68,7 +68,7 @@ High-level orchestration classes that manage:
 Copy semantics are intentionally disabled to prevent unsafe handle duplication.
 
 ### ViewLayer
-Contains raw user-interface related utilities and WinUser helpers.
+Contains raw user-interface-related utilities and WinUser helpers.
 This layer is isolated from native process logic.
 
 ## Design Characteristics
@@ -77,7 +77,7 @@ This layer is isolated from native process logic.
 - No hidden global state
 - Minimal STL usage beyond containers and strings (C-style)
 - Native NT structures preserved where meaningful
-- Experimental NT structures clearly marked `[[deprecated]]`
+- Experimental NT structures are clearly marked `[[deprecated]]`
 - Verbose naming convention
 - Visual C++ XML documentation
 
