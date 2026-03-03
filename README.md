@@ -26,7 +26,7 @@ It provides structured access to low-level Windows user-mode APIs, primarily:
 The project emphasizes architectural clarity, deterministic behavior, and explicit data modeling over convenience abstractions.
   
 ## Purpose
-Corvus exposes Windows data: process, thread, module, handle, token, etc. information through a layered internal design.
+Corvus exposes Windows data such as process, thread, module, handle, token, etc. information through a layered internal design.
 It bridges raw native system calls and structured C++ data models without introducing hidden side effects or runtime magic.
 
 The SDK is designed for:
