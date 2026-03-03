@@ -1,4 +1,4 @@
-name: Snyk Security Scan
+name: Snyk Code Scan
 
 on:
   push:
@@ -13,11 +13,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Snyk
-        uses: snyk/actions/setup@v3
+      - name: Run Snyk Code
+        uses: snyk/actions/snyk-code@v1
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-      # IMPORTANT: code scan, not dependency scan
-      - name: Run Snyk Code
-        run: snyk code test
