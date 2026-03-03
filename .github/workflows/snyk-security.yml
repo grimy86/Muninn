@@ -4,29 +4,20 @@ on:
   push:
     branches: [ master ]
   pull_request:
-    branches: [ master ]
 
 jobs:
   snyk:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Snyk CLI
+      - name: Setup Snyk
         uses: snyk/actions/setup@v3
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-          
-      - run: echo "SNYK_API=https://api.eu.snyk.io" >> $GITHUB_ENV
 
-      - name: Run Snyk Code and generate SARIF
-        run: snyk code test --sarif > snyk-code.sarif
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-      - name: Upload SARIF results to GitHub
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: snyk-code.sarif
+      # IMPORTANT: code scan, not dependency scan
+      - name: Run Snyk Code
+        run: snyk code test
