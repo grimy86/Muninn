@@ -54,9 +54,6 @@
     <ClInclude Include="WindowsProvider32.h">
       <Filter>SDK\DataProvisionLayer</Filter>
     </ClInclude>
-    <ClInclude Include="ntdll.h">
-      <Filter>SDK</Filter>
-    </ClInclude>
     <ClInclude Include="WindowsProviderNt.h">
       <Filter>SDK\DataProvisionLayer</Filter>
     </ClInclude>

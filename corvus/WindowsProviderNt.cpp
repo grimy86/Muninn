@@ -269,11 +269,11 @@ namespace Corvus::Data
 		processEntry.parentProcessId =
 			static_cast<DWORD>(
 				reinterpret_cast<uintptr_t>(processInfo.BasicInfo.InheritedFromUniqueProcessId));
-		processEntry.isProtectedProcess = processInfo.u.s.IsProtectedProcess;
-		processEntry.isWow64Process = processInfo.u.s.IsWow64Process;
-		processEntry.isBackgroundProcess = processInfo.u.s.IsBackground;
-		processEntry.isSecureProcess = processInfo.u.s.IsSecureProcess;
-		processEntry.isSubsystemProcess = processInfo.u.s.IsSubsystemProcess;
+		processEntry.isProtectedProcess = processInfo.IsProtectedProcess;
+		processEntry.isWow64Process = processInfo.IsWow64Process;
+		processEntry.isBackgroundProcess = processInfo.IsBackground;
+		processEntry.isSecureProcess = processInfo.IsSecureProcess;
+		processEntry.isSubsystemProcess = processInfo.IsSubsystemProcess;
 		return TRUE;
 	}
 
@@ -334,11 +334,11 @@ namespace Corvus::Data
 				processEntry.parentProcessId =
 					static_cast<DWORD>(
 						reinterpret_cast<uintptr_t>(processInfo.BasicInfo.InheritedFromUniqueProcessId));
-				processEntry.isProtectedProcess = processInfo.u.s.IsProtectedProcess;
-				processEntry.isWow64Process = processInfo.u.s.IsWow64Process;
-				processEntry.isBackgroundProcess = processInfo.u.s.IsBackground;
-				processEntry.isSecureProcess = processInfo.u.s.IsSecureProcess;
-				processEntry.isSubsystemProcess = processInfo.u.s.IsSubsystemProcess;
+				processEntry.isProtectedProcess = processInfo.IsProtectedProcess;
+				processEntry.isWow64Process = processInfo.IsWow64Process;
+				processEntry.isBackgroundProcess = processInfo.IsBackground;
+				processEntry.isSecureProcess = processInfo.IsSecureProcess;
+				processEntry.isSubsystemProcess = processInfo.IsSubsystemProcess;
 				break;
 			}
 		}
@@ -728,6 +728,7 @@ namespace Corvus::Data
 		return threads;
 	}
 
+	/*
 	std::vector<SYSTEM_EXTENDED_THREAD_INFORMATION> GetProcessThreadsExtendedNt(const HANDLE processHandle, const DWORD processId)
 	{
 		if (!IsValidHandle(processHandle)) return {};
@@ -839,73 +840,75 @@ namespace Corvus::Data
 		delete[] processInfoBuffer;
 		return TRUE;
 	}
-
-	BOOL GetProcessThreadObjectsExtendedNt(
-		const HANDLE processHandle,
-		const DWORD processId,
-		std::vector<Corvus::Object::ThreadEntry>& threads)
-	{
-		if (!IsValidHandle(processHandle)) return FALSE;
-		if (!IsValidProcessId(processId)) return FALSE;
-
-		const DWORD bufferSize{ GetQSIBufferSizeNt(SystemExtendedProcessInformation) };
-		BYTE* processInfoBuffer = new BYTE[bufferSize];
-		NTSTATUS status{ NtQuerySystemInformation(
-			SystemExtendedProcessInformation,
-			processInfoBuffer,
-			bufferSize,
-			nullptr) };
-
-		if (!NT_SUCCESS(status))
+	*/
+	/*
+		BOOL GetProcessThreadObjectsExtendedNt(
+			const HANDLE processHandle,
+			const DWORD processId,
+			std::vector<Corvus::Object::ThreadEntry>& threads)
 		{
-			delete[] processInfoBuffer;
-			return FALSE;
-		}
+			if (!IsValidHandle(processHandle)) return FALSE;
+			if (!IsValidProcessId(processId)) return FALSE;
 
-		PSYSTEM_PROCESS_INFORMATION processInfo
-		{ reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(processInfoBuffer) };
-		if (!processInfo)
-		{
-			delete[] processInfoBuffer;
-			return FALSE;
-		}
+			const DWORD bufferSize{ GetQSIBufferSizeNt(SystemExtendedProcessInformation) };
+			BYTE* processInfoBuffer = new BYTE[bufferSize];
+			NTSTATUS status{ NtQuerySystemInformation(
+				SystemExtendedProcessInformation,
+				processInfoBuffer,
+				bufferSize,
+				nullptr) };
 
-		while (processInfo)
-		{
-			DWORD processInfoId{ static_cast<DWORD>(
-				reinterpret_cast<uintptr_t>(processInfo->UniqueProcessId)) };
-
-			if (processInfoId == processId)
+			if (!NT_SUCCESS(status))
 			{
-				for (ULONG i{ 0 }; i < processInfo->NumberOfThreads; ++i)
-				{
-					const SYSTEM_THREAD_INFORMATION& sThreadInfo{ processInfo->Threads[i] };
-					const SYSTEM_EXTENDED_THREAD_INFORMATION& sThreadExInfo{ processInfo->ThreadsEx[i] };
-					Corvus::Object::ThreadEntry threadEntry{};
-					threadEntry.kernelThreadStartAddress =
-						reinterpret_cast<uintptr_t>(sThreadInfo.StartAddress);
-					threadEntry.win32ThreadStartAddress =
-						reinterpret_cast<uintptr_t>(sThreadExInfo.Win32StartAddress);
-					threadEntry.tebBaseAddress =
-						reinterpret_cast<uintptr_t>(sThreadExInfo.TebBase);
-					threadEntry.nativeThreadBasePriority =
-						static_cast<KPRIORITY>(sThreadInfo.BasePriority);
-					threadEntry.threadId =
-						static_cast<DWORD>(
-							reinterpret_cast<uintptr_t>(sThreadInfo.ClientId.UniqueThread));
-					threadEntry.threadOwnerProcessId = processId;
-					threads.push_back(threadEntry);
-				} break;
+				delete[] processInfoBuffer;
+				return FALSE;
 			}
-			if (processInfo->NextEntryOffset == 0) break;
 
-			processInfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(
-				reinterpret_cast<BYTE*>(processInfo) +
-				processInfo->NextEntryOffset);
+			PSYSTEM_PROCESS_INFORMATION processInfo
+			{ reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(processInfoBuffer) };
+			if (!processInfo)
+			{
+				delete[] processInfoBuffer;
+				return FALSE;
+			}
+
+			while (processInfo)
+			{
+				DWORD processInfoId{ static_cast<DWORD>(
+					reinterpret_cast<uintptr_t>(processInfo->UniqueProcessId)) };
+
+				if (processInfoId == processId)
+				{
+					for (ULONG i{ 0 }; i < processInfo->NumberOfThreads; ++i)
+					{
+						const SYSTEM_THREAD_INFORMATION& sThreadInfo{ processInfo->Threads[i] };
+						const SYSTEM_EXTENDED_THREAD_INFORMATION& sThreadExInfo{ processInfo->ThreadsEx[i] };
+						Corvus::Object::ThreadEntry threadEntry{};
+						threadEntry.kernelThreadStartAddress =
+							reinterpret_cast<uintptr_t>(sThreadInfo.StartAddress);
+						threadEntry.win32ThreadStartAddress =
+							reinterpret_cast<uintptr_t>(sThreadExInfo.Win32StartAddress);
+						threadEntry.tebBaseAddress =
+							reinterpret_cast<uintptr_t>(sThreadExInfo.TebBase);
+						threadEntry.nativeThreadBasePriority =
+							static_cast<KPRIORITY>(sThreadInfo.BasePriority);
+						threadEntry.threadId =
+							static_cast<DWORD>(
+								reinterpret_cast<uintptr_t>(sThreadInfo.ClientId.UniqueThread));
+						threadEntry.threadOwnerProcessId = processId;
+						threads.push_back(threadEntry);
+					} break;
+				}
+				if (processInfo->NextEntryOffset == 0) break;
+
+				processInfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(
+					reinterpret_cast<BYTE*>(processInfo) +
+					processInfo->NextEntryOffset);
+			}
+			delete[] processInfoBuffer;
+			return TRUE;
 		}
-		delete[] processInfoBuffer;
-		return TRUE;
-	}
+	*/
 
 	std::vector<SYSTEM_HANDLE_TABLE_ENTRY_INFO> GetProcessHandlesNt(HANDLE hProcess, DWORD processId)
 	{
@@ -1016,7 +1019,7 @@ namespace Corvus::Data
 		DWORD requiredBufferSize{};
 		NTSTATUS status{ NtQueryInformationToken(
 			tokenHandle,
-			TokenStatistics,
+			static_cast<TOKEN_INFORMATION_CLASS>(TokenStatistics),
 			&statisticsBuffer,
 			sizeof(TOKEN_STATISTICS),
 			&requiredBufferSize) };

@@ -1,4 +1,4 @@
-#include <windows.h>
+#include <phnt_windows.h>
 
 BOOL APIENTRY DllMain(HMODULE hModule,
 	DWORD  ul_reason_for_call,
