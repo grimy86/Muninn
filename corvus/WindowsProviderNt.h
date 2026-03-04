@@ -186,6 +186,7 @@ namespace Corvus::Data
 		const HANDLE processHandle,
 		const DWORD processId);
 
+	/*
 	/// <summary>
 	/// EXPERIMENTAL: SYSTEM_EXTENDED_THREAD_INFORMATION @ SYSTEM_PROCESS_INFORMATION.
 	/// </summary>
@@ -196,32 +197,36 @@ namespace Corvus::Data
 	std::vector<SYSTEM_EXTENDED_THREAD_INFORMATION> GetProcessThreadsExtendedNt(
 		const HANDLE processHandle,
 		const DWORD processId);
+		*/
 
-	/// <summary>
-	/// Adds thread entry objects to the list of thread entry objects.
-	/// <para> Does not do any kind of validation on the list. </para>
-	/// </summary>
-	/// <param name="processHandle"> A handle to the process. </param>
-	/// <param name="processId"> The unique process identifier. </param>
-	/// <param name="threads"> A reference to the list of thread entry objects. </param>
-	/// <returns> TRUE if all values are sucessfully assigned. </returns>
+
+		/// <summary>
+		/// Adds thread entry objects to the list of thread entry objects.
+		/// <para> Does not do any kind of validation on the list. </para>
+		/// </summary>
+		/// <param name="processHandle"> A handle to the process. </param>
+		/// <param name="processId"> The unique process identifier. </param>
+		/// <param name="threads"> A reference to the list of thread entry objects. </param>
+		/// <returns> TRUE if all values are sucessfully assigned. </returns>
 	BOOL GetProcessThreadObjectsNt(
 		const HANDLE processHandle,
 		const DWORD processId,
 		std::vector<Corvus::Object::ThreadEntry>& threads);
 
-	/// <summary>
-	/// Initializes the win32ThreadStartAddress and the tebBaseAddress.
-	/// <para> EXPERIMENTAL: SYSTEM_EXTENDED_THREAD_INFORMATION @ SYSTEM_PROCESS_INFORMATION. </para>
-	/// </summary>
-	/// <param name="processHandle"> A handle to the process. </param>
-	/// <param name="processId"> The unique process identifier. </param>
-	/// <returns> A list of ThreadEntry objects. </returns>
-	[[deprecated("Uses experimental NT structure: SYSTEM_EXTENDED_THREAD_INFORMATION @ SYSTEM_PROCESS_INFORMATION.")]]
-	BOOL GetProcessThreadObjectsExtendedNt(
-		const HANDLE processHandle,
-		const DWORD processId,
-		std::vector<Corvus::Object::ThreadEntry>& threads);
+	/*
+/// <summary>
+/// Initializes the win32ThreadStartAddress and the tebBaseAddress.
+/// <para> EXPERIMENTAL: SYSTEM_EXTENDED_THREAD_INFORMATION @ SYSTEM_PROCESS_INFORMATION. </para>
+/// </summary>
+/// <param name="processHandle"> A handle to the process. </param>
+/// <param name="processId"> The unique process identifier. </param>
+/// <returns> A list of ThreadEntry objects. </returns>
+[[deprecated("Uses experimental NT structure: SYSTEM_EXTENDED_THREAD_INFORMATION @ SYSTEM_PROCESS_INFORMATION.")]]
+BOOL GetProcessThreadObjectsExtendedNt(
+	const HANDLE processHandle,
+	const DWORD processId,
+	std::vector<Corvus::Object::ThreadEntry>& threads);
+	*/
 
 	std::vector<SYSTEM_HANDLE_TABLE_ENTRY_INFO> GetProcessHandlesNt(
 		const HANDLE processHandle,

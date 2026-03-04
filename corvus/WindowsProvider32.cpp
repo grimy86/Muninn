@@ -2,7 +2,6 @@
 #include <Psapi.h>
 #include <TlHelp32.h>
 #include "WindowsProvider32.h"
-#include "WindowsProviderNt.h"
 
 #ifndef SUSPEND_THREAD_ERROR
 #define SUSPEND_THREAD_ERROR -1
@@ -23,6 +22,16 @@
 namespace Corvus::Data
 {
 #pragma region WRITE
+	HANDLE OpenProcessHandle32(const DWORD processId, const ACCESS_MASK accessMask)
+	{
+		return OpenProcess(accessMask, FALSE, processId);
+	}
+
+	BOOL CloseHandle32(const HANDLE handle)
+	{
+		return CloseHandle(handle);
+	}
+
 	HANDLE OpenTokenHandle32(const HANDLE processHandle, const ACCESS_MASK accessMask)
 	{
 		if (!IsValidHandle(processHandle)) return {};
@@ -48,7 +57,7 @@ namespace Corvus::Data
 			LookupPrivilegeValueW(nullptr, SE_DEBUG_NAME, &luid) };
 		if (!status)
 		{
-			CloseHandleNt(tokenHandle);
+			CloseHandle32(tokenHandle);
 			return FALSE;
 		}
 
@@ -67,11 +76,11 @@ namespace Corvus::Data
 		if (!status) return FALSE;
 		if (GetLastError() == ERROR_NOT_ALL_ASSIGNED)
 		{
-			CloseHandleNt(tokenHandle);
+			CloseHandle32(tokenHandle);
 			return FALSE;
 		}
 
-		CloseHandleNt(tokenHandle);
+		CloseHandle32(tokenHandle);
 		return TRUE;
 	}
 
@@ -119,7 +128,7 @@ namespace Corvus::Data
 		if (suspendCount == SUSPEND_THREAD_ERROR)
 			return FALSE;
 
-		CloseHandleNt(threadHandle);
+		CloseHandle32(threadHandle);
 		return TRUE;
 	}
 
@@ -133,7 +142,7 @@ namespace Corvus::Data
 		if (suspendCount == RESUME_THREAD_ERROR)
 			return FALSE;
 
-		CloseHandleNt(threadHandle);
+		CloseHandle32(threadHandle);
 		return TRUE;
 	}
 #pragma endregion
@@ -146,17 +155,18 @@ namespace Corvus::Data
 
 	DWORD GetTokenInfoBufferSize32(
 		const HANDLE tokenHandle,
-		const TOKEN_INFORMATION_CLASS infoClass)
+		const _TOKEN_INFORMATION_CLASS infoClass)
 	{
 		DWORD bufferSize{};
-
-		if (!GetTokenInformation(tokenHandle, infoClass, nullptr, 0, &bufferSize))
+		if (!GetTokenInformation(
+			tokenHandle,
+			infoClass,
+			nullptr, 0, &bufferSize))
 		{
 			if (GetLastError() == ERROR_INSUFFICIENT_BUFFER)
 				return bufferSize;
 			else return 0;
 		}
-
 		return bufferSize;
 	}
 
@@ -207,7 +217,7 @@ namespace Corvus::Data
 
 		if (!Process32FirstW(snapshotHandle, &processEntry))
 		{
-			CloseHandleNt(snapshotHandle);
+			CloseHandle32(snapshotHandle);
 			return {};
 		}
 
@@ -215,12 +225,12 @@ namespace Corvus::Data
 		{
 			if (processEntry.th32ProcessID == processId)
 			{
-				CloseHandleNt(snapshotHandle);
+				CloseHandle32(snapshotHandle);
 				return processEntry;
 			}
 		} while (Process32NextW(snapshotHandle, &processEntry));
 
-		CloseHandleNt(snapshotHandle);
+		CloseHandle32(snapshotHandle);
 		return {};
 	}
 
@@ -238,7 +248,7 @@ namespace Corvus::Data
 		processEntry32W.dwSize = sizeof(PROCESSENTRY32W);
 		if (!Process32FirstW(snapshotHandle, &processEntry32W))
 		{
-			CloseHandleNt(snapshotHandle);
+			CloseHandle32(snapshotHandle);
 			return FALSE;
 		}
 
@@ -251,7 +261,7 @@ namespace Corvus::Data
 
 		} while (Process32NextW(snapshotHandle, &processEntry32W));
 
-		CloseHandleNt(snapshotHandle);
+		CloseHandle32(snapshotHandle);
 		return TRUE;
 	}
 
@@ -285,7 +295,7 @@ namespace Corvus::Data
 
 		if (!Module32FirstW(snapshotHandle, &mEntry))
 		{
-			CloseHandleNt(snapshotHandle);
+			CloseHandle32(snapshotHandle);
 			return 0;
 		}
 
@@ -293,12 +303,12 @@ namespace Corvus::Data
 		{
 			if (_wcsicmp(mEntry.szModule, processName.c_str()) == 0)
 			{
-				CloseHandleNt(snapshotHandle);
+				CloseHandle32(snapshotHandle);
 				return reinterpret_cast<uintptr_t>(mEntry.modBaseAddr);
 			}
 		} while (Module32Next(snapshotHandle, &mEntry));
 
-		CloseHandleNt(snapshotHandle);
+		CloseHandle32(snapshotHandle);
 		return 0;
 	}
 
@@ -370,7 +380,7 @@ namespace Corvus::Data
 		moduleEntry32W.dwSize = sizeof(MODULEENTRY32W);
 		if (!Module32FirstW(snapshotHandle, &moduleEntry32W))
 		{
-			CloseHandleNt(snapshotHandle);
+			CloseHandle32(snapshotHandle);
 			return {};
 		}
 
@@ -387,7 +397,7 @@ namespace Corvus::Data
 			modules.emplace_back(moduleEntry32W, moduleInfoBuffer);
 
 		} while (Module32NextW(snapshotHandle, &moduleEntry32W));
-		CloseHandleNt(snapshotHandle);
+		CloseHandle32(snapshotHandle);
 		return modules;
 	}
 
@@ -407,7 +417,7 @@ namespace Corvus::Data
 		moduleEntry32W.dwSize = sizeof(MODULEENTRY32W);
 		if (!Module32FirstW(snapshotHandle, &moduleEntry32W))
 		{
-			CloseHandleNt(snapshotHandle);
+			CloseHandle32(snapshotHandle);
 			return FALSE;
 		}
 
@@ -435,7 +445,7 @@ namespace Corvus::Data
 			modules.push_back(moduleEntry);
 
 		} while (Module32NextW(snapshotHandle, &moduleEntry32W));
-		CloseHandleNt(snapshotHandle);
+		CloseHandle32(snapshotHandle);
 		return TRUE;
 	}
 
@@ -454,7 +464,7 @@ namespace Corvus::Data
 		threadEntry32.dwSize = sizeof(THREADENTRY32);
 		if (!Thread32First(snapshotHandle, &threadEntry32))
 		{
-			CloseHandleNt(snapshotHandle);
+			CloseHandle32(snapshotHandle);
 			return {};
 		}
 
@@ -465,7 +475,7 @@ namespace Corvus::Data
 			threads.push_back(threadEntry32);
 
 		} while (Thread32Next(snapshotHandle, &threadEntry32));
-		CloseHandleNt(snapshotHandle);
+		CloseHandle32(snapshotHandle);
 		return threads;
 	}
 
@@ -485,7 +495,7 @@ namespace Corvus::Data
 		threadEntry32.dwSize = sizeof(THREADENTRY32);
 		if (!Thread32First(snapshotHandle, &threadEntry32))
 		{
-			CloseHandleNt(snapshotHandle);
+			CloseHandle32(snapshotHandle);
 			return FALSE;
 		}
 
@@ -501,7 +511,7 @@ namespace Corvus::Data
 			threads.push_back(threadEntry);
 
 		} while (Thread32Next(snapshotHandle, &threadEntry32));
-		CloseHandleNt(snapshotHandle);
+		CloseHandle32(snapshotHandle);
 		return TRUE;
 	}
 

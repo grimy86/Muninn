@@ -1,6 +1,4 @@
 #include "MemoryService.h"
-#include "ntdll.h"
-#pragma comment(lib, "ntdll.lib")
 
 namespace Corvus::Data
 {

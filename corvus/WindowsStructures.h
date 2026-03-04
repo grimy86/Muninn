@@ -1,9 +1,14 @@
 #pragma once
-#include <Windows.h>
-#include <ProcessSnapshot.h>
+#ifndef PHNT_VERSION
+#define PHNT_VERSION PHNT_WINDOWS_11
+#endif // !PHNT_VERSION
+
+// Win32 API
+#include <phnt_windows.h> 
+// Native API
+#include <phnt.h>
 #include <string>
 #include <vector>
-#include "ntdll.h"
 
 #ifndef UNDEFINED_PRIORITY_CLASS
 #define UNDEFINED_PRIORITY_CLASS 0x00000000

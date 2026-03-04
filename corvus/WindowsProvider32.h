@@ -1,9 +1,12 @@
 #pragma once
 #include "WindowsStructures.h"
+#include <ProcessSnapshot.h>
 
 namespace Corvus::Data
 {
 #pragma region WRITE
+	HANDLE OpenProcessHandle32(const DWORD processId, const ACCESS_MASK accessMask);
+	BOOL CloseHandle32(const HANDLE handle);
 	HANDLE OpenTokenHandle32(const HANDLE processHandle, const ACCESS_MASK accessMask);
 	BOOL SetSeDebugPrivilege32();
 	BOOL SetSeDebugPrivilege32(const HANDLE tokenHandle);
@@ -17,7 +20,7 @@ namespace Corvus::Data
 
 	DWORD GetTokenInfoBufferSize32(
 		const HANDLE tokenHandle,
-		const TOKEN_INFORMATION_CLASS infoClass);
+		const _TOKEN_INFORMATION_CLASS infoClass);
 
 	BOOL GetSeDebugPrivilege32(const HANDLE tokenHandle);
 

@@ -1,8 +1,15 @@
 #ifndef CORVUS_WINDOWS_STRUCTURES_H_INCLUDED
 #define CORVUS_WINDOWS_STRUCTURES_H_INCLUDED
+
+#ifndef PHNT_VERSION
+#define PHNT_VERSION PHNT_WINDOWS_11
+#endif // !PHNT_VERSION
+
+// Win32 API
+#include <phnt_windows.h>
+// Native API
+#include <phnt.h>
 #include <stdint.h>
-#include <Windows.h>
-#include "ntdll.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -211,12 +218,12 @@ extern "C" {
 		/// <summary>
 			/// Arg: TOKEN_INFORMATION_CLAS::TOKEN_STATISTICS
 			/// </summary>
-		uint64_t TokenId{};
+		uint64_t TokenId;
 
 		/// <summary>
 		/// Arg: TOKEN_INFORMATION_CLAS::TOKEN_STATISTICS
 		/// </summary>
-		uint64_t AuthenticationId{};
+		uint64_t AuthenticationId;
 
 		/// <summary>
 		/// Arg: TOKEN_INFORMATION_CLAS::TOKEN_STATISTICS
