@@ -36,6 +36,7 @@ The project emphasizes architectural clarity, deterministic behavior, and explic
 - [Build Requirements](#build-requirements)
 - [Namespace diagram](#namespace-diagram)
 - [DataTransferObject class diagrams](#datatransferobject-class-diagrams)
+- [Third-party libraries](#third-party-libraries)
 - [Contributors](#contributors)
 
 ## Purpose
@@ -156,7 +157,14 @@ Visual Studio (Desktop development with C++):
 ![Math](/Math.png)
 
 </details>
-  
+
+## Third-party Libraries
+This project uses the following third-party code:
+
+- **PHNT** – Process Hacker Native Types  
+  - License: [MIT](https://github.com/winsiderss/phnt/blob/fc1f96ee976635f51faa89896d1d805eb0586350/LICENSE)  
+  - Source: [https://github.com/processhacker/phnt](https://github.com/processhacker/phnt)
+
 ## Contributors
 Thanks to these wonderful people for contributing:
 
