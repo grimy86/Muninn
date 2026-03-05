@@ -18,13 +18,15 @@
 </table>
 
 ## Summary
-Corvus is a Windows native SDK DLL (x86 / x64) written in ISO C++20 with a deliberately minimal, exceptionless C-style design.
+Corvus is a Windows-native SDK provided as a static library with optional DLL support (x86/x64). It is written in ISO C++20 using a deliberately minimal, exceptionless C-style design.
 
 It provides structured access to low-level Windows user-mode APIs, primarily:
 - Win32
 - Native NT (ntdll)
 
 The project emphasizes architectural clarity, deterministic behavior, and explicit data modeling over convenience abstractions.
+
+> **Disclaimer**: The SDK is relatively new, and the API interface may evolve as the project matures.
 
 ## Table of contents
 - [Purpose](#purpose)
