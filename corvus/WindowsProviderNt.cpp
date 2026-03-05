@@ -1,6 +1,11 @@
 #include "WindowsProviderNt.h"
 #include "MemoryService.h"
+#include <algorithm>
 #pragma comment(lib, "ntdll.lib")
+
+#ifndef QSI_MIN_BUFFER_SIZE 
+#define QSI_MIN_BUFFER_SIZE 0x20
+#endif // !QSI_MIN_BUFFER_SIZE 
 
 #ifndef MAX_MODULES
 #define MAX_MODULES 1024
@@ -17,32 +22,62 @@
 namespace Corvus::Data
 {
 #pragma region WRITE
-	HANDLE OpenProcessHandleNt(const DWORD processId, const ACCESS_MASK accessMask)
+	CORVUS_API NTSTATUS CORVUS_CALL
+		OpenProcessHandleNt(
+			_In_ const DWORD processId,
+			_In_ const ACCESS_MASK accessMask,
+			_Out_ HANDLE* const pHandle) noexcept
 	{
+		if (!IsValidProcessId(processId))
+			return STATUS_INVALID_PARAMETER;
+		if (pHandle == nullptr)
+			return STATUS_INVALID_PARAMETER;
+
+		*pHandle = nullptr;
+
 		OBJECT_ATTRIBUTES objectAttributes{};
 		objectAttributes.Length = sizeof(OBJECT_ATTRIBUTES);
 
 		CLIENT_ID clientId{};
-		clientId.UniqueProcess = reinterpret_cast<HANDLE>(processId);
+		clientId.UniqueProcess
+			= reinterpret_cast<HANDLE>(static_cast<uintptr_t>(processId));
 		clientId.UniqueThread = nullptr;
 
-		HANDLE pHandle{ nullptr };
-		NTSTATUS status{ NtOpenProcess(&pHandle, accessMask, &objectAttributes, &clientId) };
-		if (NT_SUCCESS(status) && IsValidHandle(pHandle)) return pHandle;
-		else return nullptr;
+		NTSTATUS status{ NtOpenProcess(
+			pHandle,
+			accessMask,
+			&objectAttributes,
+			&clientId) };
+
+		if (!NT_SUCCESS(status) || !IsValidHandle(*pHandle))
+			*pHandle = nullptr;
+
+		return status;
 	}
 
-	BOOL CloseHandleNt(const HANDLE handle)
+	CORVUS_API NTSTATUS CORVUS_CALL
+		CloseHandleNt(_In_ const HANDLE handle) noexcept
 	{
-		return NT_SUCCESS(NtClose(handle));
+		if (!IsValidHandle(handle))
+			return STATUS_INVALID_HANDLE;
+
+		return NtClose(handle);
 	}
 
-	HANDLE DuplicateHandleNt(
-		const HANDLE sourceHandle,
-		const DWORD processId)
+	CORVUS_API NTSTATUS CORVUS_CALL
+		DuplicateHandleNt(
+			_In_ const HANDLE sourceHandle,
+			_In_ const DWORD processId,
+			_Out_ HANDLE* const pDuplicatedHandle) noexcept
 	{
-		if (!IsValidHandle(sourceHandle)) return nullptr;
-		if (!IsValidProcessId(processId)) return nullptr;
+		if (!IsValidHandle(sourceHandle))
+			return STATUS_INVALID_PARAMETER;
+		if (!IsValidProcessId(processId))
+			return STATUS_INVALID_PARAMETER;
+		if (pDuplicatedHandle == nullptr)
+			return STATUS_INVALID_PARAMETER;
+
+		*pDuplicatedHandle = nullptr;
 
 		OBJECT_ATTRIBUTES objectAttributes{};
 		InitializeObjectAttributes(
@@ -54,7 +89,7 @@ namespace Corvus::Data
 
 		CLIENT_ID clientId{};
 		clientId.UniqueProcess = reinterpret_cast<HANDLE>(
-			static_cast<ULONG_PTR>(processId));
+			static_cast<uintptr_t>(processId));
 		clientId.UniqueThread = nullptr;
 
 		HANDLE remoteProcessHandle{};
@@ -63,123 +98,238 @@ namespace Corvus::Data
 			PROCESS_DUP_HANDLE,
 			&objectAttributes,
 			&clientId);
-		if (!NT_SUCCESS(status)) return nullptr;
+		if (!NT_SUCCESS(status)) return status;
 
 		HANDLE duplicatedHandle{};
 		status = NtDuplicateObject(
 			remoteProcessHandle,
 			sourceHandle,
 			NT_CURRENT_PROCESS,
-			&duplicatedHandle,
+			pDuplicatedHandle,
 			0,
 			0,
 			DUPLICATE_SAME_ACCESS);
 		CloseHandleNt(remoteProcessHandle);
 
-		if (!NT_SUCCESS(status)) return nullptr;
-		else return duplicatedHandle;
+		if (!NT_SUCCESS(status))
+			*pDuplicatedHandle = nullptr;
+
+		return status;
 	}
 
-	HANDLE OpenProcessTokenHandleNt(const HANDLE processHandle, const ACCESS_MASK accessMask)
+	CORVUS_API NTSTATUS CORVUS_CALL
+		OpenProcessTokenHandleNt(
+			_In_ const HANDLE processHandle,
+			_In_ const ACCESS_MASK accessMask,
+			_Out_ HANDLE* const pTokenHandle) noexcept
 	{
-		if (!IsValidHandle(processHandle)) return nullptr;
+		if (!IsValidHandle(processHandle))
+			return STATUS_INVALID_PARAMETER;
+		if (pTokenHandle == nullptr)
+			return STATUS_INVALID_PARAMETER;
 
-		HANDLE tokenHandle{};
-		NTSTATUS status{ NtOpenProcessToken(processHandle, accessMask, &tokenHandle) };
-		if (!NT_SUCCESS(status)) return nullptr;
-		else return tokenHandle;
+		*pTokenHandle = nullptr;
+
+		NTSTATUS status{ NtOpenProcessToken(
+			processHandle,
+			accessMask,
+			pTokenHandle) };
+
+		if (!NT_SUCCESS(status))
+			*pTokenHandle = nullptr;
+
+		return status;
 	}
 #pragma endregion
 
 #pragma region READ
-	uint64_t GetFullLuidNt(const LUID& luid)
+	CORVUS_API NTSTATUS CORVUS_CALL
+		GetFullLuidNt(
+			_In_ const LUID luid,
+			_Out_ uint64_t* const pFullLuid) noexcept
 	{
-		return (uint64_t(luid.HighPart) << 32) | luid.LowPart;
+		if (pFullLuid == nullptr)
+			return STATUS_INVALID_PARAMETER;
+
+		*pFullLuid
+			= (uint64_t(luid.HighPart) << 32) |
+			uint64_t(luid.LowPart);
+
+		return STATUS_SUCCESS;
 	}
 
-	DWORD GetQSIBufferSizeNt(const SYSTEM_INFORMATION_CLASS& infoClass)
+	CORVUS_API NTSTATUS CORVUS_CALL
+		GetQSIBufferSizeNt(
+			_In_ const SYSTEM_INFORMATION_CLASS infoClass,
+			_Out_ DWORD* const pRequiredBufferSize) noexcept
 	{
-		ULONG requiredBufferSize{};
-		BYTE buffer[0x20];
+		if (pRequiredBufferSize == nullptr)
+			return STATUS_INVALID_PARAMETER;
 
-		NtQuerySystemInformation(
+		*pRequiredBufferSize = 0;
+
+		BYTE buffer[QSI_MIN_BUFFER_SIZE];
+		NTSTATUS status{ NtQuerySystemInformation(
 			infoClass,
 			buffer,
 			sizeof(buffer),
-			&requiredBufferSize);
-		if (!requiredBufferSize) return 0;
+			pRequiredBufferSize) };
 
-		return requiredBufferSize;
+		if (status != STATUS_INFO_LENGTH_MISMATCH)
+			*pRequiredBufferSize = 0;
+
+		return status;
 	}
 
-	DWORD GetQOBufferSizeNt(const HANDLE duplicatedHandle, const OBJECT_INFORMATION_CLASS& infoClass)
+	CORVUS_API NTSTATUS CORVUS_CALL
+		GetQOBufferSizeNt(
+			_In_ const HANDLE duplicatedHandle,
+			_In_ const OBJECT_INFORMATION_CLASS infoClass,
+			_Out_ DWORD* const pRequiredBufferSize) noexcept
 	{
-		if (!IsValidHandle(duplicatedHandle)) return 0;
+		if (!IsValidHandle(duplicatedHandle))
+			return STATUS_INVALID_PARAMETER;
+		if (pRequiredBufferSize == nullptr)
+			return STATUS_INVALID_PARAMETER;
 
-		ULONG requiredBufferSize{};
-		NtQueryObject(
+		*pRequiredBufferSize = 0;
+
+		NTSTATUS status{ NtQueryObject(
 			duplicatedHandle,
 			infoClass,
 			nullptr,
 			0,
-			&requiredBufferSize);
-		if (!requiredBufferSize) return 0;
+			pRequiredBufferSize) };
 
-		return requiredBufferSize;
+		if (status != STATUS_INFO_LENGTH_MISMATCH)
+			*pRequiredBufferSize = 0;
+
+		return status;
 	}
 
-	DWORD GetQITBufferSizeNt(const HANDLE tokenHandle, const TOKEN_INFORMATION_CLASS& infoClass)
+	CORVUS_API NTSTATUS CORVUS_CALL
+		GetQITBufferSizeNt(
+			_In_ const HANDLE tokenHandle,
+			_In_ const _TOKEN_INFORMATION_CLASS infoClass,
+			_Out_ DWORD* const pRequiredBufferSize) noexcept
 	{
-		if (!IsValidHandle(tokenHandle)) return 0;
+		if (!IsValidHandle(tokenHandle))
+			return STATUS_INVALID_PARAMETER;
+		if (pRequiredBufferSize == nullptr)
+			return STATUS_INVALID_PARAMETER;
 
-		ULONG requiredBufferSize{};
-		NtQueryInformationToken(
+		*pRequiredBufferSize = 0;
+
+		NTSTATUS status{ NtQueryInformationToken(
 			tokenHandle,
 			infoClass,
 			nullptr,
 			0,
-			&requiredBufferSize);
-		if (!requiredBufferSize) return 0;
+			pRequiredBufferSize) };
 
-		return requiredBufferSize;
+		if (status != STATUS_INFO_LENGTH_MISMATCH)
+			*pRequiredBufferSize = 0;
+
+		return status;
 	}
 
-	std::wstring GetObjectNameNt(const HANDLE sourceHandle, const DWORD processId)
+	CORVUS_API NTSTATUS CORVUS_CALL
+		GetObjectNameNt(
+			_In_ const HANDLE sourceHandle,
+			_In_ const DWORD processId,
+			_Out_ wchar_t* const pBuffer,
+			_In_ const DWORD bufferLength,
+			_Out_ DWORD* const pCopiedLength) noexcept
 	{
-		if (!IsValidHandle(sourceHandle)) return L"";
-		if (!IsValidProcessId(processId)) return L"";
+		if (!IsValidHandle(sourceHandle))
+			return STATUS_INVALID_PARAMETER;
+		if (!IsValidProcessId(processId))
+			return STATUS_INVALID_PARAMETER;
+		if (pBuffer == nullptr)
+			return STATUS_INVALID_PARAMETER;
+		if (pCopiedLength == nullptr)
+			return STATUS_INVALID_PARAMETER;
 
-		HANDLE duplicateHandle{ DuplicateHandleNt(sourceHandle, processId) };
-		if (!IsValidHandle(duplicateHandle)) return L"";
+		*pBuffer = L'\0';
+		*pCopiedLength = 0;
 
-		DWORD bufferSize{
-			GetQOBufferSizeNt(duplicateHandle, ObjectNameInformation) };
-		if (!bufferSize)
+		HANDLE duplicatedHandle{};
+		NTSTATUS status{ DuplicateHandleNt(
+			sourceHandle,
+			processId,
+			&duplicatedHandle) };
+
+		if (!NT_SUCCESS(status) ||
+			!IsValidHandle(duplicatedHandle))
+			return status;
+
+		DWORD requiredSize{};
+		status = GetQOBufferSizeNt(
+			duplicatedHandle,
+			ObjectNameInformation,
+			&requiredSize);
+
+		if (status != STATUS_INFO_LENGTH_MISMATCH &&
+			!NT_SUCCESS(status))
 		{
-			CloseHandleNt(duplicateHandle);
-			return L"";
+			CloseHandleNt(duplicatedHandle);
+			return status;
 		}
 
-		POBJECT_NAME_INFORMATION nameInfoBuffer{
-			reinterpret_cast<POBJECT_NAME_INFORMATION>(new BYTE[bufferSize]) };
-		NTSTATUS status{ NtQueryObject(
-			duplicateHandle, ObjectNameInformation, nameInfoBuffer, bufferSize, nullptr) };
+		if (!requiredSize)
+		{
+			CloseHandleNt(duplicatedHandle);
+			return STATUS_UNSUCCESSFUL;
+		}
+
+		BYTE* nameInfoBuffer{ new BYTE[requiredSize] };
+		status = NtQueryObject(
+			duplicatedHandle,
+			ObjectNameInformation,
+			nameInfoBuffer,
+			requiredSize,
+			nullptr);
+
 		if (!NT_SUCCESS(status))
 		{
 			delete[] nameInfoBuffer;
-			CloseHandleNt(duplicateHandle);
-			return L"";
+			CloseHandleNt(duplicatedHandle);
+			return status;
 		}
 
-		std::wstring result{};
-		if (nameInfoBuffer->Name.Buffer && nameInfoBuffer->Name.Length > 0)
-			result.assign(nameInfoBuffer->Name.Buffer, nameInfoBuffer->Name.Length / sizeof(WCHAR));
+		OBJECT_NAME_INFORMATION* nameInfo{
+			reinterpret_cast<OBJECT_NAME_INFORMATION*>(nameInfoBuffer) };
+
+		if (!NT_SUCCESS(status))
+		{
+			delete[] nameInfo;
+			CloseHandleNt(duplicatedHandle);
+			return status;
+		}
+
+		if (nameInfo->Name.Buffer &&
+			nameInfo->Name.Length > 0)
+		{
+			DWORD charsToCopy{
+				nameInfo->Name.Length / sizeof(WCHAR) };
+
+			// leave room for null terminator -> (-1)
+			if (charsToCopy >= bufferLength)
+				charsToCopy = bufferLength - 1;
+
+			for (DWORD i{}; i < charsToCopy; ++i)
+				pBuffer[i] = nameInfo->Name.Buffer[i];
+
+			pBuffer[charsToCopy] = L'\0';
+			*pCopiedLength = charsToCopy;
+		}
 
 		delete[] nameInfoBuffer;
-		CloseHandleNt(duplicateHandle);
-		return result;
+		CloseHandleNt(duplicatedHandle);
+		return STATUS_SUCCESS;
 	}
 
+	// Rework from here on down
 	std::wstring GetObjectTypeNameNt(const HANDLE sourceHandle, const DWORD processId)
 	{
 		if (!IsValidHandle(sourceHandle)) return L"";
@@ -678,9 +828,16 @@ namespace Corvus::Data
 		return TRUE;
 	};
 
-	std::vector<SYSTEM_THREAD_INFORMATION> GetProcessThreadsNt(const HANDLE processHandle, const DWORD processId)
+	CORVUS_API NTSTATUS CORVUS_CALL
+		GetProcessThreadsNt(
+			_In_ const HANDLE processHandle,
+			_In_ const DWORD processId,
+			_Out_ SYSTEM_THREAD_INFORMATION* const buffer,
+			_In_ const uint32_t bufferCount,
+			_Out_ uint32_t* const requiredCount)
 	{
-		if (!IsValidHandle(processHandle)) return {};
+		if (!IsValidHandle(processHandle))
+			return STATUS_INVALID_HANDLE;
 
 		const DWORD bufferSize{ GetQSIBufferSizeNt(SystemProcessInformation) };
 		BYTE* processInfoBuffer = new BYTE[bufferSize];
@@ -693,18 +850,18 @@ namespace Corvus::Data
 		if (!NT_SUCCESS(status))
 		{
 			delete[] processInfoBuffer;
-			return {};
+			return status;
 		}
 
 		PSYSTEM_PROCESS_INFORMATION processInfo
 		{ reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(processInfoBuffer) };
+		uint32_t threadCount{};
 		if (!processInfo)
 		{
 			delete[] processInfoBuffer;
-			return {};
+			return STATUS_UNSUCCESSFUL;
 		}
 
-		std::vector<SYSTEM_THREAD_INFORMATION> threads{};
 		while (processInfo)
 		{
 			DWORD processInfoId{ static_cast<DWORD>(
@@ -712,20 +869,28 @@ namespace Corvus::Data
 
 			if (processInfoId == processId)
 			{
-				for (ULONG i{ 0 }; i < processInfo->NumberOfThreads; ++i)
+				threadCount = processInfo->NumberOfThreads;
+				if (requiredCount)
+					*requiredCount = threadCount;
+
+				if (buffer)
 				{
-					const SYSTEM_THREAD_INFORMATION& sThreadInfo = processInfo->Threads[i];
-					threads.push_back(sThreadInfo);
-				} break;
+					uint32_t toCopy{ std::min(bufferCount, threadCount) };
+
+					for (uint32_t i{}; i < toCopy; ++i)
+						buffer[i] = processInfo->Threads[i];
+				}
+				break;
 			}
-			if (processInfo->NextEntryOffset == 0) break;
+			if (processInfo->NextEntryOffset == 0)
+				break;
 
 			processInfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(
 				reinterpret_cast<BYTE*>(processInfo) +
 				processInfo->NextEntryOffset);
 		}
 		delete[] processInfoBuffer;
-		return threads;
+		return STATUS_SUCCESS;
 	}
 
 	/*
@@ -734,12 +899,12 @@ namespace Corvus::Data
 		if (!IsValidHandle(processHandle)) return {};
 		if (!IsValidProcessId(processId)) return {};
 
-		const DWORD bufferSize{ GetQSIBufferSizeNt(SystemProcessInformation) };
-		BYTE* processInfoBuffer = new BYTE[bufferSize];
+		const DWORD requiredSize{ GetQSIBufferSizeNt(SystemProcessInformation) };
+		BYTE* processInfoBuffer = new BYTE[requiredSize];
 		NTSTATUS status{ NtQuerySystemInformation(
 			SystemProcessInformation,
 			processInfoBuffer,
-			bufferSize,
+			requiredSize,
 			nullptr) };
 
 		if (!NT_SUCCESS(status))
@@ -788,12 +953,12 @@ namespace Corvus::Data
 		if (!IsValidHandle(processHandle)) return FALSE;
 		if (!IsValidProcessId(processId)) return FALSE;
 
-		const DWORD bufferSize{ GetQSIBufferSizeNt(SystemProcessInformation) };
-		BYTE* processInfoBuffer = new BYTE[bufferSize];
+		const DWORD requiredSize{ GetQSIBufferSizeNt(SystemProcessInformation) };
+		BYTE* processInfoBuffer = new BYTE[requiredSize];
 		NTSTATUS status{ NtQuerySystemInformation(
 			SystemProcessInformation,
 			processInfoBuffer,
-			bufferSize,
+			requiredSize,
 			nullptr) };
 
 		if (!NT_SUCCESS(status))
@@ -850,12 +1015,12 @@ namespace Corvus::Data
 			if (!IsValidHandle(processHandle)) return FALSE;
 			if (!IsValidProcessId(processId)) return FALSE;
 
-			const DWORD bufferSize{ GetQSIBufferSizeNt(SystemExtendedProcessInformation) };
-			BYTE* processInfoBuffer = new BYTE[bufferSize];
+			const DWORD requiredSize{ GetQSIBufferSizeNt(SystemExtendedProcessInformation) };
+			BYTE* processInfoBuffer = new BYTE[requiredSize];
 			NTSTATUS status{ NtQuerySystemInformation(
 				SystemExtendedProcessInformation,
 				processInfoBuffer,
-				bufferSize,
+				requiredSize,
 				nullptr) };
 
 			if (!NT_SUCCESS(status))
@@ -1015,7 +1180,7 @@ namespace Corvus::Data
 		if (!IsValidHandle(tokenHandle)) return {};
 
 		TOKEN_STATISTICS statisticsBuffer{};
-		// requiredBufferSize, the tarnished one
+		// pRequiredBufferSize, the tarnished one
 		DWORD requiredBufferSize{};
 		NTSTATUS status{ NtQueryInformationToken(
 			tokenHandle,
@@ -1075,7 +1240,7 @@ namespace Corvus::Data
 		if (!IsValidHandle(tokenHandle)) return {};
 
 		ULONG sessionIdBuffer{};
-		// requiredBufferSize, the tarnished one
+		// pRequiredBufferSize, the tarnished one
 		DWORD requiredBufferSize{};
 		NTSTATUS status{ NtQueryInformationToken(
 			tokenHandle,
@@ -1119,18 +1284,18 @@ namespace Corvus::Data
 	/*
 	std::vector<Corvus::Object::ProcessEntry> WindowsProviderNt::QueryProcesses()
 	{
-		const DWORD bufferSize{ Corvus::Service::GetQSIBufferSizeNt(SystemProcessInformation) };
-		std::unique_ptr<BYTE[]> buffer(new BYTE[bufferSize]);
+		const DWORD requiredSize{ Corvus::Service::GetQSIBufferSizeNt(SystemProcessInformation) };
+		std::unique_ptr<BYTE[]> pBuffer(new BYTE[requiredSize]);
 		NTSTATUS systemInfoStatus{ NtQuerySystemInformation(
 			SystemProcessInformation,
-			buffer.get(),
-			bufferSize,
+			pBuffer.get(),
+			requiredSize,
 			nullptr) };
 
 		if (!NT_SUCCESS(systemInfoStatus)) return {};
 
 		std::vector<Corvus::Object::ProcessEntry> processList{};
-		PSYSTEM_PROCESS_INFORMATION processInfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(buffer.get());
+		PSYSTEM_PROCESS_INFORMATION processInfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(pBuffer.get());
 		while (processInfo)
 		{
 			Corvus::Object::ProcessEntry pEntry{};
