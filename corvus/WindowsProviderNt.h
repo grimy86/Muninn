@@ -37,10 +37,10 @@ namespace Corvus::Data
 		OpenProcessHandleNt(
 			_In_ const DWORD processId,
 			_In_ const ACCESS_MASK accessMask,
-			_Out_ HANDLE* const pHandle);
+			_Out_ HANDLE* const pHandle) noexcept;
 
 	CORVUS_API NTSTATUS CORVUS_CALL
-		CloseHandleNt(_In_ const HANDLE handle);
+		CloseHandleNt(_In_ const HANDLE handle) noexcept;
 
 	/// <summary>
 	/// Handles are per-process, duplicating allows us to safely query objects from another process.
@@ -133,7 +133,8 @@ namespace Corvus::Data
 		GetObjectNameNt(
 			_In_ const HANDLE sourceHandle,
 			_In_ const DWORD processId,
-			_Out_ WCHAR* const pBuffer,
+			_Out_writes_(bufferLength)
+			WCHAR* const pBuffer,
 			_In_ const DWORD bufferLength,
 			_Out_ DWORD* const pCopiedLength) noexcept;
 
@@ -155,16 +156,17 @@ namespace Corvus::Data
 		GetObjectTypeNameNt(
 			_In_ const HANDLE sourceHandle,
 			_In_ const DWORD processId,
-			_Out_ WCHAR* const pBuffer,
+			_Out_writes_(bufferLength)
+			WCHAR* const pBuffer,
 			_In_ const DWORD bufferLength,
 			_Out_ DWORD* const pCopiedLength) noexcept;
 
-	// To do
 	CORVUS_API NTSTATUS CORVUS_CALL
 		GetRemoteUnicodeStringNt(
 			_In_ const HANDLE processHandle,
 			_In_ const UNICODE_STRING* const pRemoteUnicodeString,
-			_Out_ WCHAR* const pBuffer,
+			_Out_writes_(bufferLength)
+			WCHAR* const pBuffer,
 			_In_ const DWORD bufferLength,
 			_Out_ DWORD* const pCopiedLength) noexcept;
 
@@ -181,14 +183,16 @@ namespace Corvus::Data
 	CORVUS_API NTSTATUS CORVUS_CALL
 		GetImageFileNameNt(
 			_In_ const HANDLE processHandle,
-			_Out_ WCHAR* const pBuffer,
+			_Out_writes_(bufferLength)
+			WCHAR* const pBuffer,
 			_In_ const DWORD bufferLength,
 			_Out_ DWORD* const pCopiedLength) noexcept;
 
 	CORVUS_API NTSTATUS CORVUS_CALL
 		GetImageFileNameWin32Nt(
 			_In_ const HANDLE processHandle,
-			_Out_ WCHAR* const pBuffer,
+			_Out_writes_(bufferLength)
+			WCHAR* const pBuffer,
 			_In_ const DWORD bufferLength,
 			_Out_ DWORD* const pCopiedLength) noexcept;
 
@@ -242,27 +246,28 @@ namespace Corvus::Data
 	/// </summary>
 	/// <param name="processHandle"> A handle to the process. </param>
 	/// <returns> The module base address of the process. </returns>
-	CORVUS_API uintptr_t CORVUS_CALL GetModuleBaseAddressNt(const HANDLE processHandle);
+	CORVUS_API NTSTATUS CORVUS_CALL
+		GetModuleBaseAddressNt(
+			_In_ const HANDLE processHandle,
+			_Out_ uintptr_t* const pModuleBaseAddress) noexcept;
 
-	/// <summary>
-	/// Initializes the PEB base address using processInfo instead of calling the GetPebBaseAddressNt() function.
-	/// </summary>
 	/// <param name="processHandle"> A handle to the process. </param>
 	/// <param name="processInfo"> The extended native process structure containing the PEB base address. </param>
 	/// <returns> The module base address of the process. </returns>
-	CORVUS_API uintptr_t CORVUS_CALL GetModuleBaseAddressNt(
-		const HANDLE processHandle,
-		const PROCESS_EXTENDED_BASIC_INFORMATION& processInfo);
+	CORVUS_API NTSTATUS CORVUS_CALL
+		GetModuleBaseAddressFromProcessInfoNt(
+			_In_ const HANDLE processHandle,
+			_In_ const PROCESS_EXTENDED_BASIC_INFORMATION* const processInfo,
+			_Out_ uintptr_t* const pModuleBaseAddress) noexcept;
 
-	/// <summary>
-	/// Initializes the PEB using ReadVirtualMemoryNt<PEB>(processHandle, pebBaseAddress, peb)
-	/// </summary>
 	/// <param name="processHandle"> A handle to the process. </param>
 	/// <param name="pebBaseAddress"> The PEB base address. </param>
 	/// <returns></returns>
-	CORVUS_API uintptr_t CORVUS_CALL GetModuleBaseAddressNt(
-		const HANDLE processHandle,
-		const uintptr_t pebBaseAddress);
+	CORVUS_API NTSTATUS CORVUS_CALL
+		GetModuleBaseAddressFromPebBaseAddressNt(
+			_In_ const HANDLE processHandle,
+			_In_ const uintptr_t* const pPebBaseAddress,
+			_Out_ uintptr_t* const pModuleBaseAddress) noexcept;
 
 	/// <summary>
 	/// Directly uses the PEB from reference.
@@ -270,21 +275,33 @@ namespace Corvus::Data
 	/// <param name="processHandle"> A handle to the process. </param>
 	/// <param name="pebBaseAddress"> The PEB base address. </param>
 	/// <returns></returns>
-	CORVUS_API uintptr_t CORVUS_CALL GetModuleBaseAddressNt(const HANDLE processHandle, const PEB& peb);
+	CORVUS_API NTSTATUS CORVUS_CALL
+		GetModuleBaseAddressFromPebNt(
+			_In_ const HANDLE processHandle,
+			_In_ const PEB* const pPeb,
+			_Out_ uintptr_t* const pModuleBaseAddress) noexcept;
 
 	/// <summary>
-	/// IF ProcessWow64Information is not NULL, the process is running under WoW64 and is a 32-bit process.
+	/// If wow64Info is not NULL, the process is running under WoW64 and is a 32-bit process.
 	/// <para> If it is NULL, the process is running natively and is a 64-bit process. </para>
 	/// </summary>
 	/// <param name="processHandle"> A handle to the process. </param>
 	/// <returns>
-	/// Corvus::Object::ArchitectureType
+	/// ProcessWow64Information
 	/// </returns>
-	CORVUS_API Corvus::Object::ArchitectureType CORVUS_CALL GetArchitectureTypeNt(const HANDLE processHandle);
+	CORVUS_API NTSTATUS CORVUS_CALL
+		GetWow64InfoNt(
+			_In_ const HANDLE processHandle,
+			_Out_ ULONG_PTR* const wow64Info) noexcept;
 
-	CORVUS_API std::vector<LDR_DATA_TABLE_ENTRY> CORVUS_CALL GetProcessModulesNt(
-		const HANDLE processHandle,
-		const PEB& peb);
+	CORVUS_API NTSTATUS CORVUS_CALL
+		GetProcessModulesNt(
+			_In_ const HANDLE processHandle,
+			_In_ const PEB* const pPeb,
+			_Out_writes_(bufferLength)
+			LDR_DATA_TABLE_ENTRY* const pBuffer,
+			_In_ const DWORD bufferLength,
+			_Out_ DWORD* const pCopiedLength) noexcept;
 
 	/// <summary>
 	/// Adds module entry objects to the list of module entry objects.
@@ -368,7 +385,7 @@ CORVUS_API BOOL CORVUS_CALL GetProcessInformationObjectExtendedNt(
 */
 
 
-	/*
+/*
 /// <summary>
 /// EXPERIMENTAL: SYSTEM_EXTENDED_THREAD_INFORMATION @ SYSTEM_PROCESS_INFORMATION.
 /// </summary>
