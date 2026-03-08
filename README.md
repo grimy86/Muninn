@@ -18,7 +18,9 @@
 </table>
 
 ## Summary
-Muninn is a Windows-native SDK provided as a static library with optional DLL support (x86/x64). It is written in ISO C++20 using a deliberately minimal, exceptionless C-style design.
+Muninn is a Windows-native SDK (x86/x64) implemented in ISO C++20.
+It exposes a minimal, exceptionless, C-style API with a stable C ABI (`extern "C"`),
+enabling straightforward integration with languages such as C#, Rust, and Python.
 
 It provides structured access to low-level Windows user-mode APIs, primarily:
 - Win32
