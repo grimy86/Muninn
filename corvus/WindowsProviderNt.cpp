@@ -1,3 +1,4 @@
+#define NOMINMAX
 #include "WindowsProviderNt.h"
 #include "MemoryService.h"
 #include <algorithm>
@@ -37,9 +38,9 @@ namespace Corvus::Data
 			_Out_ HANDLE* const pHandle) noexcept
 	{
 		if (!IsValidProcessId(processId))
-			return STATUS_INVALID_PARAMETER;
+			return STATUS_INVALID_PARAMETER_1;
 		if (pHandle == nullptr)
-			return STATUS_INVALID_PARAMETER;
+			return STATUS_INVALID_PARAMETER_3;
 
 		*pHandle = nullptr;
 
@@ -57,7 +58,7 @@ namespace Corvus::Data
 			&objectAttributes,
 			&clientId) };
 
-		if (!NT_SUCCESS(status) || !IsValidHandle(*pHandle))
+		if (!IsValidHandle(*pHandle))
 			*pHandle = nullptr;
 
 		return status;
@@ -67,7 +68,8 @@ namespace Corvus::Data
 		CloseHandleNt(_In_ const HANDLE handle) noexcept
 	{
 		if (!IsValidHandle(handle))
-			return STATUS_INVALID_HANDLE;
+			// previously STATUS_INVALID_HANDLE
+			return STATUS_INVALID_PARAMETER_1;
 
 		return NtClose(handle);
 	}
@@ -79,21 +81,22 @@ namespace Corvus::Data
 			_Out_ HANDLE* const pDuplicatedHandle) noexcept
 	{
 		if (!IsValidHandle(sourceHandle))
-			return STATUS_INVALID_PARAMETER;
+			return STATUS_INVALID_PARAMETER_1;
 		if (!IsValidProcessId(processId))
-			return STATUS_INVALID_PARAMETER;
+			return STATUS_INVALID_PARAMETER_2;
 		if (pDuplicatedHandle == nullptr)
-			return STATUS_INVALID_PARAMETER;
+			return STATUS_INVALID_PARAMETER_3;
 
 		*pDuplicatedHandle = nullptr;
 
+		// Prefer explicity over InitializeObjectAttributes(p, n, a, r, s)
 		OBJECT_ATTRIBUTES objectAttributes{};
-		InitializeObjectAttributes(
-			&objectAttributes,
-			nullptr,
-			0,
-			nullptr,
-			nullptr);
+		objectAttributes.Length = sizeof(OBJECT_ATTRIBUTES);
+		objectAttributes.ObjectName = nullptr;
+		objectAttributes.Attributes = 0ul;
+		objectAttributes.RootDirectory = nullptr;
+		objectAttributes.SecurityDescriptor = nullptr;
+		objectAttributes.SecurityQualityOfService = nullptr;
 
 		CLIENT_ID clientId{};
 		clientId.UniqueProcess = reinterpret_cast<HANDLE>(
@@ -114,8 +117,8 @@ namespace Corvus::Data
 			sourceHandle,
 			NT_CURRENT_PROCESS,
 			pDuplicatedHandle,
-			0,
-			0,
+			0ul,
+			0ul,
 			DUPLICATE_SAME_ACCESS);
 		CloseHandleNt(remoteProcessHandle);
 
@@ -132,9 +135,9 @@ namespace Corvus::Data
 			_Out_ HANDLE* const pTokenHandle) noexcept
 	{
 		if (!IsValidHandle(processHandle))
-			return STATUS_INVALID_PARAMETER;
+			return STATUS_INVALID_PARAMETER_1;
 		if (pTokenHandle == nullptr)
-			return STATUS_INVALID_PARAMETER;
+			return STATUS_INVALID_PARAMETER_3;
 
 		*pTokenHandle = nullptr;
 
@@ -157,10 +160,10 @@ namespace Corvus::Data
 			_Out_ uint64_t* const pFullLuid) noexcept
 	{
 		if (pFullLuid == nullptr)
-			return STATUS_INVALID_PARAMETER;
+			return STATUS_INVALID_PARAMETER_2;
 
 		*pFullLuid
-			= (uint64_t(luid.HighPart) << 32) |
+			= (uint64_t(luid.HighPart) << 32l) |
 			uint64_t(luid.LowPart);
 
 		return STATUS_SUCCESS;
@@ -172,9 +175,9 @@ namespace Corvus::Data
 			_Out_ DWORD* const pRequiredBufferSize) noexcept
 	{
 		if (pRequiredBufferSize == nullptr)
-			return STATUS_INVALID_PARAMETER;
+			return STATUS_INVALID_PARAMETER_2;
 
-		*pRequiredBufferSize = 0;
+		*pRequiredBufferSize = 0ul;
 
 		BYTE buffer[QSI_MIN_BUFFER_SIZE];
 		NTSTATUS status{ NtQuerySystemInformation(
@@ -184,7 +187,7 @@ namespace Corvus::Data
 			pRequiredBufferSize) };
 
 		if (status != STATUS_INFO_LENGTH_MISMATCH)
-			*pRequiredBufferSize = 0;
+			*pRequiredBufferSize = 0ul;
 
 		return status;
 	}
@@ -196,21 +199,21 @@ namespace Corvus::Data
 			_Out_ DWORD* const pRequiredBufferSize) noexcept
 	{
 		if (!IsValidHandle(duplicatedHandle))
-			return STATUS_INVALID_PARAMETER;
+			return STATUS_INVALID_PARAMETER_1;
 		if (pRequiredBufferSize == nullptr)
-			return STATUS_INVALID_PARAMETER;
+			return STATUS_INVALID_PARAMETER_3;
 
-		*pRequiredBufferSize = 0;
+		*pRequiredBufferSize = 0ul;
 
 		NTSTATUS status{ NtQueryObject(
 			duplicatedHandle,
 			infoClass,
 			nullptr,
-			0,
+			0ul,
 			pRequiredBufferSize) };
 
 		if (status != STATUS_INFO_LENGTH_MISMATCH)
-			*pRequiredBufferSize = 0;
+			*pRequiredBufferSize = 0ul;
 
 		return status;
 	}
@@ -222,11 +225,11 @@ namespace Corvus::Data
 			_Out_ DWORD* const pRequiredBufferSize) noexcept
 	{
 		if (!IsValidHandle(tokenHandle))
-			return STATUS_INVALID_PARAMETER;
+			return STATUS_INVALID_PARAMETER_1;
 		if (pRequiredBufferSize == nullptr)
-			return STATUS_INVALID_PARAMETER;
+			return STATUS_INVALID_PARAMETER_3;
 
-		*pRequiredBufferSize = 0;
+		*pRequiredBufferSize = 0ul;
 
 		NTSTATUS status{ NtQueryInformationToken(
 			tokenHandle,
@@ -236,7 +239,7 @@ namespace Corvus::Data
 			pRequiredBufferSize) };
 
 		if (status != STATUS_INFO_LENGTH_MISMATCH)
-			*pRequiredBufferSize = 0;
+			*pRequiredBufferSize = 0ul;
 
 		return status;
 	}
@@ -245,20 +248,24 @@ namespace Corvus::Data
 		GetObjectNameNt(
 			_In_ const HANDLE sourceHandle,
 			_In_ const DWORD processId,
-			_Out_ WCHAR* const pBuffer,
+			_Out_writes_(bufferLength)
+			WCHAR* const pBuffer,
 			_In_ const DWORD bufferLength,
 			_Out_ DWORD* const pCopiedLength) noexcept
 	{
 		if (!IsValidHandle(sourceHandle))
-			return STATUS_INVALID_PARAMETER;
+			return STATUS_INVALID_PARAMETER_1;
 		if (!IsValidProcessId(processId))
-			return STATUS_INVALID_PARAMETER;
-		if (pBuffer == nullptr ||
-			pCopiedLength == nullptr)
-			return STATUS_INVALID_PARAMETER;
+			return STATUS_INVALID_PARAMETER_2;
+		if (pBuffer == nullptr)
+			return STATUS_INVALID_PARAMETER_3;
+		if (bufferLength == 0ul)
+			return STATUS_BUFFER_TOO_SMALL;
+		if (pCopiedLength == nullptr)
+			return STATUS_INVALID_PARAMETER_5;
 
 		*pBuffer = L'\0';
-		*pCopiedLength = 0;
+		*pCopiedLength = 0ul;
 
 		HANDLE duplicatedHandle{};
 		NTSTATUS status{ DuplicateHandleNt(
@@ -266,9 +273,11 @@ namespace Corvus::Data
 			processId,
 			&duplicatedHandle) };
 
-		if (!NT_SUCCESS(status) ||
-			!IsValidHandle(duplicatedHandle))
+		if (!NT_SUCCESS(status))
 			return status;
+
+		if (!IsValidHandle(duplicatedHandle))
+			return STATUS_INVALID_HANDLE;
 
 		DWORD requiredSize{};
 		status = GetQOBufferSizeNt(
@@ -313,9 +322,9 @@ namespace Corvus::Data
 			DWORD charsToCopy{
 				nameInfo->Name.Length / sizeof(WCHAR) };
 
-			// leave room for null terminator -> (-1)
+			// leave room for null terminator -> (-1ul)
 			if (charsToCopy >= bufferLength)
-				charsToCopy = bufferLength - 1;
+				charsToCopy = bufferLength - 1ul;
 
 			for (DWORD i{}; i < charsToCopy; ++i)
 				pBuffer[i] = nameInfo->Name.Buffer[i];
@@ -334,20 +343,24 @@ namespace Corvus::Data
 		GetObjectTypeNameNt(
 			_In_ const HANDLE sourceHandle,
 			_In_ const DWORD processId,
-			_Out_ WCHAR* const pBuffer,
+			_Out_writes_(bufferLength)
+			WCHAR* const pBuffer,
 			_In_ const DWORD bufferLength,
 			_Out_ DWORD* const pCopiedLength) noexcept
 	{
 		if (!IsValidHandle(sourceHandle))
-			return STATUS_INVALID_PARAMETER;
+			return STATUS_INVALID_PARAMETER_1;
 		if (!IsValidProcessId(processId))
-			return STATUS_INVALID_PARAMETER;
-		if (pBuffer == nullptr ||
-			pCopiedLength == nullptr)
-			return STATUS_INVALID_PARAMETER;
+			return STATUS_INVALID_PARAMETER_2;
+		if (pBuffer == nullptr)
+			return STATUS_INVALID_PARAMETER_3;
+		if (bufferLength == 0ul)
+			return STATUS_BUFFER_TOO_SMALL;
+		if (pCopiedLength == nullptr)
+			return STATUS_INVALID_PARAMETER_5;
 
 		*pBuffer = L'\0';
-		*pCopiedLength = 0;
+		*pCopiedLength = 0ul;
 
 		HANDLE duplicatedHandle{};
 		NTSTATUS status{ DuplicateHandleNt(
@@ -355,9 +368,11 @@ namespace Corvus::Data
 			processId,
 			&duplicatedHandle) };
 
-		if (!NT_SUCCESS(status) ||
-			!IsValidHandle(duplicatedHandle))
+		if (!NT_SUCCESS(status))
 			return status;
+
+		if (!IsValidHandle(duplicatedHandle))
+			return STATUS_INVALID_HANDLE;
 
 		DWORD requiredSize{};
 		status = GetQOBufferSizeNt(
@@ -402,9 +417,9 @@ namespace Corvus::Data
 			DWORD charsToCopy{
 				typeInfo->TypeName.Length / sizeof(WCHAR) };
 
-			// leave room for null terminator -> (-1)
+			// leave room for null terminator -> (-1ul)
 			if (charsToCopy >= bufferLength)
-				charsToCopy = bufferLength - 1;
+				charsToCopy = bufferLength - 1ul;
 
 			for (DWORD i{}; i < charsToCopy; ++i)
 				pBuffer[i] = typeInfo->TypeName.Buffer[i];
@@ -422,33 +437,35 @@ namespace Corvus::Data
 		GetRemoteUnicodeStringNt(
 			_In_ const HANDLE processHandle,
 			_In_ const UNICODE_STRING* const pRemoteUnicodeString,
-			_Out_ WCHAR* const pBuffer,
+			_Out_writes_(bufferLength)
+			WCHAR* const pBuffer,
 			_In_ const DWORD bufferLength,
 			_Out_ DWORD* const pCopiedLength) noexcept
 	{
 		if (!IsValidHandle(processHandle))
-			return STATUS_INVALID_PARAMETER;
-		if (pRemoteUnicodeString == nullptr ||
-			pBuffer == nullptr ||
-			pCopiedLength == nullptr)
-			return STATUS_INVALID_PARAMETER;
-	
-		if (bufferLength == 0)
+			return STATUS_INVALID_PARAMETER_1;
+		if (pRemoteUnicodeString == nullptr)
+			return STATUS_INVALID_PARAMETER_2;
+		if (pBuffer == nullptr)
+			return STATUS_INVALID_PARAMETER_3;
+		if (bufferLength == 0ul)
 			return STATUS_BUFFER_TOO_SMALL;
+		if (pCopiedLength == nullptr)
+			return STATUS_INVALID_PARAMETER_5;
 
 		*pBuffer = L'\0';
-		*pCopiedLength = 0;
+		*pCopiedLength = 0ul;
 
 		// The string is empty
 		if (pRemoteUnicodeString->Buffer == nullptr ||
 			pRemoteUnicodeString->Length == 0)
 			return STATUS_SUCCESS;
 
-		DWORD charsToCopy {
+		DWORD charsToCopy{
 			pRemoteUnicodeString->Length / sizeof(WCHAR) };
 
 		if (charsToCopy >= bufferLength)
-			charsToCopy = bufferLength - 1;
+			charsToCopy = bufferLength - 1ul;
 
 		SIZE_T bytesToRead{
 			charsToCopy * sizeof(WCHAR) };
@@ -475,15 +492,15 @@ namespace Corvus::Data
 			_Out_ SYSTEM_PROCESS_INFORMATION* const pSystemProcessInfo) noexcept
 	{
 		if (!IsValidHandle(processHandle))
-			return STATUS_INVALID_PARAMETER;
+			return STATUS_INVALID_PARAMETER_1;
 		if (pSystemProcessInfo == nullptr)
-			return STATUS_INVALID_PARAMETER;
+			return STATUS_INVALID_PARAMETER_2;
 
 		*pSystemProcessInfo = {};
 
-		const DWORD requiredBufferSize{ 
+		const DWORD requiredBufferSize{
 			GetQSIBufferSizeNt(SystemProcessInformation) };
-		BYTE* systemInfoBuffer{ 
+		BYTE* systemInfoBuffer{
 			new BYTE[requiredBufferSize] };
 
 		NTSTATUS status{ NtQuerySystemInformation(
@@ -493,21 +510,20 @@ namespace Corvus::Data
 			nullptr) };
 
 		if (!NT_SUCCESS(status))
-		{
 			delete[] systemInfoBuffer;
-			return status;
-		}
+
+		return status;
 	}
 
 	CORVUS_API NTSTATUS CORVUS_CALL
-	GetProcessInformationNt(
-		_In_ const HANDLE processHandle,
-		_Out_ PROCESS_EXTENDED_BASIC_INFORMATION* const pProcessInfo) noexcept
+		GetProcessInformationNt(
+			_In_ const HANDLE processHandle,
+			_Out_ PROCESS_EXTENDED_BASIC_INFORMATION* const pProcessInfo) noexcept
 	{
 		if (!IsValidHandle(processHandle))
-			return STATUS_INVALID_PARAMETER;
+			return STATUS_INVALID_PARAMETER_1;
 		if (pProcessInfo == nullptr)
-			return STATUS_INVALID_PARAMETER;
+			return STATUS_INVALID_PARAMETER_2;
 
 		*pProcessInfo = {};
 
@@ -524,22 +540,25 @@ namespace Corvus::Data
 		return status;
 	}
 
-	// revisit
 	CORVUS_API NTSTATUS CORVUS_CALL
 		GetImageFileNameNt(
 			_In_ const HANDLE processHandle,
-			_Out_ WCHAR* const pBuffer,
+			_Out_writes_(bufferLength)
+			WCHAR* const pBuffer,
 			_In_ const DWORD bufferLength,
 			_Out_ DWORD* const pCopiedLength) noexcept
 	{
 		if (!IsValidHandle(processHandle))
-			return STATUS_INVALID_PARAMETER;
-		if (pBuffer == nullptr ||
-			pCopiedLength == nullptr)
-			return STATUS_INVALID_PARAMETER;
+			return STATUS_INVALID_PARAMETER_1;
+		if (pBuffer == nullptr)
+			return STATUS_INVALID_PARAMETER_2;
+		if (bufferLength == 0ul)
+			return STATUS_BUFFER_TOO_SMALL;
+		if (pCopiedLength == nullptr)
+			return STATUS_INVALID_PARAMETER_4;
 
 		*pBuffer = L'\0';
-		*pCopiedLength = 0;
+		*pCopiedLength = 0ul;
 
 		BYTE imageFileNameBuffer[MAX_PATH]{};
 		NTSTATUS status{ NtQueryInformationProcess(
@@ -562,7 +581,7 @@ namespace Corvus::Data
 				pImageFileName->Length / sizeof(WCHAR) };
 
 			if (charsToCopy >= bufferLength)
-				charsToCopy = bufferLength - 1;
+				charsToCopy = bufferLength - 1ul;
 
 			for (DWORD i{}; i < charsToCopy; ++i)
 				pBuffer[i] = pImageFileName->Buffer[i];
@@ -574,22 +593,25 @@ namespace Corvus::Data
 		return status;
 	}
 
-	// revisit
 	CORVUS_API NTSTATUS CORVUS_CALL
 		GetImageFileNameWin32Nt(
 			_In_ const HANDLE processHandle,
-			_Out_ WCHAR* const pBuffer,
+			_Out_writes_(bufferLength)
+			WCHAR* const pBuffer,
 			_In_ const DWORD bufferLength,
 			_Out_ DWORD* const pCopiedLength) noexcept
 	{
 		if (!IsValidHandle(processHandle))
-			return STATUS_INVALID_PARAMETER;
-		if (pBuffer == nullptr ||
-			pCopiedLength == nullptr)
-			return STATUS_INVALID_PARAMETER;
+			return STATUS_INVALID_PARAMETER_1;
+		if (pBuffer == nullptr)
+			return STATUS_INVALID_PARAMETER_2;
+		if (bufferLength == 0ul)
+			return STATUS_BUFFER_TOO_SMALL;
+		if (pCopiedLength == nullptr)
+			return STATUS_INVALID_PARAMETER_4;
 
 		*pBuffer = L'\0';
-		*pCopiedLength = 0;
+		*pCopiedLength = 0ul;
 
 		BYTE imageFileNameBuffer[MAX_PATH]{};
 		NTSTATUS status{ NtQueryInformationProcess(
@@ -612,7 +634,7 @@ namespace Corvus::Data
 				pImageFileName->Length / sizeof(WCHAR) };
 
 			if (charsToCopy >= bufferLength)
-				charsToCopy = bufferLength - 1;
+				charsToCopy = bufferLength - 1ul;
 
 			for (DWORD i{}; i < charsToCopy; ++i)
 				pBuffer[i] = pImageFileName->Buffer[i];
@@ -663,12 +685,12 @@ namespace Corvus::Data
 		if (!IsValidHandle(processHandle)) return FALSE;
 		if (!IsValidProcessId(processId)) return FALSE;
 
-		const DWORD bufferSize{ GetQSIBufferSizeNt(SystemProcessInformation) };
-		BYTE* systemInfoBuffer = new BYTE[bufferSize];
+		const DWORD requiredBufferSize{ GetQSIBufferSizeNt(SystemProcessInformation) };
+		BYTE* systemInfoBuffer = new BYTE[requiredBufferSize];
 		NTSTATUS qsiStatus{ NtQuerySystemInformation(
 			SystemProcessInformation,
 			systemInfoBuffer,
-			bufferSize,
+			requiredBufferSize,
 			nullptr) };
 
 		if (!NT_SUCCESS(qsiStatus))
@@ -725,21 +747,21 @@ namespace Corvus::Data
 	*/
 
 	CORVUS_API NTSTATUS CORVUS_CALL
-	GetPebBaseAddressNt(
-		_In_ const HANDLE processHandle,
-		_Out_ uintptr_t* const pPebBaseAddress) noexcept
+		GetPebBaseAddressNt(
+			_In_ const HANDLE processHandle,
+			_Out_ uintptr_t* const pPebBaseAddress) noexcept
 	{
 		if (!IsValidHandle(processHandle))
-			return STATUS_INVALID_PARAMETER;
+			return STATUS_INVALID_PARAMETER_1;
 		if (pPebBaseAddress == nullptr)
-			return STATUS_INVALID_PARAMETER;
-		
-		*pPebBaseAddress = 0U;
+			return STATUS_INVALID_PARAMETER_2;
+
+		*pPebBaseAddress = 0ull;
 
 		PROCESS_EXTENDED_BASIC_INFORMATION processInfo{};
 		NTSTATUS status{ GetProcessInformationNt(
 			processHandle,
-			&processInfo)};
+			&processInfo) };
 
 		if (!NT_SUCCESS(status))
 			return status;
@@ -749,7 +771,7 @@ namespace Corvus::Data
 
 		if (!IsValidAddress(*pPebBaseAddress))
 		{
-			*pPebBaseAddress = 0U;
+			*pPebBaseAddress = 0ull;
 			return STATUS_UNSUCCESSFUL;
 		}
 
@@ -761,16 +783,17 @@ namespace Corvus::Data
 			_In_ const PROCESS_EXTENDED_BASIC_INFORMATION* const pProcessInfo,
 			_Out_ uintptr_t* const pPebBaseAddress) noexcept
 	{
-		if (pProcessInfo == nullptr ||
-			pPebBaseAddress == nullptr)
-			return STATUS_INVALID_PARAMETER;
+		if (pProcessInfo == nullptr)
+			return STATUS_INVALID_PARAMETER_2;
+		if (pPebBaseAddress == nullptr)
+			return STATUS_INVALID_PARAMETER_2;
 
 		*pPebBaseAddress =
 			reinterpret_cast<uintptr_t>(pProcessInfo->BasicInfo.PebBaseAddress);
 
 		if (!IsValidAddress(*pPebBaseAddress))
 		{
-			*pPebBaseAddress = 0U;
+			*pPebBaseAddress = 0ull;
 			return STATUS_UNSUCCESSFUL;
 		}
 
@@ -789,7 +812,7 @@ namespace Corvus::Data
 			pProcessInfo == nullptr)
 			return STATUS_INVALID_PARAMETER;
 
-		*pPebBaseAddress = 0U;
+		*pPebBaseAddress = 0ull;
 		*pProcessInfo = {};
 
 		NTSTATUS status{ GetProcessInformationNt(
@@ -804,7 +827,7 @@ namespace Corvus::Data
 
 		if (!IsValidAddress(*pPebBaseAddress))
 		{
-			*pPebBaseAddress = 0U;
+			*pPebBaseAddress = 0ull;
 			*pProcessInfo = {};
 			return STATUS_UNSUCCESSFUL;
 		}
@@ -818,9 +841,9 @@ namespace Corvus::Data
 			_Out_ PEB* const pPeb) noexcept
 	{
 		if (!IsValidHandle(processHandle))
-			return STATUS_INVALID_PARAMETER;
-		if(pPeb == nullptr)
-			return STATUS_INVALID_PARAMETER;
+			return STATUS_INVALID_PARAMETER_1;
+		if (pPeb == nullptr)
+			return STATUS_INVALID_PARAMETER_2;
 
 		*pPeb = {};
 
@@ -832,9 +855,12 @@ namespace Corvus::Data
 		if (!NT_SUCCESS(status))
 			return status;
 
+		if (!IsValidAddress(pebBaseAddress))
+			return STATUS_INVALID_ADDRESS;
+
 		status = ReadVirtualMemoryNt<PEB>(
-			processHandle, 
-			pebBaseAddress, 
+			processHandle,
+			pebBaseAddress,
 			*pPeb);
 
 		if (!NT_SUCCESS(status))
@@ -843,7 +869,6 @@ namespace Corvus::Data
 		return status;
 	}
 
-	// REVIST FOR PARAM NUMS
 	CORVUS_API NTSTATUS CORVUS_CALL
 		GetPebAndPebBaseAddressNt(
 			_In_ const HANDLE processHandle,
@@ -852,12 +877,12 @@ namespace Corvus::Data
 	{
 		if (!IsValidHandle(processHandle))
 			return STATUS_INVALID_PARAMETER_1;
-		if(pPebBaseAddress == nullptr)
+		if (pPebBaseAddress == nullptr)
 			return STATUS_INVALID_PARAMETER_2;
 		if (pPeb == nullptr)
 			return STATUS_INVALID_PARAMETER_3;
 
-		*pPebBaseAddress = 0;
+		*pPebBaseAddress = 0ull;
 		*pPeb = {};
 
 		NTSTATUS status{ GetPebBaseAddressNt(
@@ -875,192 +900,406 @@ namespace Corvus::Data
 		if (!NT_SUCCESS(status))
 		{
 			*pPeb = {};
-			*pPebBaseAddress = 0;
+			*pPebBaseAddress = 0ull;
 		}
 
 		return status;
 	}
 
-	uintptr_t GetModuleBaseAddressNt(const HANDLE processHandle)
+	CORVUS_API NTSTATUS CORVUS_CALL
+		GetModuleBaseAddressNt(
+			_In_ const HANDLE processHandle,
+			_Out_ uintptr_t* const pModuleBaseAddress) noexcept
 	{
-		if (!IsValidHandle(processHandle)) return {};
+		if (!IsValidHandle(processHandle))
+			return STATUS_INVALID_PARAMETER_1;
+		if (pModuleBaseAddress == nullptr)
+			return STATUS_INVALID_PARAMETER_2;
 
-		// Get PEB address
-		PROCESS_EXTENDED_BASIC_INFORMATION processInfo{ GetPebBaseAddressNt(processHandle) };
-		uintptr_t pebBaseAddress{ reinterpret_cast<uintptr_t>(processInfo.BasicInfo.PebBaseAddress) };
-		if (!IsValidAddress(pebBaseAddress)) return {};
+		*pModuleBaseAddress = 0ull;
 
-		// Read remote PEB
+		uintptr_t pebBaseAddress{};
+		PROCESS_EXTENDED_BASIC_INFORMATION processInfo{};
+		NTSTATUS status{ GetPebBaseAddressAndProcessInfoNt(
+			processHandle,
+			&pebBaseAddress,
+			&processInfo) };
+
+		if (!NT_SUCCESS(status))
+			return status;
+
+		if (!IsValidAddress(pebBaseAddress))
+			return STATUS_INVALID_ADDRESS;
+
 		PEB peb{};
-		if (!NT_SUCCESS(ReadVirtualMemoryNt<PEB>(processHandle, pebBaseAddress, peb)))
-			return {};
-		if (!peb.Ldr) return {};
+		status = ReadVirtualMemoryNt<PEB>(
+			processHandle,
+			pebBaseAddress,
+			peb);
 
-		uintptr_t loaderAddress{ reinterpret_cast<uintptr_t>(peb.Ldr) };
-		if (!IsValidAddress(loaderAddress)) return {};
+		if (!NT_SUCCESS(status))
+			return status;
+		if (!peb.Ldr)
+			return STATUS_UNSUCCESSFUL;
+
+		uintptr_t loaderAddress{
+			reinterpret_cast<uintptr_t>(peb.Ldr) };
+		if (!IsValidAddress(loaderAddress))
+			return STATUS_INVALID_ADDRESS;
 
 		// Read loader data
 		PEB_LDR_DATA loaderData{};
-		if (!NT_SUCCESS(ReadVirtualMemoryNt<PEB_LDR_DATA>(processHandle, loaderAddress, loaderData)))
-			return {};
+		status = ReadVirtualMemoryNt<PEB_LDR_DATA>(
+			processHandle,
+			loaderAddress,
+			loaderData);
+
+		if (!NT_SUCCESS(status))
+			return status;
 
 		// First module in load order list
-		uintptr_t firstLink{ reinterpret_cast<uintptr_t>(loaderData.InLoadOrderModuleList.Flink) };
-		if (!IsValidAddress(firstLink)) return {};
+		uintptr_t firstLink{ reinterpret_cast<uintptr_t>(
+			loaderData.InLoadOrderModuleList.Flink) };
+		if (!IsValidAddress(firstLink))
+			return STATUS_INVALID_ADDRESS;
 
 		// Get the LDR_DATA_TABLE_ENTRY
-		uintptr_t entryAddress{ firstLink - offsetof(LDR_DATA_TABLE_ENTRY, InLoadOrderLinks) };
+		uintptr_t entryAddress{
+			firstLink - offsetof(LDR_DATA_TABLE_ENTRY, InLoadOrderLinks) };
 		LDR_DATA_TABLE_ENTRY entry{};
-		if (!NT_SUCCESS(ReadVirtualMemoryNt(processHandle, entryAddress, entry)))
-			return {};
-		else return reinterpret_cast<uintptr_t>(entry.DllBase);
+		status = ReadVirtualMemoryNt(
+			processHandle,
+			entryAddress,
+			entry);
+
+		if (entry.DllBase == nullptr)
+			return STATUS_UNSUCCESSFUL;
+
+		*pModuleBaseAddress
+			= reinterpret_cast<uintptr_t>(entry.DllBase);
+
+		return status;
 	}
 
-	uintptr_t GetModuleBaseAddressNt(
-		const HANDLE processHandle,
-		const PROCESS_EXTENDED_BASIC_INFORMATION& processInfo)
+	// AI generated, to be reviewed
+	CORVUS_API NTSTATUS CORVUS_CALL
+		GetModuleBaseAddressFromProcessInfoNt(
+			_In_ const HANDLE processHandle,
+			_In_ const PROCESS_EXTENDED_BASIC_INFORMATION* const processInfo,
+			_Out_ uintptr_t* const pModuleBaseAddress) noexcept
 	{
-		if (!IsValidHandle(processHandle)) return {};
-		uintptr_t pebBaseAddress{ reinterpret_cast<uintptr_t>(processInfo.BasicInfo.PebBaseAddress) };
-		if (!IsValidAddress(pebBaseAddress)) return {};
+		if (!IsValidHandle(processHandle))
+			return STATUS_INVALID_PARAMETER_1;
+		if (processInfo == nullptr)
+			return STATUS_INVALID_PARAMETER_2;
+		if (pModuleBaseAddress == nullptr)
+			return STATUS_INVALID_PARAMETER_3;
 
-		// Read remote PEB
+		*pModuleBaseAddress = 0ull;
+
+		uintptr_t pebBaseAddress{ reinterpret_cast<uintptr_t>(
+			processInfo->BasicInfo.PebBaseAddress) };
+
+		if (!IsValidAddress(pebBaseAddress))
+			return STATUS_INVALID_ADDRESS;
+
 		PEB peb{};
-		if (!NT_SUCCESS(ReadVirtualMemoryNt<PEB>(processHandle, pebBaseAddress, peb)))
-			return {};
-		if (!peb.Ldr) return {};
+		NTSTATUS status{ ReadVirtualMemoryNt<PEB>(
+			processHandle,
+			pebBaseAddress,
+			peb) };
 
-		uintptr_t loaderAddress{ reinterpret_cast<uintptr_t>(peb.Ldr) };
-		if (!IsValidAddress(loaderAddress)) return {};
+		if (!NT_SUCCESS(status))
+			return status;
+		if (!peb.Ldr)
+			return STATUS_UNSUCCESSFUL;
 
-		// Read loader data
+		uintptr_t loaderAddress{
+			reinterpret_cast<uintptr_t>(peb.Ldr) };
+
+		if (!IsValidAddress(loaderAddress))
+			return STATUS_INVALID_ADDRESS;
+
 		PEB_LDR_DATA loaderData{};
-		if (!NT_SUCCESS(ReadVirtualMemoryNt<PEB_LDR_DATA>(processHandle, loaderAddress, loaderData)))
-			return {};
+		status = ReadVirtualMemoryNt<PEB_LDR_DATA>(
+			processHandle,
+			loaderAddress,
+			loaderData);
 
-		// First module in load order list
-		uintptr_t firstLink{ reinterpret_cast<uintptr_t>(loaderData.InLoadOrderModuleList.Flink) };
-		if (!IsValidAddress(firstLink)) return {};
+		if (!NT_SUCCESS(status))
+			return status;
 
-		// Get the LDR_DATA_TABLE_ENTRY
-		uintptr_t entryAddress{ firstLink - offsetof(LDR_DATA_TABLE_ENTRY, InLoadOrderLinks) };
+		uintptr_t firstLink{ reinterpret_cast<uintptr_t>(
+				loaderData.InLoadOrderModuleList.Flink) };
+
+		if (!IsValidAddress(firstLink))
+			return STATUS_INVALID_ADDRESS;
+
+		uintptr_t entryAddress{
+			firstLink - offsetof(LDR_DATA_TABLE_ENTRY, InLoadOrderLinks) };
+
 		LDR_DATA_TABLE_ENTRY entry{};
-		if (!NT_SUCCESS(ReadVirtualMemoryNt(processHandle, entryAddress, entry)))
-			return {};
-		else return reinterpret_cast<uintptr_t>(entry.DllBase);
+		status = ReadVirtualMemoryNt(
+			processHandle,
+			entryAddress,
+			entry);
+
+		if (!NT_SUCCESS(status))
+			return status;
+		if (entry.DllBase == nullptr)
+			return STATUS_UNSUCCESSFUL;
+
+		*pModuleBaseAddress =
+			reinterpret_cast<uintptr_t>(entry.DllBase);
+
+		return status;
 	}
 
-	uintptr_t GetModuleBaseAddressNt(const HANDLE processHandle, const uintptr_t pebBaseAddress)
+	// AI generated, to be reviewed
+	CORVUS_API NTSTATUS CORVUS_CALL
+		GetModuleBaseAddressFromPebBaseAddressNt(
+			_In_ const HANDLE processHandle,
+			_In_ const uintptr_t* const pPebBaseAddress,
+			_Out_ uintptr_t* const pModuleBaseAddress) noexcept
 	{
-		if (!IsValidHandle(processHandle)) return {};
-		if (!IsValidAddress(pebBaseAddress)) return {};
+		if (!IsValidHandle(processHandle))
+			return STATUS_INVALID_PARAMETER_1;
+		if (pPebBaseAddress == nullptr)
+			return STATUS_INVALID_PARAMETER_2;
+		if (pModuleBaseAddress == nullptr)
+			return STATUS_INVALID_PARAMETER_3;
 
-		// Read remote PEB
+		*pModuleBaseAddress = 0ull;
+
+		if (!IsValidAddress(*pPebBaseAddress))
+			return STATUS_INVALID_ADDRESS;
+
 		PEB peb{};
-		if (!NT_SUCCESS(ReadVirtualMemoryNt<PEB>(processHandle, pebBaseAddress, peb)))
-			return {};
-		if (!peb.Ldr) return {};
+		NTSTATUS status{ ReadVirtualMemoryNt<PEB>(
+			processHandle,
+			*pPebBaseAddress,
+			peb) };
 
-		uintptr_t loaderAddress{ reinterpret_cast<uintptr_t>(peb.Ldr) };
-		if (!IsValidAddress(loaderAddress)) return {};
+		if (!NT_SUCCESS(status))
+			return status;
+		if (!peb.Ldr)
+			return STATUS_UNSUCCESSFUL;
 
-		// Read loader data
+		uintptr_t loaderAddress{
+			reinterpret_cast<uintptr_t>(peb.Ldr) };
+
+		if (!IsValidAddress(loaderAddress))
+			return STATUS_INVALID_ADDRESS;
+
 		PEB_LDR_DATA loaderData{};
-		if (!NT_SUCCESS(ReadVirtualMemoryNt<PEB_LDR_DATA>(processHandle, loaderAddress, loaderData)))
-			return {};
+		status = ReadVirtualMemoryNt<PEB_LDR_DATA>(
+			processHandle,
+			loaderAddress,
+			loaderData);
 
-		// First module in load order list
-		uintptr_t firstLink{ reinterpret_cast<uintptr_t>(loaderData.InLoadOrderModuleList.Flink) };
-		if (!IsValidAddress(firstLink)) return {};
+		if (!NT_SUCCESS(status))
+			return status;
 
-		// Get the LDR_DATA_TABLE_ENTRY
-		uintptr_t entryAddress{ firstLink - offsetof(LDR_DATA_TABLE_ENTRY, InLoadOrderLinks) };
+		uintptr_t firstLink{
+			reinterpret_cast<uintptr_t>(
+				loaderData.InLoadOrderModuleList.Flink) };
+
+		if (!IsValidAddress(firstLink))
+			return STATUS_INVALID_ADDRESS;
+
+		uintptr_t entryAddress{
+			firstLink - offsetof(LDR_DATA_TABLE_ENTRY, InLoadOrderLinks) };
+
 		LDR_DATA_TABLE_ENTRY entry{};
-		if (!NT_SUCCESS(ReadVirtualMemoryNt(processHandle, entryAddress, entry)))
-			return {};
-		else return reinterpret_cast<uintptr_t>(entry.DllBase);
+		status = ReadVirtualMemoryNt(
+			processHandle,
+			entryAddress,
+			entry);
+
+		if (!NT_SUCCESS(status))
+			return status;
+		if (entry.DllBase == nullptr)
+			return STATUS_UNSUCCESSFUL;
+
+		*pModuleBaseAddress =
+			reinterpret_cast<uintptr_t>(entry.DllBase);
+
+		return status;
 	}
 
-	uintptr_t GetModuleBaseAddressNt(const HANDLE processHandle, const PEB& peb)
+	CORVUS_API NTSTATUS CORVUS_CALL
+		GetModuleBaseAddressFromPebNt(
+			_In_ const HANDLE processHandle,
+			_In_ const PEB* const pPeb,
+			_Out_ uintptr_t* const pModuleBaseAddress) noexcept
 	{
-		if (!IsValidHandle(processHandle)) return {};
-		if (!peb.Ldr) return {};
+		if (!IsValidHandle(processHandle))
+			return STATUS_INVALID_PARAMETER_1;
+		if (pPeb == nullptr)
+			return STATUS_INVALID_PARAMETER_2;
+		if (pModuleBaseAddress == nullptr)
+			return STATUS_INVALID_PARAMETER_3;
 
-		uintptr_t loaderAddress{ reinterpret_cast<uintptr_t>(peb.Ldr) };
-		if (!IsValidAddress(loaderAddress)) return {};
+		*pModuleBaseAddress = 0ull;
 
-		// Read loader data
+		if (!pPeb->Ldr)
+			return STATUS_UNSUCCESSFUL;
+
+		uintptr_t loaderAddress{
+			reinterpret_cast<uintptr_t>(pPeb->Ldr) };
+
+		if (!IsValidAddress(loaderAddress))
+			return STATUS_INVALID_ADDRESS;
+
 		PEB_LDR_DATA loaderData{};
-		if (!NT_SUCCESS(ReadVirtualMemoryNt<PEB_LDR_DATA>(processHandle, loaderAddress, loaderData)))
-			return {};
+		NTSTATUS status{ ReadVirtualMemoryNt<PEB_LDR_DATA>(
+			processHandle,
+			loaderAddress,
+			loaderData) };
 
-		// First module in load order list
-		uintptr_t firstLink{ reinterpret_cast<uintptr_t>(loaderData.InLoadOrderModuleList.Flink) };
-		if (!IsValidAddress(firstLink)) return {};
+		if (!NT_SUCCESS(status))
+			return status;
 
-		// Get the LDR_DATA_TABLE_ENTRY
-		uintptr_t entryAddress{ firstLink - offsetof(LDR_DATA_TABLE_ENTRY, InLoadOrderLinks) };
+		uintptr_t firstLink{
+			reinterpret_cast<uintptr_t>(
+				loaderData.InLoadOrderModuleList.Flink) };
+
+		if (!IsValidAddress(firstLink))
+			return STATUS_INVALID_ADDRESS;
+
+		uintptr_t entryAddress{
+			firstLink - offsetof(LDR_DATA_TABLE_ENTRY, InLoadOrderLinks) };
+
 		LDR_DATA_TABLE_ENTRY entry{};
-		if (!NT_SUCCESS(ReadVirtualMemoryNt(processHandle, entryAddress, entry)))
-			return {};
-		else return reinterpret_cast<uintptr_t>(entry.DllBase);
+		status = ReadVirtualMemoryNt(
+			processHandle,
+			entryAddress,
+			entry);
+
+		if (!NT_SUCCESS(status))
+			return status;
+		if (entry.DllBase == nullptr)
+			return STATUS_UNSUCCESSFUL;
+
+		*pModuleBaseAddress =
+			reinterpret_cast<uintptr_t>(entry.DllBase);
+
+		return status;
 	}
 
-	Corvus::Object::ArchitectureType GetArchitectureTypeNt(const HANDLE processHandle)
+	CORVUS_API NTSTATUS CORVUS_CALL
+		GetWow64InfoNt(
+			_In_ const HANDLE processHandle,
+			_Out_ ULONG_PTR* const wow64Info) noexcept
 	{
-		ULONG_PTR wow64Info{};
-		if (!NT_SUCCESS(NtQueryInformationProcess(
+		if (!IsValidHandle(processHandle))
+			return STATUS_INVALID_PARAMETER_1;
+		if (wow64Info == nullptr)
+			return STATUS_INVALID_PARAMETER_2;
+
+		*wow64Info = 0ull;
+
+		NTSTATUS status{ NtQueryInformationProcess(
 			processHandle,
 			ProcessWow64Information,
-			&wow64Info,
+			wow64Info,
 			sizeof(ULONG_PTR),
-			nullptr)))
-			return Corvus::Object::ArchitectureType::Unknown;
+			nullptr) };
 
-		return (wow64Info) ?
-			Corvus::Object::ArchitectureType::x86 :
-			Corvus::Object::ArchitectureType::x64;
+		return status;
 	}
 
-	std::vector<LDR_DATA_TABLE_ENTRY> GetProcessModulesNt(const HANDLE processHandle, const PEB& peb)
+	CORVUS_API NTSTATUS CORVUS_CALL
+		GetProcessModulesNt(
+			_In_ const HANDLE processHandle,
+			_In_ const PEB* const pPeb,
+			_Out_writes_(bufferLength)
+			LDR_DATA_TABLE_ENTRY* const pBuffer,
+			_In_ const DWORD bufferLength,
+			_Out_ DWORD* const pCopiedLength) noexcept
 	{
-		if (!IsValidHandle(processHandle)) return {};
-		if (!peb.Ldr) return {};
+		if (!IsValidHandle(processHandle))
+			return STATUS_INVALID_PARAMETER_1;
+		if (pPeb == nullptr)
+			return STATUS_INVALID_PARAMETER_2;
+		if (pBuffer == nullptr)
+			return STATUS_INVALID_PARAMETER_3;
+		if (pCopiedLength == nullptr)
+			return STATUS_INVALID_PARAMETER_5;
 
-		uintptr_t loaderAddress{ reinterpret_cast<uintptr_t>(peb.Ldr) };
-		if (!IsValidAddress(loaderAddress)) return {};
+		if (!pPeb->Ldr)
+			return STATUS_UNSUCCESSFUL;
+
+		*pBuffer = {};
+		*pCopiedLength = 0ul;
+
+		uintptr_t loaderAddress{
+			reinterpret_cast<uintptr_t>(pPeb->Ldr) };
+		if (!IsValidAddress(loaderAddress))
+			return STATUS_INVALID_ADDRESS;
 
 		PEB_LDR_DATA loaderData{};
-		if (!NT_SUCCESS(ReadVirtualMemoryNt<PEB_LDR_DATA>(processHandle, loaderAddress, loaderData))) return {};
-		if (!loaderData.InLoadOrderModuleList.Flink) return {};
+		NTSTATUS status{ ReadVirtualMemoryNt<PEB_LDR_DATA>(
+			processHandle,
+			loaderAddress,
+			loaderData) };
 
-		uintptr_t listHead{ loaderAddress + offsetof(PEB_LDR_DATA, InLoadOrderModuleList) };
-		if (!IsValidAddress(listHead)) return {};
+		if (!NT_SUCCESS(status))
+			return status;
+		if (!loaderData.InLoadOrderModuleList.Flink)
+			return STATUS_UNSUCCESSFUL;
 
-		uintptr_t currentLink{ reinterpret_cast<uintptr_t>(loaderData.InLoadOrderModuleList.Flink) };
-		if (!IsValidAddress(currentLink)) return {};
+		uintptr_t listHead{
+			loaderAddress + offsetof(PEB_LDR_DATA, InLoadOrderModuleList) };
 
-		std::vector<LDR_DATA_TABLE_ENTRY> modules{};
-		size_t sanityCounter{ 0 };
+		if (!IsValidAddress(listHead))
+			return STATUS_INVALID_ADDRESS;
+
+		uintptr_t currentLink{ reinterpret_cast<uintptr_t>(
+			loaderData.InLoadOrderModuleList.Flink) };
+
+		if (!IsValidAddress(currentLink))
+			return STATUS_INVALID_ADDRESS;
+
+		DWORD copied{ 0ull };
+		DWORD sanityCounter{ 0ull };
 		while (currentLink && currentLink != listHead)
 		{
 			if (++sanityCounter > MAX_MODULES)
 				break;
 
-			// first remote module = fLink - ILOL offset
-			uintptr_t entryAddress{ currentLink - offsetof(LDR_DATA_TABLE_ENTRY, InLoadOrderLinks) };
-			LDR_DATA_TABLE_ENTRY entry{};
-			if (!NT_SUCCESS(ReadVirtualMemoryNt<LDR_DATA_TABLE_ENTRY>(processHandle, entryAddress, entry)))
-				break;
-			else modules.push_back(std::move(entry));
+			if (copied >= bufferLength)
+				return STATUS_BUFFER_TOO_SMALL;
 
-			uintptr_t next = reinterpret_cast<uintptr_t>(entry.InLoadOrderLinks.Flink);
-			if (!IsValidAddress(next) || next == currentLink) break;
-			else currentLink = next;
+			// first remote module = fLink - ILOL offset
+			uintptr_t entryAddress{
+				currentLink - offsetof(LDR_DATA_TABLE_ENTRY, InLoadOrderLinks) };
+
+			LDR_DATA_TABLE_ENTRY entry{};
+			status = ReadVirtualMemoryNt<LDR_DATA_TABLE_ENTRY>(
+				processHandle,
+				entryAddress,
+				entry);
+
+			if (!NT_SUCCESS(status))
+				break;
+
+			pBuffer[copied++] = entry;
+
+			uintptr_t next{ reinterpret_cast<uintptr_t>(
+				entry.InLoadOrderLinks.Flink) };
+
+			if (!IsValidAddress(next) || next == currentLink)
+				break;
+
+			currentLink = next;
 		};
-		return modules;
+
+		*pCopiedLength = copied;
+		return STATUS_SUCCESS;
 	};
 
+	/*
 	BOOL GetProcessModuleObjectsNt(
 		const HANDLE processHandle,
 		const DWORD processId,
@@ -1117,25 +1356,45 @@ namespace Corvus::Data
 		};
 		return TRUE;
 	};
+	*/
 
 	CORVUS_API NTSTATUS CORVUS_CALL
 		GetProcessThreadsNt(
 			_In_ const HANDLE processHandle,
 			_In_ const DWORD processId,
-			_Out_ SYSTEM_THREAD_INFORMATION* const buffer,
-			_In_ const uint32_t bufferCount,
-			_Out_ uint32_t* const requiredCount)
+			_Out_writes_(bufferLength)
+			SYSTEM_THREAD_INFORMATION* const pBuffer,
+			_In_ const DWORD bufferLength,
+			_Out_ DWORD* const pCopiedLength)
 	{
 		if (!IsValidHandle(processHandle))
-			return STATUS_INVALID_HANDLE;
+			return STATUS_INVALID_PARAMETER_1;
+		if (!IsValidProcessId(processId))
+			return STATUS_INVALID_PARAMETER_2;
+		if (pBuffer == nullptr)
+			return STATUS_INVALID_PARAMETER_3;
+		if (pCopiedLength == nullptr)
+			return STATUS_INVALID_PARAMETER_5;
 
-		const DWORD bufferSize{ GetQSIBufferSizeNt(SystemProcessInformation) };
-		BYTE* processInfoBuffer = new BYTE[bufferSize];
-		NTSTATUS status{ NtQuerySystemInformation(
+		*pBuffer = {};
+		*pCopiedLength = 0ul;
+
+		DWORD requiredBufferSize{};
+		NTSTATUS status{ GetQSIBufferSizeNt(
+			SystemProcessInformation,
+			&requiredBufferSize) };
+
+		if (!NT_SUCCESS(status))
+			return status;
+
+		BYTE* processInfoBuffer{
+			new BYTE[requiredBufferSize] };
+
+		status = NtQuerySystemInformation(
 			SystemProcessInformation,
 			processInfoBuffer,
-			bufferSize,
-			nullptr) };
+			requiredBufferSize,
+			nullptr);
 
 		if (!NT_SUCCESS(status))
 		{
@@ -1143,8 +1402,9 @@ namespace Corvus::Data
 			return status;
 		}
 
-		PSYSTEM_PROCESS_INFORMATION processInfo
-		{ reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(processInfoBuffer) };
+		PSYSTEM_PROCESS_INFORMATION processInfo{
+			reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(processInfoBuffer) };
+
 		uint32_t threadCount{};
 		if (!processInfo)
 		{
@@ -1160,15 +1420,16 @@ namespace Corvus::Data
 			if (processInfoId == processId)
 			{
 				threadCount = processInfo->NumberOfThreads;
-				if (requiredCount)
-					*requiredCount = threadCount;
+				if (pCopiedLength)
+					*pCopiedLength = threadCount;
 
-				if (buffer)
+				if (pBuffer)
 				{
-					uint32_t toCopy{ std::min(bufferCount, threadCount) };
+					uint32_t toCopy{
+						std::min(bufferLength, threadCount) };
 
 					for (uint32_t i{}; i < toCopy; ++i)
-						buffer[i] = processInfo->Threads[i];
+						pBuffer[i] = processInfo->Threads[i];
 				}
 				break;
 			}
