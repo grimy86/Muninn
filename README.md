@@ -3,10 +3,10 @@
     <td>
         <img width="200"
              src="https://github.com/user-attachments/assets/bddd2b09-5e16-44a1-ae18-0a92e5a0eb9a"
-             alt="Corvus Banner" />
+             alt="Muninn Banner" />
     </td>
     <td>
-      <h1>Corvus</h1>
+      <h1>Muninn</h1>
       <img src="https://custom-icon-badges.demolab.com/badge/Platform-Windows%2011-0078D6.svg?&logo=windows11&logoColor=white&style=for-the-badge" />
       <img src="https://img.shields.io/badge/Language-C%2B%2B%2020-00599C?logo=c%2B%2B&logoColor=white&style=for-the-badge" />
       <img src="https://img.shields.io/badge/Language-Legacy%20(MSVC)-A8B9CC?logo=c&logoColor=white&style=for-the-badge" />
@@ -18,7 +18,7 @@
 </table>
 
 ## Summary
-Corvus is a Windows-native SDK provided as a static library with optional DLL support (x86/x64). It is written in ISO C++20 using a deliberately minimal, exceptionless C-style design.
+Muninn is a Windows-native SDK provided as a static library with optional DLL support (x86/x64). It is written in ISO C++20 using a deliberately minimal, exceptionless C-style design.
 
 It provides structured access to low-level Windows user-mode APIs, primarily:
 - Win32
@@ -43,7 +43,7 @@ The project emphasizes architectural clarity, deterministic behavior, and explic
 - [Contributors](#contributors)
 
 ## Purpose
-Corvus exposes Windows data such as process, thread, module, handle, token, etc. information through a layered internal design.
+Muninn exposes Windows data such as process, thread, module, handle, token, etc. information through a layered internal design.
 It bridges raw native system calls and structured C++ data models without introducing hidden side effects or runtime magic.
 
 The SDK is designed for:
@@ -56,7 +56,7 @@ The SDK is designed for:
 As of now, it does **not** implement persistence mechanisms, obfuscation, or network behavior.
 
 ## Architecture
-Corvus follows a layered MVC-inspired structure:
+Muninn follows a layered MVC-inspired structure:
 
 <details>
 
@@ -171,6 +171,6 @@ This project uses the following third-party code:
 ## Contributors
 Thanks to these wonderful people for contributing:
 
-<a href="https://github.com/grimy86/corvus/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Grimy86/corvus" />
+<a href="https://github.com/grimy86/Muninn/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Grimy86/Muninn" />
 </a>
