@@ -2,7 +2,7 @@
   <tr>
     <td>
         <img width="200"
-             src="https://github.com/user-attachments/assets/bddd2b09-5e16-44a1-ae18-0a92e5a0eb9a"
+             src="/Resources/banner.svg"
              alt="Muninn Banner" />
     </td>
     <td>
@@ -157,9 +157,9 @@ Visual Studio (Desktop development with C++):
   
 <summary>Images</summary>
   
-![Windows Structures](/WindowsStructures.png)
-![C_Windows Structures](/C_WindowsStructures.png)
-![Math](/Math.png)
+![Windows Structures](/Resources/WindowsStructures.png)
+![C_Windows Structures](/Resources/C_WindowsStructures.png)
+![Math](/Resources/Math.png)
 
 </details>
 
