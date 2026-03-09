@@ -367,12 +367,12 @@ namespace Muninn::Data
 	/// Retrieves the WOW64 information for a process.
 	/// </summary>
 	/// <param name="processHandle"> Handle to the process. </param>
-	/// <param name="wow64Info"> Receives the WOW64 information pointer. </param>
+	/// <param name="pWow64Info"> Receives the WOW64 information pointer. </param>
 	/// <returns> NTSTATUS indicating the result of the operation. </returns>
 	MUNINN_API NTSTATUS MUNINN_CALL
 		GetWow64InfoNt(
 			_In_ const HANDLE processHandle,
-			_Out_ ULONG_PTR* const wow64Info) noexcept;
+			_Out_ ULONG_PTR* const pWow64Info) noexcept;
 
 	/// <summary>
 	/// Retrieves modules loaded in a process.

@@ -159,6 +159,8 @@ namespace Muninn::Data
 			_In_ const LUID luid,
 			_Out_ uint64_t* const pFullLuid) noexcept
 	{
+		if (!IsValidLuid(luid))
+			return STATUS_INVALID_PARAMETER_1;
 		if (pFullLuid == nullptr)
 			return STATUS_INVALID_PARAMETER_2;
 
@@ -1096,19 +1098,19 @@ namespace Muninn::Data
 	MUNINN_API NTSTATUS MUNINN_CALL
 		GetWow64InfoNt(
 			_In_ const HANDLE processHandle,
-			_Out_ ULONG_PTR* const wow64Info) noexcept
+			_Out_ ULONG_PTR* const pWow64Info) noexcept
 	{
 		if (!IsValidHandle(processHandle))
 			return STATUS_INVALID_PARAMETER_1;
-		if (wow64Info == nullptr)
+		if (pWow64Info == nullptr)
 			return STATUS_INVALID_PARAMETER_2;
 
-		*wow64Info = 0ull;
+		*pWow64Info = 0ull;
 
 		NTSTATUS status{ NtQueryInformationProcess(
 			processHandle,
 			ProcessWow64Information,
-			wow64Info,
+			pWow64Info,
 			sizeof(ULONG_PTR),
 			nullptr) };
 

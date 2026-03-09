@@ -16,6 +16,10 @@
 #define _Out_
 #endif // !_Out_
 
+#ifndef _Out_writes_
+#define _Out_writes_(size)
+#endif // !_Out_writes_
+
 #ifndef _Out_opt_
 #define _Out_opt_
 #endif // !_Out_opt_

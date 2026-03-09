@@ -1,71 +1,116 @@
 #pragma once
+#include "apiconfig.h"
 #include "WindowsStructures.h"
 #include <ProcessSnapshot.h>
 
 namespace Muninn::Data
 {
 #pragma region WRITE
-	HANDLE OpenProcessHandle32(const DWORD processId, const ACCESS_MASK accessMask);
-	BOOL CloseHandle32(const HANDLE handle);
-	HANDLE OpenTokenHandle32(const HANDLE processHandle, const ACCESS_MASK accessMask);
-	BOOL SetSeDebugPrivilege32();
-	BOOL SetSeDebugPrivilege32(const HANDLE tokenHandle);
-	BOOL SetThreadPriority32(const DWORD priorityClass);
-	BOOL SetThreadSuspended32(const DWORD threadId);
-	BOOL SetThreadResumed32(const DWORD threadId);
+	MUNINN_API NTSTATUS MUNINN_CALL
+		OpenProcessHandle32(
+			_In_ const DWORD processId,
+			_In_ const ACCESS_MASK accessMask,
+			_Out_ HANDLE* const pHandle) noexcept;
+
+	MUNINN_API NTSTATUS MUNINN_CALL
+		CloseHandle32(_In_ const HANDLE handle) noexcept;
+
+	MUNINN_API NTSTATUS MUNINN_CALL
+		OpenTokenHandle32(
+			_In_ const HANDLE processHandle,
+			_In_ const ACCESS_MASK accessMask,
+			_Out_ HANDLE* const pTokenHandle) noexcept;
+
+	MUNINN_API NTSTATUS MUNINN_CALL
+		SetSeDebugPrivilege32() noexcept;
+
+	MUNINN_API NTSTATUS MUNINN_CALL
+		SetRemoteSeDebugPrivilege32(
+			_In_ const HANDLE tokenHandle) noexcept;
+
+	MUNINN_API NTSTATUS MUNINN_CALL
+		SetThreadPriority32(_In_ const DWORD priorityClass) noexcept;
+
+	MUNINN_API NTSTATUS MUNINN_CALL
+		SetThreadSuspended32(_In_ const DWORD threadId) noexcept;
+
+	MUNINN_API NTSTATUS MUNINN_CALL
+		SetThreadResumed32(_In_ const DWORD threadId) noexcept;
 #pragma endregion
 
 #pragma region READ
-	int GetThreadPriority32(HANDLE threadHandle);
+	MUNINN_API NTSTATUS MUNINN_CALL
+		GetThreadPriority32(
+			_In_ const HANDLE threadHandle,
+			_Out_ INT* const pThreadPriority) noexcept;
 
-	DWORD GetTokenInfoBufferSize32(
-		const HANDLE tokenHandle,
-		const _TOKEN_INFORMATION_CLASS infoClass);
+	MUNINN_API NTSTATUS MUNINN_CALL
+		GetTokenInfoBufferSize32(
+			_In_ const HANDLE tokenHandle,
+			_In_ const _TOKEN_INFORMATION_CLASS infoClass,
+			_Out_ DWORD* const pRequiredSize) noexcept;
 
-	BOOL GetSeDebugPrivilege32(const HANDLE tokenHandle);
+	MUNINN_API NTSTATUS MUNINN_CALL
+		GetSeDebugPrivilege32(
+			_In_ const HANDLE tokenHandle,
+			_Out_ BOOL* const pIsSeDebugPrivilegeEnabled) noexcept;
 
-	PROCESSENTRY32W GetProcessInformation32(const DWORD processId);
+	MUNINN_API NTSTATUS MUNINN_CALL
+		GetProcessInformation32(
+			_In_ const DWORD processId,
+			_Out_ PROCESSENTRY32W* const pProcessEntry) noexcept;
 
-	BOOL GetProcessInformationObject32(
-		const DWORD processId,
-		Muninn::Object::ProcessEntry& processEntry);
+	MUNINN_API NTSTATUS MUNINN_CALL
+		GetImageFileName32(
+			_In_ const HANDLE processHandle,
+			_Out_writes_(bufferLength)
+			WCHAR* const pBuffer,
+			_In_ const DWORD bufferLength,
+			_Out_ DWORD* const pCopiedLength) noexcept;
 
-	std::wstring GetImageFileName32(const HANDLE hProcess);
+	MUNINN_API NTSTATUS MUNINN_CALL
+		GetModuleBaseAddress32(
+			_In_ const DWORD processId,
+			_In_ const wchar_t* const pModuleName,
+			_Out_ uintptr_t* const pModuleBaseAddress) noexcept;
 
-	uintptr_t GetModuleBaseAddress32(const DWORD processId, const std::wstring& processName);
+	MUNINN_API NTSTATUS MUNINN_CALL
+		GetWindowVisibility32(
+			_In_ const DWORD processId,
+			_Out_ BOOL* const pIsWindowVisible) noexcept;
 
-	BOOL GetWindowVisibility32(const DWORD processId);
+	MUNINN_API NTSTATUS MUNINN_CALL
+		GetProcessArchitecture32(
+			_In_ const HANDLE processHandle,
+			_Out_ USHORT* const pProcessMachine,
+			_Out_ USHORT* const pNativeMachine,
+			_Out_ BOOL* const pIsWow64) noexcept;
 
-	BOOL GetProcessArchitecture32(
-		const HANDLE processHandle,
-		Muninn::Object::ArchitectureType& architectureType,
-		BOOL& isWow64);
+	MUNINN_API NTSTATUS MUNINN_CALL
+		GetProcessModules32(
+			_In_ const HANDLE processHandle,
+			_In_ const DWORD processId,
+			_Out_writes_(bufferLength)
+			MODULEENTRY32W* const pBuffer,
+			_In_ const DWORD bufferLength,
+			_Out_ DWORD* const pCopiedLength) noexcept;
 
-	std::vector<std::pair<MODULEENTRY32W, MODULEINFO>> GetProcessModules32(
-		const HANDLE processHandle,
-		const DWORD processId);
+	MUNINN_API NTSTATUS MUNINN_CALL
+		GetProcessThreads32(
+			_In_ const HANDLE processHandle,
+			_In_ const DWORD processId,
+			_Out_writes_(bufferLength)
+			THREADENTRY32* const pBuffer,
+			_In_ const DWORD bufferLength,
+			_Out_ DWORD* const pCopiedLength) noexcept;
 
-	BOOL GetProcessModuleObjects32(
-		const HANDLE processHandle,
-		const DWORD processId,
-		std::vector<Muninn::Object::ModuleEntry>& modules);
-
-	std::vector<THREADENTRY32> GetProcessThreads32(
-		const HANDLE processHandle,
-		const DWORD processId);
-
-	BOOL GetProcessThreadObjects32(
-		const HANDLE processHandle,
-		const DWORD processId,
-		std::vector<Muninn::Object::ThreadEntry>& threads);
-
-	std::vector<PSS_HANDLE_ENTRY> GetProcessHandles32(
-		const HANDLE processHandle,
-		const DWORD processId);
-
-	BOOL GetProcessHandleObjects32(
-		const HANDLE processHandle,
-		const DWORD processId,
-		std::vector<Muninn::Object::HandleEntry>& handles);
+	MUNINN_API NTSTATUS MUNINN_CALL
+		GetProcessHandles32(
+			_In_ const HANDLE processHandle,
+			_In_ const DWORD processId,
+			_Out_writes_(bufferLength)
+			PSS_HANDLE_ENTRY* const pBuffer,
+			_In_ const DWORD bufferLength,
+			_Out_ DWORD* const pCopiedLength) noexcept;
 #pragma endregion
 }
