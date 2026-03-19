@@ -1,30 +1,109 @@
-# Ignore all build folders recursively
-**/build/
+# =========================
 
-# Ignore all cache directories recursively
-**/.cache/
+# Visual Studio (C/C++)
 
-# Ignore raw class diagram files
-*.cd
+# =========================
 
-# OS/editor temp files
-.DS_Store
-Thumbs.db
-*.swp
-*.tmp
+## Build results
 
-# CMake
-CMakeFiles/
-CMakeCache.txt
-*.cmake
-**/*.dir/
-Makefile
-Testing/
-CTestTestfile.cmake
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Bb]in/
+[Oo]bj/
+build/
+out/
 
-# IDE artifacts
-.vscode/
+## Visual Studio cache / temp
+
+.vs/
+*.VC.db
+*.VC.opendb
 *.suo
 *.user
 *.userosscache
 *.sln.docstates
+
+## IntelliSense / browsing
+
+ipch/
+*.aps
+*.ncb
+*.opendb
+*.cachefile
+
+## Compiled files
+
+*.obj
+*.o
+*.pch
+*.pdb
+*.ilk
+*.idb
+*.exe
+*.dll
+*.lib
+*.exp
+
+## CMake (if used)
+
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.cmake
+
+## Logs
+
+*.log
+
+## Temporary files
+
+*.tmp
+*.temp
+*.tlog
+*.lastbuildstate
+
+## Visual Studio profiler
+
+*.psess
+*.vsp
+*.vspx
+
+## Windows image file caches
+
+Thumbs.db
+ehthumbs.db
+
+## OS generated files
+
+.DS_Store
+
+## Package managers (optional)
+
+.vcpkg-root/
+vcpkg_installed/
+
+## Test results
+
+TestResults/
+
+## Coverage
+
+*.coverage
+*.coveragexml
+
+## Misc
+
+*.opensdf
+*.sdf
+*.dbmdl
+
+# =========================
+
+# Optional: Keep empty dirs
+
+# =========================
+
+!.gitkeep
