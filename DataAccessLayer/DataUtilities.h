@@ -1,12 +1,15 @@
-#ifndef MUNINN_DATA_UTILITIES
-#define MUNINN_DATA_UTILITIES
+#ifndef DATA_UTILITIES_H
+#define DATA_UTILITIES_H
 
-#include "phnt/phnt_windows.h"
+#include <phnt_windows.h>
 #include <stdbool.h>
+#include <stdint.h>
 
-bool MDAL_IsValidProcessId(const DWORD processId);
-bool MDAL_IsValidHandle(const HANDLE processHandle);
-bool MDAL_IsValidAddress(const DWORD moduleBaseAddress);
-bool MDAL_IsValidLuid(const LUID luid);
+bool DAL_IsValidProcessId(const DWORD processId);
+bool DAL_IsValidHandle(const HANDLE processHandle);
+bool DAL_IsValidAddress(const DWORD moduleBaseAddress);
+bool DAL_IsValidLuid(const LUID luid);
+size_t DAL_MinSizeT(const size_t a, const size_t b);
+uint32_t DAL_MinU32(const uint32_t a, const uint32_t b);
 
-#endif // !MUNINN_DATA_UTILITIES
+#endif // !DATA_UTILITIES_H

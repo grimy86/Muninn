@@ -1,15 +1,19 @@
 #ifndef API_CONFIG_H
 #define API_CONFIG_H
 
-#ifdef MUNINN_EXPORTS
-#warning "MUNINN_EXPORTS is defined"
+#ifdef _MSC_VER
+#define MUNINN_CALL __fastcall
+
+#ifdef BUILDING_DLL
 #define MUNINN_API __declspec(dllexport)
 #else
-#warning "MUNINN_EXPORTS is undefined"
 #define MUNINN_API __declspec(dllimport)
 #endif
 
-#define MUNINN_CALL __fastcall
+#else // Non-MSVC compilers
+#define MUNINN_API
+#define MUNINN_CALL
+#endif // !_MSC_VER
 
 #ifndef _In_
 #define _In_

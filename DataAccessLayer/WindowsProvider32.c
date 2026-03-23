@@ -26,12 +26,12 @@
 #endif // !MAX_PATH_LONG
 
 MUNINN_API NTSTATUS MUNINN_CALL
-MDAL_OpenProcessHandle32(
+DAL_OpenProcessHandle32(
 	_In_ const DWORD processId,
 	_In_ const ACCESS_MASK accessMask,
 	_Out_ HANDLE* const pHandle)
 {
-	if (!MDAL_IsValidProcessId(processId))
+	if (!DAL_IsValidProcessId(processId))
 		return STATUS_INVALID_PARAMETER_1;
 	if (pHandle == NULL)
 		return STATUS_INVALID_PARAMETER_3;
@@ -41,16 +41,16 @@ MDAL_OpenProcessHandle32(
 		FALSE,
 		processId);
 
-	if (!MDAL_IsValidHandle(*pHandle))
+	if (!DAL_IsValidHandle(*pHandle))
 		return STATUS_INVALID_HANDLE;
 
 	return STATUS_SUCCESS;
 }
 
 MUNINN_API NTSTATUS MUNINN_CALL
-MDAL_CloseHandle32(_In_ const HANDLE handle)
+DAL_CloseHandle32(_In_ const HANDLE handle)
 {
-	if (!MDAL_IsValidHandle(handle))
+	if (!DAL_IsValidHandle(handle))
 		return STATUS_INVALID_PARAMETER_1;
 
 	return CloseHandle(handle) ?
@@ -59,12 +59,12 @@ MDAL_CloseHandle32(_In_ const HANDLE handle)
 }
 
 MUNINN_API NTSTATUS MUNINN_CALL
-MDAL_OpenTokenHandle32(
+DAL_OpenTokenHandle32(
 	_In_ const HANDLE processHandle,
 	_In_ const ACCESS_MASK accessMask,
 	_Out_ HANDLE* const pTokenHandle)
 {
-	if (!MDAL_IsValidHandle(processHandle))
+	if (!DAL_IsValidHandle(processHandle))
 		return STATUS_INVALID_PARAMETER_1;
 	if (pTokenHandle == NULL)
 		return STATUS_INVALID_PARAMETER_3;
@@ -83,10 +83,10 @@ MDAL_OpenTokenHandle32(
 }
 
 MUNINN_API NTSTATUS MUNINN_CALL
-MDAL_SetSeDebugPrivilege32()
+DAL_SetSeDebugPrivilege32()
 {
 	HANDLE tokenHandle = NULL;
-	NTSTATUS status = MDAL_OpenTokenHandle32(
+	NTSTATUS status = DAL_OpenTokenHandle32(
 		GetCurrentProcess(),
 		TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
 		&tokenHandle);
@@ -94,7 +94,7 @@ MDAL_SetSeDebugPrivilege32()
 	if (!NT_SUCCESS(status))
 		return status;
 
-	if (!MDAL_IsValidHandle(tokenHandle))
+	if (!DAL_IsValidHandle(tokenHandle))
 		return STATUS_INVALID_HANDLE;
 
 	LUID luid = { 0ul, 0l };
@@ -107,17 +107,17 @@ MDAL_SetSeDebugPrivilege32()
 
 	if (!NT_SUCCESS(status))
 	{
-		MDAL_CloseHandle32(tokenHandle);
+		DAL_CloseHandle32(tokenHandle);
 		return status;
 	}
 
-	if (!MDAL_IsValidLuid(luid))
+	if (!DAL_IsValidLuid(luid))
 	{
-		MDAL_CloseHandle32(tokenHandle);
+		DAL_CloseHandle32(tokenHandle);
 		return STATUS_UNSUCCESSFUL;
 	}
 
-	TOKEN_PRIVILEGES privileges{};
+	TOKEN_PRIVILEGES privileges = { 0 };
 	privileges.PrivilegeCount = 1;
 	privileges.Privileges[0].Luid = luid;
 	privileges.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
@@ -127,51 +127,51 @@ MDAL_SetSeDebugPrivilege32()
 		FALSE,
 		&privileges,
 		sizeof(TOKEN_PRIVILEGES),
-		nullptr,
-		nullptr) ?
+		NULL,
+		NULL) ?
 		STATUS_SUCCESS :
 		STATUS_UNSUCCESSFUL;
 
 	if (NT_SUCCESS(status))
 	{
-		MDAL_CloseHandle32(tokenHandle);
+		DAL_CloseHandle32(tokenHandle);
 		return status;
 	}
 
 	// privilege missing
 	if (GetLastError() == ERROR_NOT_ALL_ASSIGNED)
 	{
-		MDAL_CloseHandle32(tokenHandle);
+		DAL_CloseHandle32(tokenHandle);
 		return STATUS_UNSUCCESSFUL;
 	}
 
-	MDAL_CloseHandle32(tokenHandle);
+	DAL_CloseHandle32(tokenHandle);
 	return status;
 }
 
 MUNINN_API NTSTATUS MUNINN_CALL
-MDAL_SetRemoteSeDebugPrivilege32(
+DAL_SetRemoteSeDebugPrivilege32(
 	_In_ const HANDLE tokenHandle)
 {
 	// required: TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY
-	if (!MDAL_IsValidHandle(tokenHandle))
+	if (!DAL_IsValidHandle(tokenHandle))
 		return STATUS_INVALID_HANDLE;
 
-	LUID luid{};
-	NTSTATUS status{ LookupPrivilegeValueW(
-		nullptr,
+	LUID luid = { 0ul, 0l };
+	NTSTATUS status = LookupPrivilegeValueW(
+		NULL,
 		SE_DEBUG_NAME_W,
 		&luid) ?
 		STATUS_SUCCESS :
-		STATUS_UNSUCCESSFUL };
+		STATUS_UNSUCCESSFUL;
 
 	if (!NT_SUCCESS(status))
 		return status;
 
-	if (!MDAL_IsValidLuid(luid))
+	if (!DAL_IsValidLuid(luid))
 		return STATUS_UNSUCCESSFUL;
 
-	TOKEN_PRIVILEGES privileges{};
+	TOKEN_PRIVILEGES privileges = { 0 };
 	privileges.PrivilegeCount = 1;
 	privileges.Privileges[0].Luid = luid;
 	privileges.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
@@ -181,8 +181,8 @@ MDAL_SetRemoteSeDebugPrivilege32(
 		FALSE,
 		&privileges,
 		sizeof(TOKEN_PRIVILEGES),
-		nullptr,
-		nullptr) ?
+		NULL,
+		NULL) ?
 		STATUS_SUCCESS :
 		STATUS_UNSUCCESSFUL;
 
@@ -197,7 +197,7 @@ MDAL_SetRemoteSeDebugPrivilege32(
 }
 
 MUNINN_API NTSTATUS MUNINN_CALL
-MDAL_SetThreadPriority32(_In_ const DWORD priorityClass)
+DAL_SetThreadPriority32(_In_ const DWORD priorityClass)
 {
 	return SetPriorityClass(
 		GetCurrentProcess(),
@@ -207,55 +207,55 @@ MDAL_SetThreadPriority32(_In_ const DWORD priorityClass)
 }
 
 MUNINN_API NTSTATUS MUNINN_CALL
-MDAL_SetThreadSuspended32(_In_ const DWORD threadId)
+DAL_SetThreadSuspended32(_In_ const DWORD threadId)
 {
-	HANDLE threadHandle{ OpenThread(
+	HANDLE threadHandle = OpenThread(
 		THREAD_SUSPEND_RESUME,
 		FALSE,
-		threadId) };
+		threadId);
 
-	if (!MDAL_IsValidHandle(threadHandle))
+	if (!DAL_IsValidHandle(threadHandle))
 		return STATUS_INVALID_HANDLE;
 
-	DWORD suspendCount{
-	SuspendThread(threadHandle) };
+	DWORD suspendCount =
+		SuspendThread(threadHandle);
 
 	if (suspendCount == SUSPEND_THREAD_ERROR)
 		return STATUS_UNSUCCESSFUL;
 
-	MDAL_CloseHandle32(threadHandle);
+	DAL_CloseHandle32(threadHandle);
 	return STATUS_SUCCESS;
 }
 
 MUNINN_API NTSTATUS MUNINN_CALL
-MDAL_SetThreadResumed32(_In_ const DWORD threadId)
+DAL_SetThreadResumed32(_In_ const DWORD threadId)
 {
-	HANDLE threadHandle{ OpenThread(
+	HANDLE threadHandle = OpenThread(
 		THREAD_SUSPEND_RESUME,
 		FALSE,
-		threadId) };
+		threadId);
 
-	if (!MDAL_IsValidHandle(threadHandle))
+	if (!DAL_IsValidHandle(threadHandle))
 		return STATUS_INVALID_HANDLE;
 
-	DWORD suspendCount{
-	ResumeThread(threadHandle) };
+	DWORD suspendCount =
+		ResumeThread(threadHandle);
 
 	if (suspendCount == RESUME_THREAD_ERROR)
 		return STATUS_UNSUCCESSFUL;
 
-	MDAL_CloseHandle32(threadHandle);
+	DAL_CloseHandle32(threadHandle);
 	return STATUS_SUCCESS;
 }
 
 MUNINN_API NTSTATUS MUNINN_CALL
-MDAL_GetThreadPriority32(
+DAL_GetThreadPriority32(
 	_In_ const HANDLE threadHandle,
 	_Out_ INT* const pThreadPriority)
 {
-	if (!MDAL_IsValidHandle(threadHandle))
+	if (!DAL_IsValidHandle(threadHandle))
 		return STATUS_INVALID_PARAMETER_1;
-	if (pThreadPriority == nullptr)
+	if (pThreadPriority == NULL)
 		return STATUS_INVALID_PARAMETER_2;
 
 	SetLastError(ERROR_SUCCESS);
@@ -270,26 +270,26 @@ MDAL_GetThreadPriority32(
 }
 
 MUNINN_API NTSTATUS MUNINN_CALL
-MDAL_GetTokenInfoBufferSize32(
+DAL_GetTokenInfoBufferSize32(
 	_In_ const HANDLE tokenHandle,
-	_In_ const _TOKEN_INFORMATION_CLASS infoClass,
+	_In_ const TOKEN_INFORMATION_CLASS infoClass,
 	_Out_ DWORD* const pRequiredSize)
 {
-	if (!MDAL_IsValidHandle(tokenHandle))
+	if (!DAL_IsValidHandle(tokenHandle))
 		return STATUS_INVALID_PARAMETER_1;
-	if (pRequiredSize == nullptr)
+	if (pRequiredSize == NULL)
 		return STATUS_INVALID_PARAMETER_3;
 
 	*pRequiredSize = 0ul;
 
-	NTSTATUS status{ GetTokenInformation(
+	NTSTATUS status = GetTokenInformation(
 		tokenHandle,
 		infoClass,
-		nullptr,
+		NULL,
 		0,
 		pRequiredSize) ?
 		STATUS_SUCCESS :
-		STATUS_UNSUCCESSFUL };
+		STATUS_UNSUCCESSFUL;
 
 	if (!NT_SUCCESS(status))
 	{
@@ -302,22 +302,22 @@ MDAL_GetTokenInfoBufferSize32(
 }
 
 MUNINN_API NTSTATUS MUNINN_CALL
-MDAL_GetSeDebugPrivilege32(
+DAL_GetSeDebugPrivilege32(
 	_In_ const HANDLE tokenHandle,
 	_Out_ BOOL* const pIsSeDebugPrivilegeEnabled)
 {
-	if (!MDAL_IsValidHandle(tokenHandle))
+	if (!DAL_IsValidHandle(tokenHandle))
 		return STATUS_INVALID_PARAMETER_1;
-	if (pIsSeDebugPrivilegeEnabled == nullptr)
+	if (pIsSeDebugPrivilegeEnabled == NULL)
 		return STATUS_INVALID_PARAMETER_2;
 
 	*pIsSeDebugPrivilegeEnabled = FALSE;
 
-	DWORD requiredBufferSize{};
-	NTSTATUS status{ MDAL_GetTokenInfoBufferSize32(
+	DWORD requiredBufferSize = 0ul;
+	NTSTATUS status = DAL_GetTokenInfoBufferSize32(
 		tokenHandle,
 		TokenPrivileges,
-		&requiredBufferSize) };
+		&requiredBufferSize);
 
 	if (!NT_SUCCESS(status))
 		return status;
@@ -325,8 +325,10 @@ MDAL_GetSeDebugPrivilege32(
 	if (!requiredBufferSize)
 		return STATUS_UNSUCCESSFUL;
 
-	BYTE* privilegesBuffer{
-		new BYTE[requiredBufferSize] };
+	BYTE* privilegesBuffer =
+		(BYTE*)malloc(requiredBufferSize);
+	if (privilegesBuffer == NULL)
+		return STATUS_NO_MEMORY;
 
 	status = GetTokenInformation(
 		tokenHandle,
@@ -337,12 +339,12 @@ MDAL_GetSeDebugPrivilege32(
 		STATUS_SUCCESS :
 		STATUS_UNSUCCESSFUL;
 
-	PTOKEN_PRIVILEGES pTokenPrivileges{
-		reinterpret_cast<PTOKEN_PRIVILEGES>(privilegesBuffer) };
+	PTOKEN_PRIVILEGES pTokenPrivileges =
+		(PTOKEN_PRIVILEGES)(privilegesBuffer);
 
-	LUID debugLuid{};
+	LUID debugLuid = { 0ul, 0l };
 	status = LookupPrivilegeValueW(
-		nullptr,
+		NULL,
 		SE_DEBUG_NAME_W,
 		&debugLuid) ?
 		STATUS_SUCCESS :
@@ -350,61 +352,60 @@ MDAL_GetSeDebugPrivilege32(
 
 	if (!NT_SUCCESS(status))
 	{
-		delete[] privilegesBuffer;
+		free(privilegesBuffer);
 		return status;
 	}
 
-	if (!MDAL_IsValidLuid(debugLuid))
+	if (!DAL_IsValidLuid(debugLuid))
 	{
-		delete[] privilegesBuffer;
+		free(privilegesBuffer);
 		return STATUS_UNSUCCESSFUL;
 	}
 
 	status = STATUS_NOT_FOUND;
-	for (DWORD i{}; i < pTokenPrivileges->PrivilegeCount; ++i)
+	for (DWORD i = 0ul; i < pTokenPrivileges->PrivilegeCount; ++i)
 	{
-		LUID_AND_ATTRIBUTES& laa{
-			pTokenPrivileges->Privileges[i] };
+		LUID_AND_ATTRIBUTES* pLaa =
+			&pTokenPrivileges->Privileges[i];
 
-		if (laa.Luid.LowPart == debugLuid.LowPart &&
-			laa.Luid.HighPart == debugLuid.HighPart)
+		if (pLaa->Luid.LowPart == debugLuid.LowPart &&
+			pLaa->Luid.HighPart == debugLuid.HighPart)
 		{
 			*pIsSeDebugPrivilegeEnabled =
-				(laa.Attributes & SE_PRIVILEGE_ENABLED) != FALSE;
+				(pLaa->Attributes & SE_PRIVILEGE_ENABLED) != FALSE;
 
 			status = STATUS_SUCCESS;
 			break;
 		}
 	}
 
-	delete[] privilegesBuffer;
+	free(privilegesBuffer);
 	return status;
 }
 
 MUNINN_API NTSTATUS MUNINN_CALL
-MDAL_GetProcessInformation32(
+DAL_GetProcessInformation32(
 	_In_ const DWORD processId,
 	_Out_ PROCESSENTRY32W* const pProcessEntry)
 {
-	if (!MDAL_IsValidProcessId(processId))
+	if (!DAL_IsValidProcessId(processId))
 		return STATUS_INVALID_PARAMETER_1;
-	if (pProcessEntry == nullptr)
+	if (pProcessEntry == NULL)
 		return STATUS_INVALID_PARAMETER_2;
 
-	*pProcessEntry = {};
+	memset(pProcessEntry, 0, sizeof(*pProcessEntry));
+	pProcessEntry->dwSize = sizeof(PROCESSENTRY32W);
 
-	HANDLE snapshotHandle{ CreateToolhelp32Snapshot(
+	HANDLE snapshotHandle = CreateToolhelp32Snapshot(
 		TH32CS_SNAPPROCESS,
-		0) };
+		0);
 
-	if (!MDAL_IsValidHandle(snapshotHandle))
+	if (!DAL_IsValidHandle(snapshotHandle))
 		return STATUS_INVALID_HANDLE;
 
-
-	pProcessEntry->dwSize = sizeof(PROCESSENTRY32W);
 	if (!Process32FirstW(snapshotHandle, pProcessEntry))
 	{
-		MDAL_CloseHandle32(snapshotHandle);
+		DAL_CloseHandle32(snapshotHandle);
 		return STATUS_UNSUCCESSFUL;
 	}
 
@@ -412,34 +413,34 @@ MDAL_GetProcessInformation32(
 	{
 		if (pProcessEntry->th32ProcessID == processId)
 		{
-			MDAL_CloseHandle32(snapshotHandle);
+			DAL_CloseHandle32(snapshotHandle);
 			return STATUS_SUCCESS;
 		}
 	} while (Process32NextW(snapshotHandle, pProcessEntry));
 
-	MDAL_CloseHandle32(snapshotHandle);
+	DAL_CloseHandle32(snapshotHandle);
 	return STATUS_NOT_FOUND;
 }
 
 MUNINN_API NTSTATUS MUNINN_CALL
-MDAL_GetImageFileName32(
+DAL_GetImageFileName32(
 	_In_ const HANDLE processHandle,
 	_Out_writes_(bufferLength)
 	WCHAR* const pBuffer,
 	_In_ const DWORD bufferLength,
-	_Out_ DWORD* const pCopiedLength) noexcept
+	_Out_ DWORD* const pCopiedLength)
 {
-	if (!MDAL_IsValidHandle(processHandle))
+	if (!DAL_IsValidHandle(processHandle))
 		return STATUS_INVALID_PARAMETER_1;
-	if (pBuffer == nullptr)
+	if (pBuffer == NULL)
 		return STATUS_INVALID_PARAMETER_2;
-	if (pCopiedLength == nullptr)
+	if (pCopiedLength == NULL)
 		return STATUS_INVALID_PARAMETER_4;
 
-	*pBuffer = L'\0';
+	memset(pBuffer, 0, bufferLength * sizeof(WCHAR));
 	*pCopiedLength = 0ul;
 
-	DWORD length{ bufferLength };
+	DWORD length = bufferLength;
 	NTSTATUS status = QueryFullProcessImageNameW(
 		processHandle,
 		0ul,
@@ -456,33 +457,33 @@ MDAL_GetImageFileName32(
 }
 
 MUNINN_API NTSTATUS MUNINN_CALL
-MDAL_GetModuleBaseAddress32(
+DAL_GetModuleBaseAddress32(
 	_In_ const DWORD processId,
 	_In_ const wchar_t* const pModuleName,
 	_Out_ uintptr_t* const pModuleBaseAddress)
 {
-	if (!MDAL_IsValidProcessId(processId))
+	if (!DAL_IsValidProcessId(processId))
 		return STATUS_INVALID_PARAMETER_1;
-	if (pModuleName == nullptr)
+	if (pModuleName == NULL)
 		return STATUS_INVALID_PARAMETER_2;
-	if (pModuleBaseAddress == nullptr)
+	if (pModuleBaseAddress == NULL)
 		return STATUS_INVALID_PARAMETER_3;
 
 	*pModuleBaseAddress = 0ull;
 
-	MODULEENTRY32W moduleEntry{};
+	MODULEENTRY32W moduleEntry = { 0 };
 	moduleEntry.dwSize = sizeof(MODULEENTRY32W);
 
-	HANDLE snapshotHandle{ CreateToolhelp32Snapshot(
+	HANDLE snapshotHandle = CreateToolhelp32Snapshot(
 		TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32,
-		processId) };
+		processId);
 
-	if (!MDAL_IsValidHandle(snapshotHandle))
+	if (!DAL_IsValidHandle(snapshotHandle))
 		return STATUS_INVALID_HANDLE;
 
 	if (!Module32FirstW(snapshotHandle, &moduleEntry))
 	{
-		MDAL_CloseHandle32(snapshotHandle);
+		DAL_CloseHandle32(snapshotHandle);
 		return STATUS_UNSUCCESSFUL;
 	}
 
@@ -490,33 +491,33 @@ MDAL_GetModuleBaseAddress32(
 	{
 		if (_wcsicmp(moduleEntry.szModule, pModuleName) == 0)
 		{
-			*pModuleBaseAddress
-				= reinterpret_cast<uintptr_t>(moduleEntry.modBaseAddr);
+			*pModuleBaseAddress =
+				(uintptr_t)(moduleEntry.modBaseAddr);
 
-			MDAL_CloseHandle32(snapshotHandle);
+			DAL_CloseHandle32(snapshotHandle);
 			return STATUS_SUCCESS;
 		}
 	} while (Module32NextW(snapshotHandle, &moduleEntry));
 
-	MDAL_CloseHandle32(snapshotHandle);
+	DAL_CloseHandle32(snapshotHandle);
 	return STATUS_NOT_FOUND;
 }
 
 MUNINN_API NTSTATUS MUNINN_CALL
-MDAL_GetWindowVisibility32(
+DAL_GetWindowVisibility32(
 	_In_ const DWORD processId,
 	_Out_ BOOL* const pIsWindowVisible)
 {
-	if (!MDAL_IsValidProcessId(processId))
+	if (!DAL_IsValidProcessId(processId))
 		return STATUS_INVALID_PARAMETER_1;
-	if (pIsWindowVisible == nullptr)
+	if (pIsWindowVisible == NULL)
 		return STATUS_INVALID_PARAMETER_2;
 
 	*pIsWindowVisible = FALSE;
 
-	for (HWND hwnd{ GetTopWindow(nullptr) }; hwnd; hwnd = GetNextWindow(hwnd, GW_HWNDNEXT))
+	for (HWND hwnd = GetTopWindow(NULL); hwnd; hwnd = GetNextWindow(hwnd, GW_HWNDNEXT))
 	{
-		DWORD windowThreadProcessId{};
+		DWORD windowThreadProcessId = 0ul;
 		GetWindowThreadProcessId(hwnd, &windowThreadProcessId);
 
 		if (windowThreadProcessId == processId && IsWindowVisible(hwnd))
@@ -530,39 +531,39 @@ MDAL_GetWindowVisibility32(
 }
 
 MUNINN_API NTSTATUS MUNINN_CALL
-MDAL_GetProcessArchitecture32(
+DAL_GetProcessArchitecture32(
 	_In_ const HANDLE processHandle,
 	_Out_ USHORT* const pProcessMachine,
 	_Out_ USHORT* const pNativeMachine,
 	_Out_ BOOL* const pIsWow64)
 {
-	if (!MDAL_IsValidHandle(processHandle))
+	if (!DAL_IsValidHandle(processHandle))
 		return STATUS_INVALID_PARAMETER_1;
-	if (pProcessMachine == nullptr)
+	if (pProcessMachine == NULL)
 		return STATUS_INVALID_PARAMETER_2;
-	if (pNativeMachine == nullptr)
+	if (pNativeMachine == NULL)
 		return STATUS_INVALID_PARAMETER_3;
-	if (pIsWow64 == nullptr)
+	if (pIsWow64 == NULL)
 		return STATUS_INVALID_PARAMETER_4;
 
 	*pProcessMachine = IMAGE_FILE_MACHINE_UNKNOWN;
 	*pNativeMachine = IMAGE_FILE_MACHINE_UNKNOWN;
 	*pIsWow64 = FALSE;
 
-	NTSTATUS status{ IsWow64Process2(
+	NTSTATUS status = IsWow64Process2(
 		processHandle,
 		// IMAGE_FILE_MACHINE_UNKNOWN if not a WOW64 process
 		pProcessMachine,
 		// Native architecture of host system
 		pNativeMachine) ?
 		STATUS_SUCCESS :
-		STATUS_UNSUCCESSFUL };
+		STATUS_UNSUCCESSFUL;
 
 	if (!NT_SUCCESS(status))
 		return status;
 
-	*pIsWow64
-		= *pProcessMachine != IMAGE_FILE_MACHINE_UNKNOWN;
+	*pIsWow64 =
+		*pProcessMachine != IMAGE_FILE_MACHINE_UNKNOWN;
 
 	// If running under WOW64, processMachine already contains the guest architecture.
 	// Otherwise processMachine is IMAGE_FILE_MACHINE_UNKNOWN, so use the native machine.
@@ -574,7 +575,7 @@ MDAL_GetProcessArchitecture32(
 }
 
 MUNINN_API NTSTATUS MUNINN_CALL
-MDAL_GetProcessModules32(
+DAL_GetProcessModules32(
 	_In_ const HANDLE processHandle,
 	_In_ const DWORD processId,
 	_Out_writes_(bufferLength)
@@ -582,48 +583,51 @@ MDAL_GetProcessModules32(
 	_In_ const DWORD bufferLength,
 	_Out_ DWORD* const pCopiedLength)
 {
-	if (!MDAL_IsValidHandle(processHandle))
+	if (!DAL_IsValidHandle(processHandle))
 		return STATUS_INVALID_PARAMETER_1;
-	if (!MDAL_IsValidProcessId(processId))
+	if (!DAL_IsValidProcessId(processId))
 		return STATUS_INVALID_PARAMETER_2;
-	if (pBuffer == nullptr)
+	if (pBuffer == NULL)
 		return STATUS_INVALID_PARAMETER_3;
 	if (bufferLength == 0ul)
 		return STATUS_BUFFER_TOO_SMALL;
-	if (pCopiedLength == nullptr)
+	if (pCopiedLength == NULL)
 		return STATUS_INVALID_PARAMETER_5;
 
-	*pBuffer = {};
+	memset(pBuffer, 0, bufferLength * sizeof(MODULEENTRY32W));
+	for (DWORD i = 0ul; i < bufferLength; ++i)
+		pBuffer[i].dwSize = sizeof(MODULEENTRY32W);
+
 	*pCopiedLength = 0ul;
 
-	HANDLE snapshotHandle{ CreateToolhelp32Snapshot(
+	HANDLE snapshotHandle = CreateToolhelp32Snapshot(
 		TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32,
-		processId) };
+		processId);
 
-	if (!MDAL_IsValidHandle(snapshotHandle))
+	if (!DAL_IsValidHandle(snapshotHandle))
 		return STATUS_INVALID_HANDLE;
 
-	MODULEENTRY32W moduleEntry{};
+	MODULEENTRY32W moduleEntry = { 0 };
 	moduleEntry.dwSize = sizeof(MODULEENTRY32W);
 
-	NTSTATUS status{ Module32FirstW(
+	NTSTATUS status = Module32FirstW(
 		snapshotHandle,
 		&moduleEntry) ?
 		STATUS_SUCCESS :
-		STATUS_UNSUCCESSFUL };
+		STATUS_UNSUCCESSFUL;
 
 	if (!NT_SUCCESS(status))
 	{
-		MDAL_CloseHandle32(snapshotHandle);
+		DAL_CloseHandle32(snapshotHandle);
 		return status;
 	}
 
-	DWORD count{};
+	DWORD count = 0ul;
 	do
 	{
 		if (count >= bufferLength)
 		{
-			MDAL_CloseHandle32(snapshotHandle);
+			DAL_CloseHandle32(snapshotHandle);
 			*pCopiedLength = count;
 			return STATUS_BUFFER_TOO_SMALL;
 		}
@@ -632,13 +636,13 @@ MDAL_GetProcessModules32(
 
 	} while (Module32NextW(snapshotHandle, &moduleEntry));
 
-	MDAL_CloseHandle32(snapshotHandle);
+	DAL_CloseHandle32(snapshotHandle);
 	*pCopiedLength = count;
 	return STATUS_SUCCESS;
 }
 
 MUNINN_API NTSTATUS MUNINN_CALL
-MDAL_GetProcessThreads32(
+DAL_GetProcessThreads32(
 	_In_ const HANDLE processHandle,
 	_In_ const DWORD processId,
 	_Out_writes_(bufferLength)
@@ -646,88 +650,91 @@ MDAL_GetProcessThreads32(
 	_In_ const DWORD bufferLength,
 	_Out_ DWORD* const pCopiedLength)
 {
-	if (!MDAL_IsValidHandle(processHandle))
+	if (!DAL_IsValidHandle(processHandle))
 		return STATUS_INVALID_PARAMETER_1;
-	if (!MDAL_IsValidProcessId(processId))
+	if (!DAL_IsValidProcessId(processId))
 		return STATUS_INVALID_PARAMETER_2;
-	if (pBuffer == nullptr)
+	if (pBuffer == NULL)
 		return STATUS_INVALID_PARAMETER_3;
 	if (bufferLength == 0ul)
 		return STATUS_BUFFER_TOO_SMALL;
-	if (pCopiedLength == nullptr)
+	if (pCopiedLength == NULL)
 		return STATUS_INVALID_PARAMETER_5;
 
-	*pBuffer = {};
+	memset(pBuffer, 0, bufferLength * sizeof(THREADENTRY32));
+	for (DWORD i = 0ul; i < bufferLength; ++i)
+		pBuffer[i].dwSize = sizeof(THREADENTRY32);
+
 	*pCopiedLength = 0ul;
 
 	// The processId parameter is technically ignored for TH32CS_SNAPTHREAD.
-	HANDLE snapshotHandle{ CreateToolhelp32Snapshot(
+	HANDLE snapshotHandle = CreateToolhelp32Snapshot(
 		TH32CS_SNAPTHREAD,
-		processId) };
+		processId);
 
-	if (!MDAL_IsValidHandle(snapshotHandle))
+	if (!DAL_IsValidHandle(snapshotHandle))
 		return STATUS_INVALID_HANDLE;
 
-	THREADENTRY32 threadEntry{};
+	THREADENTRY32 threadEntry = { 0 };
 	threadEntry.dwSize = sizeof(THREADENTRY32);
-	NTSTATUS status{ Thread32First(
+	NTSTATUS status = Thread32First(
 		snapshotHandle,
 		&threadEntry) ?
 		STATUS_SUCCESS :
-		STATUS_UNSUCCESSFUL };
+		STATUS_UNSUCCESSFUL;
 
 	if (!NT_SUCCESS(status))
 	{
-		MDAL_CloseHandle32(snapshotHandle);
+		DAL_CloseHandle32(snapshotHandle);
 		return status;
 	}
 
-	DWORD count{};
+	DWORD count = 0ul;
 	do
 	{
-		if (threadEntry.th32OwnerProcessID != processId)
-			continue;
-
-		if (count >= bufferLength)
+		if (threadEntry.th32OwnerProcessID == processId)
 		{
-			MDAL_CloseHandle32(snapshotHandle);
-			*pCopiedLength = count;
-			return STATUS_BUFFER_TOO_SMALL;
+			if (count >= bufferLength)
+			{
+				DAL_CloseHandle32(snapshotHandle);
+				*pCopiedLength = count;
+				return STATUS_BUFFER_TOO_SMALL;
+			}
 		}
 
 		pBuffer[count++] = threadEntry;
 
 	} while (Thread32Next(snapshotHandle, &threadEntry));
 
-	MDAL_CloseHandle32(snapshotHandle);
+	DAL_CloseHandle32(snapshotHandle);
 	*pCopiedLength = count;
 	return STATUS_SUCCESS;
 }
 
 MUNINN_API NTSTATUS MUNINN_CALL
-MDAL_GetProcessHandles32(
+DAL_GetProcessHandles32(
 	_In_ const HANDLE processHandle,
 	_In_ const DWORD processId,
 	_Out_writes_(bufferLength)
 	PSS_HANDLE_ENTRY* const pBuffer,
 	_In_ const DWORD bufferLength,
-	_Out_ DWORD* const pCopiedLength) noexcept
+	_Out_ DWORD* const pCopiedLength)
 {
-	if (!MDAL_IsValidHandle(processHandle))
+	if (!DAL_IsValidHandle(processHandle))
 		return STATUS_INVALID_PARAMETER_1;
-	if (!MDAL_IsValidProcessId(processId))
+	if (!DAL_IsValidProcessId(processId))
 		return STATUS_INVALID_PARAMETER_2;
-	if (pBuffer == nullptr)
+	if (pBuffer == NULL)
 		return STATUS_INVALID_PARAMETER_3;
 	if (bufferLength == 0ul)
 		return STATUS_BUFFER_TOO_SMALL;
-	if (pCopiedLength == nullptr)
+	if (pCopiedLength == NULL)
 		return STATUS_INVALID_PARAMETER_5;
 
-	*pBuffer = {};
+	memset(pBuffer, 0, bufferLength * sizeof(PSS_HANDLE_ENTRY));
 	*pCopiedLength = 0ul;
 
-	HPSS pssSnapshotHandle{};
+	HPSS pssSnapshotHandle = { 0 };
 	if (PssCaptureSnapshot(
 		processHandle,
 		PSS_CAPTURE_HANDLES |
@@ -740,24 +747,24 @@ MDAL_GetProcessHandles32(
 		!= ERROR_SUCCESS)
 		return STATUS_UNSUCCESSFUL;
 
-	HPSSWALK walkMarkerHandle{};
-	if (PssWalkMarkerCreate(nullptr, &walkMarkerHandle)
+	HPSSWALK walkMarkerHandle = { 0 };
+	if (PssWalkMarkerCreate(NULL, &walkMarkerHandle)
 		!= ERROR_SUCCESS)
 	{
 		PssFreeSnapshot(GetCurrentProcess(), pssSnapshotHandle);
 		return STATUS_UNSUCCESSFUL;
 	}
 
-	DWORD count{};
+	DWORD count = 0ul;
 	while (true)
 	{
-		PSS_HANDLE_ENTRY handleEntry{};
-		DWORD walkStatus{ PssWalkSnapshot(
+		PSS_HANDLE_ENTRY handleEntry = { 0 };
+		DWORD walkStatus = PssWalkSnapshot(
 			pssSnapshotHandle,
 			PSS_WALK_HANDLES,
 			walkMarkerHandle,
 			&handleEntry,
-			sizeof(handleEntry)) };
+			sizeof(handleEntry));
 
 		if (walkStatus == ERROR_NO_MORE_ITEMS)
 			break;
