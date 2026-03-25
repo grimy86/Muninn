@@ -61,13 +61,13 @@ namespace Muninn::Controller
 
 	}
 
-	const Muninn::Object::ProcessObject&
+	const Muninn::Models::ProcessObject&
 		ProcessController::GetProcessObject32() const noexcept
 	{
 		return m_process32;
 	}
 
-	const Muninn::Object::ProcessObject&
+	const Muninn::Models::ProcessObject&
 		ProcessController::GetProcessObjectNt() const noexcept
 	{
 		return m_processNt;

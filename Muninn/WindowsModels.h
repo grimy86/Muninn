@@ -1,9 +1,6 @@
 #pragma once
-// PHNT_WINDOWS_NEW by default
-#define PHNT_VERSION PHNT_WINDOWS_11
 
-// Win32 API
-#include <phnt_windows.h> 
+#include <windows.h> 
 #include <string>
 #include <vector>
 
@@ -15,7 +12,7 @@
 #define KPRIORITY LONG
 #endif // !KPRIORITY
 
-namespace Muninn::Object
+namespace Muninn::Models
 {
 	/// <summary>
 	/// Flags struct @ LDR_DATA_TABLE_ENTRY, ntdll.h

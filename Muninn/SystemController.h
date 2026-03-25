@@ -1,5 +1,4 @@
 #pragma once
-#include "WindowsStructures.h"
 
 namespace Muninn::Controller
 {
@@ -7,7 +6,7 @@ namespace Muninn::Controller
 	{
 	private:
 		SystemController() = default;
-		Muninn::Object::SystemObject m_systemObject{};
+		//Muninn::Models::SystemObject m_systemObject{};
 
 	public:
 		// Delete copy constructor and copy assignment operator

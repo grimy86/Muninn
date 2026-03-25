@@ -1,6 +1,6 @@
 #include "MathObject.h"
 
-namespace Muninn::Object
+namespace Muninn::Models
 {
 	Vector Vector::operator-(const Vector& vector) const
 	{

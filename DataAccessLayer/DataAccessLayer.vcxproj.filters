@@ -20,6 +20,7 @@
     <ClInclude Include="WindowsProviderNt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="MuninnApi.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DataUtilities.c">

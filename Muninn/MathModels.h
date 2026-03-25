@@ -1,7 +1,7 @@
 #pragma once
 #include <math.h>
 
-namespace Muninn::Object
+namespace Muninn::Models
 {
 	class Vector final
 	{
