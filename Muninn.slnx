@@ -3,6 +3,7 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
+  <Project Path="ConsoleTestClient/ConsoleTestClient.vcxproj" Id="8c9e2a35-2be2-4370-9fb1-925f22bcf0f2" />
   <Project Path="DataAccessLayer/DataAccessLayer.vcxproj" Id="742f121f-5880-4766-9a24-1b69016cf872" />
   <Project Path="Muninn/Muninn.vcxproj" Id="34523d53-2c82-4e63-89fb-536cec08d5e7" />
 </Solution>

@@ -1,4 +1,6 @@
 #pragma once
+#include "WindowsModels.h"
+#include <MuninnApi.h>
 
 namespace Muninn::Controller
 {
@@ -9,8 +11,8 @@ namespace Muninn::Controller
 	class ProcessController final
 	{
 	private:
-		Muninn::Object::ProcessObject m_process32{};
-		Muninn::Object::ProcessObject m_processNt{};
+		Muninn::Models::ProcessObject m_process32{};
+		Muninn::Models::ProcessObject m_processNt{};
 		HANDLE m_processHandle{ nullptr };
 
 		bool InitializeHandle(
@@ -30,8 +32,8 @@ namespace Muninn::Controller
 		ProcessController(const ProcessController&) = delete;
 		ProcessController& operator=(const ProcessController&) = delete;
 
-		const Muninn::Object::ProcessObject& GetProcessObject32() const noexcept;
-		const Muninn::Object::ProcessObject& GetProcessObjectNt() const noexcept;
+		const Muninn::Models::ProcessObject& GetProcessObject32() const noexcept;
+		const Muninn::Models::ProcessObject& GetProcessObjectNt() const noexcept;
 		const HANDLE& GetProcessHandle() const noexcept;
 	};
 }

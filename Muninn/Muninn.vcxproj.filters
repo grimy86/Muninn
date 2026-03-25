@@ -38,9 +38,6 @@
     <ClInclude Include="ProcessController.h">
       <Filter>ControllerLayer\Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C_WindowsModels.h">
-      <Filter>ModelLayer\Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="MathModels.h">
       <Filter>ModelLayer\Header Files</Filter>
     </ClInclude>
