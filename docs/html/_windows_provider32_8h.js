@@ -1,0 +1,23 @@
+var _windows_provider32_8h =
+[
+    [ "NTSTATUS", "_windows_provider32_8h.html#acccbcb2c4894d4553a546faf96d392ca", null ],
+    [ "DAL_CloseHandle32", "_windows_provider32_8h.html#a9357786f76b5e5e95b367c91e8d635cb", null ],
+    [ "DAL_GetImageFileName32", "_windows_provider32_8h.html#ac59c3ff10d216cfb1175e25081df8f7f", null ],
+    [ "DAL_GetModuleBaseAddress32", "_windows_provider32_8h.html#aafd8ace868040ea847a2bf1bbc42e669", null ],
+    [ "DAL_GetProcessArchitecture32", "_windows_provider32_8h.html#a93fb6d0fdbfa2b746d2d235965f1219f", null ],
+    [ "DAL_GetProcessHandles32", "_windows_provider32_8h.html#a7d8b4140b05aabb27990fcb9fc881678", null ],
+    [ "DAL_GetProcessInformation32", "_windows_provider32_8h.html#a9486281a29ba1d2f8cb6ee42e5424771", null ],
+    [ "DAL_GetProcessModules32", "_windows_provider32_8h.html#a8ae9a101dcaf66563fe06903ea85f8e5", null ],
+    [ "DAL_GetProcessThreads32", "_windows_provider32_8h.html#aacc92c88731d76353411d1c6b8836176", null ],
+    [ "DAL_GetSeDebugPrivilege32", "_windows_provider32_8h.html#a019601ae4d1bfa2ab02ccd9bdbfdc4de", null ],
+    [ "DAL_GetThreadPriority32", "_windows_provider32_8h.html#ae135dc686da7b8f7086cbd5d0f7643e2", null ],
+    [ "DAL_GetTokenInfoBufferSize32", "_windows_provider32_8h.html#acc048d91e961f0bd1cd88dfce5be26a6", null ],
+    [ "DAL_GetWindowVisibility32", "_windows_provider32_8h.html#a8b5f1a2b44b7797e84ce8e72ebdc641c", null ],
+    [ "DAL_OpenProcessHandle32", "_windows_provider32_8h.html#ab3b47b215c151efbce00ee40f2fbc88f", null ],
+    [ "DAL_OpenTokenHandle32", "_windows_provider32_8h.html#a667d878ee6584a3c7573185a13ce3baf", null ],
+    [ "DAL_SetRemoteSeDebugPrivilege32", "_windows_provider32_8h.html#aaf5b4e3711b51b90bc2fe0d086f955c7", null ],
+    [ "DAL_SetSeDebugPrivilege32", "_windows_provider32_8h.html#ac1b9abd270fd169bedb9eb8b301df8dc", null ],
+    [ "DAL_SetThreadPriority32", "_windows_provider32_8h.html#a5d156d84be79548b6f6221ea99abc37c", null ],
+    [ "DAL_SetThreadResumed32", "_windows_provider32_8h.html#ae402048aaa87d21834252b3510833cfa", null ],
+    [ "DAL_SetThreadSuspended32", "_windows_provider32_8h.html#af6d2e42df1a7546c5df9e505808f6a22", null ]
+];
