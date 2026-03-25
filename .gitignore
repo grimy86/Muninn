@@ -1,11 +1,4 @@
-# =========================
-
-# Visual Studio (C/C++)
-
-# =========================
-
 ## Build results
-
 [Dd]ebug/
 [Rr]elease/
 x64/
@@ -16,7 +9,6 @@ build/
 out/
 
 ## Visual Studio cache / temp
-
 .vs/
 *.VC.db
 *.VC.opendb
@@ -26,7 +18,6 @@ out/
 *.sln.docstates
 
 ## IntelliSense / browsing
-
 ipch/
 *.aps
 *.ncb
@@ -34,7 +25,6 @@ ipch/
 *.cachefile
 
 ## Compiled files
-
 *.obj
 *.o
 *.pch
@@ -47,7 +37,6 @@ ipch/
 *.exp
 
 ## CMake (if used)
-
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
@@ -55,55 +44,44 @@ Makefile
 *.cmake
 
 ## Logs
-
 *.log
 
 ## Temporary files
-
 *.tmp
 *.temp
 *.tlog
 *.lastbuildstate
 
 ## Visual Studio profiler
-
 *.psess
 *.vsp
 *.vspx
 
 ## Windows image file caches
-
 Thumbs.db
 ehthumbs.db
 
 ## OS generated files
-
 .DS_Store
 
 ## Package managers (optional)
-
 .vcpkg-root/
 vcpkg_installed/
 
 ## Test results
-
 TestResults/
 
 ## Coverage
-
 *.coverage
 *.coveragexml
 
 ## Misc
-
 *.opensdf
 *.sdf
 *.dbmdl
 
-# =========================
+## Doxygen
+Doxyfile
 
-# Optional: Keep empty dirs
-
-# =========================
-
+# Keep empty dirs
 !.gitkeep
