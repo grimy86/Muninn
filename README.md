@@ -9,9 +9,7 @@
       <h1>Muninn</h1>
       <img src="https://custom-icon-badges.demolab.com/badge/Platform-Windows%2011-000000.svg?&logo=windows11&logoColor=white&style=for-the-badge" />
       <img src="https://img.shields.io/badge/Language-C%2B%2B%2017-000000?logo=c%2B%2B&logoColor=white&style=for-the-badge" />
-      <img src="https://img.shields.io/badge/Language-C89-000000?logo=c&logoColor=white&style=for-the-badge" />
-      <img src="https://img.shields.io/badge/Compiler-Clang/LLvm-000000?logo=llvm&logoColor=white&style=for-the-badge" />
-      <img src="https://img.shields.io/badge/Build%20System-CMake-000000?logo=cmake&logoColor=white&style=for-the-badge" />
+      <img src="https://img.shields.io/badge/Language-C11-000000?logo=c&logoColor=white&style=for-the-badge" />
       <img src="https://img.shields.io/badge/License-MIT-000000?style=for-the-badge" />
       <img src="https://img.shields.io/badge/Snyk-Security%20Monitored-000000?logo=snyk&logoColor=white&style=for-the-badge" />
     </td>
