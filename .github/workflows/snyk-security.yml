@@ -16,13 +16,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js (if needed for JS/TS projects)
+      - name: Set up Node.js (if needed)
         uses: actions/setup-node@v3
         with:
           node-version: '18'
 
       - name: Run Snyk Code Scan
-        uses: snyk/actions@v3
+        uses: snyk/actions@v2
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
