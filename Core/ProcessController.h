@@ -1,6 +1,6 @@
 #pragma once
 #include "WindowsModels.h"
-#include <MuninnApi.h>
+#include <MuninnDal.h>
 
 namespace Muninn::Controller
 {

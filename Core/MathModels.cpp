@@ -1,4 +1,4 @@
-#include "MathObject.h"
+#include "MathModels.h"
 
 namespace Muninn::Models
 {

@@ -10,7 +10,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ApiConfig.h" />
+    <ClInclude Include="DalConfig.h" />
     <ClInclude Include="DataUtilities.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -20,7 +20,7 @@
     <ClInclude Include="WindowsProviderNt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MuninnApi.h" />
+    <ClInclude Include="MuninnDal.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DataUtilities.c">

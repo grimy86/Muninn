@@ -1165,7 +1165,7 @@ DAL_GetModuleBaseAddressFromPebNt(
 	uintptr_t loaderAddress =
 		(uintptr_t)pPeb->Ldr;
 
-	if (!IsValidAddress(loaderAddress))
+	if (!DAL_IsValidAddress(loaderAddress))
 		return STATUS_INVALID_ADDRESS;
 
 	PEB_LDR_DATA loaderData = { 0 };
@@ -1257,7 +1257,7 @@ DAL_GetProcessModulesNt(
 
 	uintptr_t loaderAddress =
 		(uintptr_t)pPeb->Ldr;
-	if (!MDAL_IsValidAddress(loaderAddress))
+	if (!DAL_IsValidAddress(loaderAddress))
 		return STATUS_INVALID_ADDRESS;
 
 	PEB_LDR_DATA loaderData = { 0 };

@@ -1,7 +1,7 @@
 #ifndef WINDOWS_PROVIDER_32_H
 #define WINDOWS_PROVIDER_32_H
 
-#include "ApiConfig.h"
+#include "DalConfig.h"
 #include <phnt_windows.h>
 #include <TlHelp32.h>
 #include <ProcessSnapshot.h>

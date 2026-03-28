@@ -1,7 +1,7 @@
 #ifndef WINDOWS_PROVIDER_NT_H
 #define WINDOWS_PROVIDER_NT_H
 
-#include "apiconfig.h"
+#include "DalConfig.h"
 #include <phnt_windows.h>
 #include <phnt.h>
 

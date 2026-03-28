@@ -1,4 +1,7 @@
 #include "ProcessController.h"
+#undef NTSTATUS // Undefine the WindowsProvider32.h definition
+#include <ntdef.h> // NTSTATUS codes
+#include <iostream>
 
 namespace Muninn::Controller
 {
@@ -19,12 +22,12 @@ namespace Muninn::Controller
 		const DWORD processId,
 		const ACCESS_MASK accessMask)
 	{
-		if (!Muninn::Data::IsValidProcessId(processId))
+		if (!DAL_IsValidProcessId(processId))
 			return false;
-		if (Muninn::Data::IsValidHandle(m_processHandle))
+		if (DAL_IsValidHandle(m_processHandle))
 			return false;
 
-		NTSTATUS status{ Muninn::Data::OpenProcessHandleNt(
+		NTSTATUS status{ DAL_OpenProcessHandleNt(
 			processId,
 			accessMask,
 			&m_processHandle) };
@@ -32,17 +35,17 @@ namespace Muninn::Controller
 		if (!NT_SUCCESS(status))
 			return false;
 
-		if (!Muninn::Data::IsValidHandle(m_processHandle))
+		if (!DAL_IsValidHandle(m_processHandle))
 			return false;
 		else return true;
 	}
 
 	bool ProcessController::DisposeHandle()
 	{
-		if (!Muninn::Data::IsValidHandle(m_processHandle))
+		if (!DAL_IsValidHandle(m_processHandle))
 			return true;
 
-		if (!Muninn::Data::CloseHandleNt(m_processHandle))
+		if (!DAL_CloseHandleNt(m_processHandle))
 			return false;
 
 		m_processHandle = nullptr;
@@ -51,9 +54,9 @@ namespace Muninn::Controller
 
 	bool ProcessController::InitializeProcessEntry32(const DWORD processId)
 	{
-		if (!Muninn::Data::IsValidProcessId(processId))
+		if (!DAL_IsValidProcessId(processId))
 			return false;
-		if (!Muninn::Data::IsValidHandle(m_processHandle))
+		if (!DAL_IsValidHandle(m_processHandle))
 			return false;
 
 		m_process32.processEntry = {};
