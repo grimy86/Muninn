@@ -25,23 +25,6 @@
 var NAVTREE =
 [
   [ "Muninn", "index.html", [
-    [ "Namespaces", "namespaces.html", [
-      [ "Namespace List", "namespaces.html", "namespaces_dup" ],
-      [ "Namespace Members", "namespacemembers.html", [
-        [ "All", "namespacemembers.html", null ],
-        [ "Functions", "namespacemembers_func.html", null ],
-        [ "Enumerations", "namespacemembers_enum.html", null ]
-      ] ]
-    ] ],
-    [ "Classes", "annotated.html", [
-      [ "Class List", "annotated.html", "annotated_dup" ],
-      [ "Class Index", "classes.html", null ],
-      [ "Class Members", "functions.html", [
-        [ "All", "functions.html", null ],
-        [ "Functions", "functions_func.html", null ],
-        [ "Variables", "functions_vars.html", null ]
-      ] ]
-    ] ],
     [ "Files", "files.html", [
       [ "File List", "files.html", "files_dup" ],
       [ "File Members", "globals.html", [
@@ -55,8 +38,7 @@ var NAVTREE =
 
 var NAVTREEINDEX =
 [
-"_api_config_8h.html",
-"namespace_muninn_1_1_models.html#aba7218a7df63b236df673ee05c8b0cbaab6ec7abeb6ae29cc35a4b47475e12afe"
+"_dal_config_8h.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronization';

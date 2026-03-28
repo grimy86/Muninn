@@ -1,9 +1,9 @@
 var _data_utilities_8h =
 [
-    [ "DAL_IsValidAddress", "_data_utilities_8h.html#a81c5ca9ad8d2c8020dc071235f41cb07", null ],
-    [ "DAL_IsValidHandle", "_data_utilities_8h.html#a1867b7d299c7c670b84d9cd4bc0951a2", null ],
-    [ "DAL_IsValidLuid", "_data_utilities_8h.html#aaa6065c19c50d18bfd74c6127d76ddcc", null ],
-    [ "DAL_IsValidProcessId", "_data_utilities_8h.html#a4f274c0fd6cc88a62ec0534a1289d306", null ],
-    [ "DAL_MinSizeT", "_data_utilities_8h.html#a412e9787cc5e1fc559ae4c96423b3f3b", null ],
-    [ "DAL_MinU32", "_data_utilities_8h.html#a9cd342e37a5857f5d9cd2551a35e7fee", null ]
+    [ "DAL_IsValidAddress", "_data_utilities_8h.html#a13791e698275772397ac0c99d0211a5c", null ],
+    [ "DAL_IsValidHandle", "_data_utilities_8h.html#aaa76d38d516930879e6a1f969d8eb3d3", null ],
+    [ "DAL_IsValidLuid", "_data_utilities_8h.html#aab3198ca5b67de730f1fd93c3cd86a10", null ],
+    [ "DAL_IsValidProcessId", "_data_utilities_8h.html#ac5833287f7c84c6eed216b473b040297", null ],
+    [ "DAL_MinSizeT", "_data_utilities_8h.html#a23a0b9109858fb3812eae0e4c3407ee5", null ],
+    [ "DAL_MinU32", "_data_utilities_8h.html#a049f933e2a56130780d5c9471f519ddb", null ]
 ];

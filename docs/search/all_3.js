@@ -1,10 +1,6 @@
 var searchData=
 [
-  ['calcanglebetweenvectors_0',['CalcAngleBetweenVectors',['../class_muninn_1_1_models_1_1_vector.html#a88ff1fbbbd2e2da98ced4c268437f9d2',1,'Muninn::Models::Vector']]],
-  ['calcvectorlength_1',['CalcVectorLength',['../class_muninn_1_1_models_1_1_vector.html#a0b3b2ff8d757d64e506aec6bb30d3a52',1,'Muninn::Models::Vector']]],
-  ['chpeemulatorimage_2',['ChpeEmulatorImage',['../namespace_muninn_1_1_models.html#ad5a492a55ac1aaa52e0c532adf45055ba700a50ef2fd978b51296d6e7b3487882',1,'Muninn::Models']]],
-  ['chpeimage_3',['ChpeImage',['../namespace_muninn_1_1_models.html#ad5a492a55ac1aaa52e0c532adf45055baa61aad6f6b7cd187561b904cbf7f1a2a',1,'Muninn::Models']]],
-  ['compatdatabaseprocessed_4',['CompatDatabaseProcessed',['../namespace_muninn_1_1_models.html#ad5a492a55ac1aaa52e0c532adf45055ba5b40243ee7fd63a6eb50deb32f072596',1,'Muninn::Models']]],
-  ['corilonly_5',['CorILOnly',['../namespace_muninn_1_1_models.html#ad5a492a55ac1aaa52e0c532adf45055bad2d9b11176b74e2234702ccb23c262fe',1,'Muninn::Models']]],
-  ['corimage_6',['CorImage',['../namespace_muninn_1_1_models.html#ad5a492a55ac1aaa52e0c532adf45055ba5408b382daf026cc6bb426e12121c2ed',1,'Muninn::Models']]]
+  ['nt_5fcurrent_5fprocess_0',['NT_CURRENT_PROCESS',['../_windows_provider_nt_8c.html#a844a5d86ca3e1f6a5b8c7f58e0b2da71',1,'WindowsProviderNt.c']]],
+  ['nt_5fsuccess_1',['NT_SUCCESS',['../_windows_provider32_8c.html#ad14231612b7a675d33f0ead0b695d21a',1,'WindowsProvider32.c']]],
+  ['ntstatus_2',['NTSTATUS',['../_windows_provider32_8h.html#acccbcb2c4894d4553a546faf96d392ca',1,'WindowsProvider32.h']]]
 ];
