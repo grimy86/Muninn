@@ -292,7 +292,6 @@ namespace Muninn::Models
 
 	struct SystemObject
 	{
-		std::vector<ProcessObject> processList32{};
-		std::vector<ProcessObject> processListNt{};
+		std::vector<ProcessObject> processList{};
 	};
 }

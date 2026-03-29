@@ -11,6 +11,11 @@
 #endif // !NTSTATUS
 
 MUNINN_API NTSTATUS MUNINN_CALL
+DAL_GetProcessId32(
+	_In_ const WCHAR* const processName,
+	_Out_ DWORD* const pProcessId);
+
+MUNINN_API NTSTATUS MUNINN_CALL
 DAL_OpenProcessHandle32(
 	_In_ const DWORD processId,
 	_In_ const ACCESS_MASK accessMask,

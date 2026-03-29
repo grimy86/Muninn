@@ -1687,7 +1687,6 @@ DAL_GetProcessTokenSessionIdNt(
 	return TRUE;
 }
 
-
 std::vector<SYSTEM_EXTENDED_THREAD_INFORMATION> GetProcessThreadsExtendedNt(const HANDLE processHandle, const DWORD processId)
 {
 	if (!IsValidHandle(processHandle)) return {};
@@ -1866,105 +1865,6 @@ BOOL GetProcessThreadObjectsNt(
 		delete[] processInfoBuffer;
 		return TRUE;
 	}
-
-	BOOL GetProcessInformationObjectNt(const HANDLE processHandle, Muninn::Object::ProcessEntry& processEntry)
-{
-	if (!IsValidHandle(processHandle)) return FALSE;
-
-	PROCESS_EXTENDED_BASIC_INFORMATION processInfo{};
-	NTSTATUS status{ NtQueryInformationProcess(
-		processHandle,
-		ProcessBasicInformation,
-		&processInfo,
-		sizeof(PROCESS_EXTENDED_BASIC_INFORMATION),
-		nullptr) };
-
-	if (!NT_SUCCESS(status)) return FALSE;
-
-	processEntry.pebBaseAddress =
-		reinterpret_cast<uintptr_t>(processInfo.BasicInfo.PebBaseAddress);
-	processEntry.processId =
-		static_cast<DWORD>(
-			reinterpret_cast<uintptr_t>(processInfo.BasicInfo.UniqueProcessId));
-	processEntry.parentProcessId =
-		static_cast<DWORD>(
-			reinterpret_cast<uintptr_t>(processInfo.BasicInfo.InheritedFromUniqueProcessId));
-	processEntry.isProtectedProcess = processInfo.IsProtectedProcess;
-	processEntry.isWow64Process = processInfo.IsWow64Process;
-	processEntry.isBackgroundProcess = processInfo.IsBackground;
-	processEntry.isSecureProcess = processInfo.IsSecureProcess;
-	processEntry.isSubsystemProcess = processInfo.IsSubsystemProcess;
-	return TRUE;
-}
-
-BOOL GetProcessInformationObjectExtendedNt(
-	const HANDLE processHandle,
-	const DWORD processId,
-	Muninn::Object::ProcessEntry& processEntry)
-{
-	if (!IsValidHandle(processHandle)) return FALSE;
-	if (!IsValidProcessId(processId)) return FALSE;
-
-	const DWORD requiredBufferSize{ DAL_GetQSIBufferSizeNt(SystemProcessInformation) };
-	BYTE* systemInfoBuffer = new BYTE[requiredBufferSize];
-	NTSTATUS qsiStatus{ NtQuerySystemInformation(
-		SystemProcessInformation,
-		systemInfoBuffer,
-		requiredBufferSize,
-		nullptr) };
-
-	if (!NT_SUCCESS(qsiStatus))
-	{
-		delete[] systemInfoBuffer;
-		return FALSE;
-	}
-
-	PROCESS_EXTENDED_BASIC_INFORMATION processInfo{};
-	NTSTATUS qipStatus{ NtQueryInformationProcess(
-		processHandle,
-		ProcessBasicInformation,
-		&processInfo,
-		sizeof(PROCESS_EXTENDED_BASIC_INFORMATION),
-		nullptr) };
-
-	if (!NT_SUCCESS(qipStatus))
-	{
-		delete[] systemInfoBuffer;
-		return FALSE;
-	}
-
-	PSYSTEM_PROCESS_INFORMATION systemInfo
-	{ reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(systemInfoBuffer) };
-	while (systemInfo)
-	{
-		DWORD uniqueProcessId
-		{ static_cast<DWORD>(reinterpret_cast<uintptr_t>(systemInfo->UniqueProcessId)) };
-		if (uniqueProcessId == processId)
-		{
-			processEntry.processName = (systemInfo->ImageName.Buffer) ?
-				systemInfo->ImageName.Buffer :
-				L"";
-			processEntry.NativeImageFileName = DAL_GetImageFileNameNt(processHandle);
-			processEntry.architectureType = GetArchitectureTypeNt(processHandle);
-			processEntry.pebBaseAddress =
-				reinterpret_cast<uintptr_t>(processInfo.BasicInfo.PebBaseAddress);
-			processEntry.processId =
-				static_cast<DWORD>(
-					reinterpret_cast<uintptr_t>(processInfo.BasicInfo.UniqueProcessId));
-			processEntry.parentProcessId =
-				static_cast<DWORD>(
-					reinterpret_cast<uintptr_t>(processInfo.BasicInfo.InheritedFromUniqueProcessId));
-			processEntry.isProtectedProcess = processInfo.IsProtectedProcess;
-			processEntry.isWow64Process = processInfo.IsWow64Process;
-			processEntry.isBackgroundProcess = processInfo.IsBackground;
-			processEntry.isSecureProcess = processInfo.IsSecureProcess;
-			processEntry.isSubsystemProcess = processInfo.IsSubsystemProcess;
-			break;
-		}
-	}
-	return TRUE;
-}
-
 
 BOOL GetProcessModuleObjectsNt(
 	const HANDLE processHandle,

@@ -26,6 +26,50 @@
 #endif // !MAX_PATH_LONG
 
 MUNINN_API NTSTATUS MUNINN_CALL
+DAL_GetProcessId32(
+	_In_ const WCHAR* const processName,
+	_Out_ DWORD* const pProcessId)
+{
+	if (processName == NULL)
+		return STATUS_INVALID_PARAMETER_1;
+	if (pProcessId == NULL)
+		return STATUS_INVALID_PARAMETER_2;
+
+	*pProcessId = 0ul;
+
+	PROCESSENTRY32W pEntry32W = { 0 };
+	pEntry32W.dwSize = sizeof(pEntry32W);
+
+	HANDLE hSnapshot = CreateToolhelp32Snapshot(
+		TH32CS_SNAPPROCESS,
+		0ul);
+
+	if (!DAL_IsValidHandle(hSnapshot))
+		return STATUS_INVALID_HANDLE;
+
+	if (!Process32First(hSnapshot, &pEntry32W))
+	{
+		CloseHandle(hSnapshot);
+		return STATUS_UNSUCCESSFUL;
+	}
+
+	do
+	{
+		// Case insensitive widestring comparison.
+		if (_wcsicmp(pEntry32W.szExeFile, processName) == 0) {
+			*pProcessId = pEntry32W.th32ProcessID;
+			break;
+		}
+	} while (Process32Next(hSnapshot, &pEntry32W));
+
+	CloseHandle(hSnapshot);
+
+	return *pProcessId ?
+		STATUS_SUCCESS :
+		STATUS_NOT_FOUND;
+}
+
+MUNINN_API NTSTATUS MUNINN_CALL
 DAL_OpenProcessHandle32(
 	_In_ const DWORD processId,
 	_In_ const ACCESS_MASK accessMask,
