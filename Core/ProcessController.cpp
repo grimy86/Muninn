@@ -2,6 +2,18 @@
 #undef NTSTATUS // Undefine the WindowsProvider32.h definition
 #include <ntdef.h> // NTSTATUS codes
 
+#ifndef MAX_MODULES
+#define MAX_MODULES 128ul
+#endif // !MAX_MODULES
+
+#ifndef MAX_THREADS
+#define MAX_THREADS 128ul
+#endif // !MAX_THREADS
+
+#ifndef MAX_HANDLES
+#define MAX_HANDLES 128ul
+#endif // !MAX_HANDLES
+
 namespace Muninn::Controller
 {
 	ProcessController::ProcessController(
@@ -62,19 +74,23 @@ namespace Muninn::Controller
 		m_process.processEntry.processName =
 			processEntry32.szExeFile;
 
+		DWORD copiedLength{0ul};
+		m_process.processEntry.userFullProcessImageName.resize(MAX_PATH);
+
 		status = DAL_GetImageFileNameWin32Nt(
 			m_processHandle,
 			m_process.processEntry.userFullProcessImageName.data(),
 			MAX_PATH,
-			NULL);
+			&copiedLength);
 		if (!NT_SUCCESS(status))
 			return false;
 
+		m_process.processEntry.NativeImageFileName.resize(MAX_PATH);
 		status = DAL_GetImageFileNameNt(
 			m_processHandle,
 			m_process.processEntry.NativeImageFileName.data(),
 			MAX_PATH,
-			NULL);
+			&copiedLength);
 		if (!NT_SUCCESS(status))
 			return false;
 
@@ -141,6 +157,175 @@ namespace Muninn::Controller
 
 		return true;
 	}
+
+	// To be reviewed
+	const bool ProcessController::InitializeModuleList() noexcept
+	{
+		if (!DAL_IsValidProcessId(m_process.processEntry.processId))
+			return false;
+		if (!DAL_IsValidHandle(m_processHandle))
+			return false;
+		if (m_process.processEntry.pebBaseAddress == NULL)
+			return false;
+
+		PEB* pPeb{ reinterpret_cast<PEB*>(
+				m_process.processEntry.pebBaseAddress) };
+
+		std::vector<LDR_DATA_TABLE_ENTRY> moduleList{ MAX_MODULES };
+		DWORD copiedLength{0ul};
+
+		NTSTATUS status{ DAL_GetProcessModulesNt(
+			m_processHandle,
+			pPeb,
+			moduleList.data(),
+			MAX_MODULES,
+			&copiedLength) };
+		if (!NT_SUCCESS(status))
+			return false;
+
+		for (DWORD i{0ul}; i < copiedLength; ++i)
+		{
+			Models::ModuleEntry moduleEntry{};
+
+			/*
+			status = DAL_GetRemoteUnicodeStringNt(
+				m_processHandle,
+				&moduleList[i].BaseDllName,
+				moduleEntry.moduleName.data(),
+				MAX_PATH,
+				&copiedLength);
+			if (!NT_SUCCESS(status))
+				return false;
+
+			status = DAL_GetRemoteUnicodeStringNt(
+				m_processHandle,
+				&moduleList[i].FullDllName,
+				moduleEntry.modulePath.data(),
+				static_cast<DWORD>(moduleEntry.modulePath.size()),
+				&copiedLength);
+			if (!NT_SUCCESS(status))
+				return false;
+				*/
+
+			moduleEntry.moduleLoadAddress =
+				reinterpret_cast<uintptr_t>(
+					moduleList[i].DllBase);
+
+			moduleEntry.moduleEntryPoint =
+				reinterpret_cast<uintptr_t>(
+					moduleList[i].EntryPoint);
+
+			moduleEntry.moduleBaseAddress =
+				reinterpret_cast<uintptr_t>(
+					moduleList[i].DllBase);
+
+			moduleEntry.parentDllBaseAddress =
+				reinterpret_cast<uintptr_t>(
+					moduleList[i].ParentDllBase);
+
+			moduleEntry.kernelModuleFlags =
+				moduleList[i].Flags;
+
+			moduleEntry.moduleImageSize =
+				moduleList[i].SizeOfImage;
+
+			moduleEntry.processId =
+				m_process.processEntry.processId;
+
+			moduleEntry.tlsIndex =
+				moduleList[i].TlsIndex;
+
+			m_process.moduleList.push_back(moduleEntry);
+		}
+		return true;
+	}
+
+	const bool ProcessController::InitializeThreadList() noexcept
+	{
+		if (!DAL_IsValidProcessId(m_process.processEntry.processId))
+			return false;
+		if (!DAL_IsValidHandle(m_processHandle))
+			return false;
+
+		std::vector<SYSTEM_THREAD_INFORMATION> threadList{ MAX_THREADS };
+		DWORD copiedLength{ 0ul };
+
+		NTSTATUS status{ DAL_GetProcessThreadsNt(
+			m_processHandle,
+			m_process.processEntry.processId,
+			threadList.data(),
+			sizeof(MAX_THREADS),
+			&copiedLength) };
+		if (!NT_SUCCESS(status))
+			return false;
+
+		for (DWORD i{ 0ul }; i < copiedLength / sizeof(SYSTEM_THREAD_INFORMATION); ++i)
+		{
+			Models::ThreadEntry threadEntry{};
+
+			threadEntry.kernelThreadStartAddress =
+				reinterpret_cast<uintptr_t>(
+					threadList[i].StartAddress);
+
+			threadEntry.threadId =
+				static_cast<DWORD>(
+				reinterpret_cast<uintptr_t>(
+					threadList[i].ClientId.UniqueThread));
+
+			threadEntry.threadOwnerProcessId =
+				static_cast<DWORD>(
+					reinterpret_cast<uintptr_t>(
+						threadList[i].ClientId.UniqueProcess));
+
+			threadEntry.nativeThreadBasePriority =
+				threadList[i].BasePriority;
+
+			m_process.threadList.push_back(threadEntry);
+		}
+		return true;
+	}
+
+	const bool ProcessController::InitializeHandleList() noexcept
+	{
+		if (!DAL_IsValidProcessId(m_process.processEntry.processId))
+			return false;
+		if (!DAL_IsValidHandle(m_processHandle))
+			return false;
+
+		std::vector<SYSTEM_HANDLE_TABLE_ENTRY_INFO> handleList{ MAX_HANDLES };
+		DWORD copiedLength{ 0ul };
+		NTSTATUS status{ DAL_GetProcessHandlesNt(
+			m_processHandle,
+			m_process.processEntry.processId,
+			handleList.data(),
+			MAX_HANDLES,
+			&copiedLength) };
+		if (!NT_SUCCESS(status))
+			return false;
+
+		for (DWORD i{ 0ul }; i < copiedLength / sizeof(SYSTEM_HANDLE_TABLE_ENTRY_INFO); ++i)
+		{
+			Models::HandleEntry handleEntry{};
+			handleEntry.objectName = std::wstring(
+				reinterpret_cast<WCHAR*>(handleList[i].Object),
+				MAX_PATH);
+
+			handleEntry.handleValue =
+				reinterpret_cast<HANDLE>(
+					handleList[i].HandleValue);
+
+			handleEntry.grantedAccess =
+				handleList[i].GrantedAccess;
+
+			handleEntry.userTargetProcessId =
+				static_cast<DWORD>(
+						handleList[i].UniqueProcessId);
+
+			m_process.handleList.push_back(handleEntry);
+		}
+		return true;
+	}
+
 
 	ProcessController::~ProcessController()
 	{

@@ -498,13 +498,23 @@ DAL_GetRemoteUnicodeStringNt(
 
 	*pCopiedLength = 0ul;
 
+	UNICODE_STRING localString = {0};
+
+	NTSTATUS status = DAL_ReadVirtualMemoryNt(
+		processHandle,
+		(uintptr_t)pRemoteUnicodeString,
+		&localString,
+		sizeof(localString));
+
+	if (!NT_SUCCESS(status))
+		return status;
+
 	// The string is empty
-	if (pRemoteUnicodeString->Buffer == NULL ||
-		pRemoteUnicodeString->Length == 0)
+	if (!localString.Buffer || localString.Length == 0)
 		return STATUS_SUCCESS;
 
 	DWORD charsToCopy =
-		pRemoteUnicodeString->Length / sizeof(WCHAR);
+		localString.Length / sizeof(WCHAR);
 
 	if (charsToCopy >= bufferLength)
 		charsToCopy = bufferLength - 1ul;
@@ -512,12 +522,11 @@ DAL_GetRemoteUnicodeStringNt(
 	SIZE_T bytesToRead =
 		charsToCopy * sizeof(WCHAR);
 
-	NTSTATUS status = NtReadVirtualMemory(
+	status = DAL_ReadVirtualMemoryNt(
 		processHandle,
-		pRemoteUnicodeString->Buffer,
+		(uintptr_t)localString.Buffer,
 		pBuffer,
-		bytesToRead,
-		NULL);
+		bytesToRead);
 
 	if (!NT_SUCCESS(status))
 		return status;
@@ -1245,8 +1254,15 @@ DAL_GetProcessModulesNt(
 	if (pCopiedLength == NULL)
 		return STATUS_INVALID_PARAMETER_5;
 
-	if (!pPeb->Ldr)
-		return STATUS_UNSUCCESSFUL;
+	PEB peb = {0};
+
+	NTSTATUS status = DAL_ReadVirtualMemoryNt(
+		processHandle,
+		(uintptr_t)pPeb,
+		&peb,
+		sizeof(peb));
+	if (!NT_SUCCESS(status))
+		return status;
 
 	memset(
 		pBuffer,
@@ -1256,12 +1272,12 @@ DAL_GetProcessModulesNt(
 	*pCopiedLength = 0ul;
 
 	uintptr_t loaderAddress =
-		(uintptr_t)pPeb->Ldr;
+		(uintptr_t)peb.Ldr;
 	if (!DAL_IsValidAddress(loaderAddress))
 		return STATUS_INVALID_ADDRESS;
 
 	PEB_LDR_DATA loaderData = { 0 };
-	NTSTATUS status = DAL_ReadVirtualMemoryNt(
+	status = DAL_ReadVirtualMemoryNt(
 		processHandle,
 		loaderAddress,
 		&loaderData,

@@ -30,6 +30,9 @@ namespace Muninn::Controller
 		ProcessController& operator=(const ProcessController&) = delete;
 
 		const bool InitializeProcessEntry() noexcept;
+		const bool InitializeModuleList() noexcept;
+		const bool InitializeThreadList() noexcept;
+		const bool InitializeHandleList() noexcept;
 
 		const Muninn::Models::ProcessObject& GetProcessObject() const noexcept;
 		const HANDLE& GetProcessHandle() const noexcept;
