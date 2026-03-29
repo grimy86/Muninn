@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['_7eprocesscontroller_0',['~ProcessController',['../class_muninn_1_1_controller_1_1_process_controller.html#acedae443ad70d7ac1cfb6349e9d2152b',1,'Muninn::Controller::ProcessController']]],
-  ['_7esystemcontroller_1',['~SystemController',['../class_muninn_1_1_controller_1_1_system_controller.html#ab2b92dc5cc1b3c60f33f22ca538fe188',1,'Muninn::Controller::SystemController']]]
+  ['vectordotproduct_0',['VectorDotProduct',['../class_muninn_1_1_models_1_1_vector.html#aa454f6808521774f6df57cd2316d1773',1,'Muninn::Models::Vector']]],
+  ['vectoview_1',['VecToView',['../class_muninn_1_1_models_1_1_vector.html#ac6c422a517fc62b74e104d6f26b98685',1,'Muninn::Models::Vector']]],
+  ['viewtovec_2',['ViewToVec',['../class_muninn_1_1_models_1_1_vector.html#a94d9631d50e0fb9d5ac2240a4e45dcf6',1,'Muninn::Models::Vector']]]
 ];

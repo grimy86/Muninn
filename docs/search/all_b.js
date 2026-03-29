@@ -18,9 +18,8 @@ var searchData=
   ['muninn_3a_3acontroller_15',['Controller',['../namespace_muninn_1_1_controller.html',1,'Muninn']]],
   ['muninn_3a_3amodels_16',['Models',['../namespace_muninn_1_1_models.html',1,'Muninn']]],
   ['muninn_3a_3aview_17',['View',['../namespace_muninn_1_1_view.html',1,'Muninn']]],
-  ['muninn_5fapi_18',['MUNINN_API',['../_api_config_8h.html#acf8d2148056107fcfa9e26653466adcb',1,'ApiConfig.h']]],
-  ['muninn_5fcall_19',['MUNINN_CALL',['../_api_config_8h.html#aca0d0085545ae028cba77b366016246e',1,'ApiConfig.h']]],
-  ['muninn_5fextern_5fc_20',['MUNINN_EXTERN_C',['../_api_config_8h.html#a4aa2aed9a52575f3858ce4fccd4008ac',1,'ApiConfig.h']]],
-  ['muninnapi_2eh_21',['MuninnApi.h',['../_muninn_api_8h.html',1,'']]],
-  ['mutant_22',['Mutant',['../namespace_muninn_1_1_models.html#aba7218a7df63b236df673ee05c8b0cbaa2190fb425e7dba568d79ba4f40b201fc',1,'Muninn::Models']]]
+  ['muninn_5fapi_18',['MUNINN_API',['../_dal_config_8h.html#acf8d2148056107fcfa9e26653466adcb',1,'DalConfig.h']]],
+  ['muninn_5fcall_19',['MUNINN_CALL',['../_dal_config_8h.html#aca0d0085545ae028cba77b366016246e',1,'DalConfig.h']]],
+  ['muninndal_2eh_20',['MuninnDal.h',['../_muninn_dal_8h.html',1,'']]],
+  ['mutant_21',['Mutant',['../namespace_muninn_1_1_models.html#aba7218a7df63b236df673ee05c8b0cbaa2190fb425e7dba568d79ba4f40b201fc',1,'Muninn::Models']]]
 ];

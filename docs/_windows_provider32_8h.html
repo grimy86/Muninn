@@ -104,6 +104,7 @@ Macros</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:a0aea2582483acd39203539da25b748d5" id="r_a0aea2582483acd39203539da25b748d5"><td class="memItemLeft"><a class="el" href="_dal_config_8h.html#acf8d2148056107fcfa9e26653466adcb">MUNINN_API</a> <a class="el" href="#acccbcb2c4894d4553a546faf96d392ca">NTSTATUS</a> <a class="el" href="_dal_config_8h.html#aca0d0085545ae028cba77b366016246e">MUNINN_CALL</a>&#160;</td><td class="memItemRight"><a class="el" href="#a0aea2582483acd39203539da25b748d5">DAL_GetProcessId32</a> (<a class="el" href="_dal_config_8h.html#aa74f89aa7d942f4a79ea12d7c9b763ef">_In_</a> const WCHAR *const processName, <a class="el" href="_dal_config_8h.html#a9c50bd6a6ca6e0be76a0f3a79379b90e">_Out_</a> DWORD *const pProcessId)</td></tr>
 <tr class="memitem:ab3b47b215c151efbce00ee40f2fbc88f" id="r_ab3b47b215c151efbce00ee40f2fbc88f"><td class="memItemLeft"><a class="el" href="_dal_config_8h.html#acf8d2148056107fcfa9e26653466adcb">MUNINN_API</a> <a class="el" href="#acccbcb2c4894d4553a546faf96d392ca">NTSTATUS</a> <a class="el" href="_dal_config_8h.html#aca0d0085545ae028cba77b366016246e">MUNINN_CALL</a>&#160;</td><td class="memItemRight"><a class="el" href="#ab3b47b215c151efbce00ee40f2fbc88f">DAL_OpenProcessHandle32</a> (<a class="el" href="_dal_config_8h.html#aa74f89aa7d942f4a79ea12d7c9b763ef">_In_</a> const DWORD processId, <a class="el" href="_dal_config_8h.html#aa74f89aa7d942f4a79ea12d7c9b763ef">_In_</a> const ACCESS_MASK accessMask, <a class="el" href="_dal_config_8h.html#a9c50bd6a6ca6e0be76a0f3a79379b90e">_Out_</a> HANDLE *const pHandle)</td></tr>
 <tr class="memitem:a9357786f76b5e5e95b367c91e8d635cb" id="r_a9357786f76b5e5e95b367c91e8d635cb"><td class="memItemLeft"><a class="el" href="_dal_config_8h.html#acf8d2148056107fcfa9e26653466adcb">MUNINN_API</a> <a class="el" href="#acccbcb2c4894d4553a546faf96d392ca">NTSTATUS</a> <a class="el" href="_dal_config_8h.html#aca0d0085545ae028cba77b366016246e">MUNINN_CALL</a>&#160;</td><td class="memItemRight"><a class="el" href="#a9357786f76b5e5e95b367c91e8d635cb">DAL_CloseHandle32</a> (<a class="el" href="_dal_config_8h.html#aa74f89aa7d942f4a79ea12d7c9b763ef">_In_</a> const HANDLE handle)</td></tr>
 <tr class="memitem:a667d878ee6584a3c7573185a13ce3baf" id="r_a667d878ee6584a3c7573185a13ce3baf"><td class="memItemLeft"><a class="el" href="_dal_config_8h.html#acf8d2148056107fcfa9e26653466adcb">MUNINN_API</a> <a class="el" href="#acccbcb2c4894d4553a546faf96d392ca">NTSTATUS</a> <a class="el" href="_dal_config_8h.html#aca0d0085545ae028cba77b366016246e">MUNINN_CALL</a>&#160;</td><td class="memItemRight"><a class="el" href="#a667d878ee6584a3c7573185a13ce3baf">DAL_OpenTokenHandle32</a> (<a class="el" href="_dal_config_8h.html#aa74f89aa7d942f4a79ea12d7c9b763ef">_In_</a> const HANDLE processHandle, <a class="el" href="_dal_config_8h.html#aa74f89aa7d942f4a79ea12d7c9b763ef">_In_</a> const ACCESS_MASK accessMask, <a class="el" href="_dal_config_8h.html#a9c50bd6a6ca6e0be76a0f3a79379b90e">_Out_</a> HANDLE *const pTokenHandle)</td></tr>
@@ -275,6 +276,27 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="_dal_config_8h.html#a9c50bd6a6ca6e0be76a0f3a79379b90e">_Out_</a> DWORD *const</td>          <td class="paramname"><span class="paramname"><em>pCopiedLength</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a0aea2582483acd39203539da25b748d5" name="a0aea2582483acd39203539da25b748d5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0aea2582483acd39203539da25b748d5">&#9670;&#160;</a></span>DAL_GetProcessId32()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="_dal_config_8h.html#acf8d2148056107fcfa9e26653466adcb">MUNINN_API</a> <a class="el" href="#acccbcb2c4894d4553a546faf96d392ca">NTSTATUS</a> <a class="el" href="_dal_config_8h.html#aca0d0085545ae028cba77b366016246e">MUNINN_CALL</a> DAL_GetProcessId32 </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="_dal_config_8h.html#aa74f89aa7d942f4a79ea12d7c9b763ef">_In_</a> const WCHAR *const</td>          <td class="paramname"><span class="paramname"><em>processName</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="_dal_config_8h.html#a9c50bd6a6ca6e0be76a0f3a79379b90e">_Out_</a> DWORD *const</td>          <td class="paramname"><span class="paramname"><em>pProcessId</em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">

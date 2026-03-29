@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['resume_5fthread_5ferror_0',['RESUME_THREAD_ERROR',['../_windows_provider32_8c.html#aa4172e94389eadad66e174ba5af352ec',1,'WindowsProvider32.c']]]
+  ['qsi_5fmin_5fbuffer_5fsize_0',['QSI_MIN_BUFFER_SIZE',['../_windows_provider_nt_8c.html#af9a6e5479fa071d117f11857f70122bf',1,'WindowsProviderNt.c']]]
 ];

@@ -100,13 +100,17 @@ $(function(){initNavTree('class_muninn_1_1_controller_1_1_process_controller.htm
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a5081078af7f70af4c450ddca8579fa29" id="r_a5081078af7f70af4c450ddca8579fa29"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a5081078af7f70af4c450ddca8579fa29">ProcessController</a> ()=default</td></tr>
-<tr class="memitem:ac1bf9126196440c3451aa6986055c3ea" id="r_ac1bf9126196440c3451aa6986055c3ea"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#ac1bf9126196440c3451aa6986055c3ea">ProcessController</a> (const DWORD processId, const ACCESS_MASK processAccessMask)</td></tr>
+<tr class="memitem:a96c48601030d018b6070a4708c26e277" id="r_a96c48601030d018b6070a4708c26e277"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a96c48601030d018b6070a4708c26e277">ProcessController</a> (const DWORD processId, const ACCESS_MASK accessMask)</td></tr>
 <tr class="memitem:acedae443ad70d7ac1cfb6349e9d2152b" id="r_acedae443ad70d7ac1cfb6349e9d2152b"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#acedae443ad70d7ac1cfb6349e9d2152b">~ProcessController</a> ()</td></tr>
 <tr class="memitem:a9b48231038dab8d575d40863d72db613" id="r_a9b48231038dab8d575d40863d72db613"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a9b48231038dab8d575d40863d72db613">ProcessController</a> (const ProcessController &amp;)=delete</td></tr>
 <tr class="memitem:aed877b34ff64fcf8cc297ff0ffd0fd04" id="r_aed877b34ff64fcf8cc297ff0ffd0fd04"><td class="memItemLeft"><a class="el" href="#a5081078af7f70af4c450ddca8579fa29">ProcessController</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#aed877b34ff64fcf8cc297ff0ffd0fd04">operator=</a> (const <a class="el" href="#a5081078af7f70af4c450ddca8579fa29">ProcessController</a> &amp;)=delete</td></tr>
-<tr class="memitem:a1c80b1d5f61607deb2bc4a785846a037" id="r_a1c80b1d5f61607deb2bc4a785846a037"><td class="memItemLeft">const <a class="el" href="struct_muninn_1_1_models_1_1_process_object.html">Muninn::Models::ProcessObject</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a1c80b1d5f61607deb2bc4a785846a037">GetProcessObject32</a> () const noexcept</td></tr>
-<tr class="memitem:a2dc001348898ee83e07444584f642387" id="r_a2dc001348898ee83e07444584f642387"><td class="memItemLeft">const <a class="el" href="struct_muninn_1_1_models_1_1_process_object.html">Muninn::Models::ProcessObject</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a2dc001348898ee83e07444584f642387">GetProcessObjectNt</a> () const noexcept</td></tr>
+<tr class="memitem:a14dc17fbb3f8247739fa75838dda6793" id="r_a14dc17fbb3f8247739fa75838dda6793"><td class="memItemLeft">const bool&#160;</td><td class="memItemRight"><a class="el" href="#a14dc17fbb3f8247739fa75838dda6793">InitializeProcessEntry</a> () noexcept</td></tr>
+<tr class="memitem:a4062986a275ccf56bae4ba81d831e332" id="r_a4062986a275ccf56bae4ba81d831e332"><td class="memItemLeft">const <a class="el" href="struct_muninn_1_1_models_1_1_process_object.html">Muninn::Models::ProcessObject</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a4062986a275ccf56bae4ba81d831e332">GetProcessObject</a> () const noexcept</td></tr>
 <tr class="memitem:a37347ed8065738bf169a0439edfb9988" id="r_a37347ed8065738bf169a0439edfb9988"><td class="memItemLeft">const HANDLE &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a37347ed8065738bf169a0439edfb9988">GetProcessHandle</a> () const noexcept</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-pub-static-methods" class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
+Static Public Member Functions</h2></td></tr>
+<tr class="memitem:a905d79e7404c3521463c08ab118f1dc2" id="r_a905d79e7404c3521463c08ab118f1dc2"><td class="memItemLeft">static DWORD&#160;</td><td class="memItemRight"><a class="el" href="#a905d79e7404c3521463c08ab118f1dc2">GetProcessId</a> (const WCHAR *processName) noexcept</td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Manages process object lifetime, initialization, population &amp; state tracking. </p>
@@ -137,8 +141,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ac1bf9126196440c3451aa6986055c3ea" name="ac1bf9126196440c3451aa6986055c3ea"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac1bf9126196440c3451aa6986055c3ea">&#9670;&#160;</a></span>ProcessController() <span class="overload">[2/3]</span></h2>
+<a id="a96c48601030d018b6070a4708c26e277" name="a96c48601030d018b6070a4708c26e277"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a96c48601030d018b6070a4708c26e277">&#9670;&#160;</a></span>ProcessController() <span class="overload">[2/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -151,7 +155,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const ACCESS_MASK</td>          <td class="paramname"><span class="paramname"><em>processAccessMask</em></span>&#160;)</td>
+          <td class="paramtype">const ACCESS_MASK</td>          <td class="paramname"><span class="paramname"><em>accessMask</em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -226,8 +230,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a1c80b1d5f61607deb2bc4a785846a037" name="a1c80b1d5f61607deb2bc4a785846a037"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1c80b1d5f61607deb2bc4a785846a037">&#9670;&#160;</a></span>GetProcessObject32()</h2>
+<a id="a905d79e7404c3521463c08ab118f1dc2" name="a905d79e7404c3521463c08ab118f1dc2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a905d79e7404c3521463c08ab118f1dc2">&#9670;&#160;</a></span>GetProcessId()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -236,7 +240,32 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="struct_muninn_1_1_models_1_1_process_object.html">Muninn::Models::ProcessObject</a> &amp; Muninn::Controller::ProcessController::GetProcessObject32 </td>
+          <td class="memname">DWORD Muninn::Controller::ProcessController::GetProcessId </td>
+          <td>(</td>
+          <td class="paramtype">const WCHAR *</td>          <td class="paramname"><span class="paramname"><em>processName</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a4062986a275ccf56bae4ba81d831e332" name="a4062986a275ccf56bae4ba81d831e332"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4062986a275ccf56bae4ba81d831e332">&#9670;&#160;</a></span>GetProcessObject()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="struct_muninn_1_1_models_1_1_process_object.html">Muninn::Models::ProcessObject</a> &amp; Muninn::Controller::ProcessController::GetProcessObject </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td> const</td>
@@ -251,8 +280,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a2dc001348898ee83e07444584f642387" name="a2dc001348898ee83e07444584f642387"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2dc001348898ee83e07444584f642387">&#9670;&#160;</a></span>GetProcessObjectNt()</h2>
+<a id="a14dc17fbb3f8247739fa75838dda6793" name="a14dc17fbb3f8247739fa75838dda6793"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a14dc17fbb3f8247739fa75838dda6793">&#9670;&#160;</a></span>InitializeProcessEntry()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -261,10 +290,10 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="struct_muninn_1_1_models_1_1_process_object.html">Muninn::Models::ProcessObject</a> &amp; Muninn::Controller::ProcessController::GetProcessObjectNt </td>
+          <td class="memname">const bool Muninn::Controller::ProcessController::InitializeProcessEntry </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
-          <td> const</td>
+          <td></td>
         </tr>
       </table>
   </td>
@@ -302,8 +331,8 @@ Public Member Functions</h2></td></tr>
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following files:<ul>
-<li>Muninn/<a class="el" href="_process_controller_8h_source.html">ProcessController.h</a></li>
-<li>Muninn/<a class="el" href="_process_controller_8cpp.html">ProcessController.cpp</a></li>
+<li>Core/<a class="el" href="_process_controller_8h_source.html">ProcessController.h</a></li>
+<li>Core/<a class="el" href="_process_controller_8cpp.html">ProcessController.cpp</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

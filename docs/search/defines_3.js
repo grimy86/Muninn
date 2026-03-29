@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['page_5fsize_0',['PAGE_SIZE',['../_windows_provider_nt_8c.html#a7d467c1d283fdfa1f2081ba1e0d01b6e',1,'WindowsProviderNt.c']]],
-  ['prealloc_5fhandles_1',['PREALLOC_HANDLES',['../_windows_provider32_8c.html#a8c2860c48574b530db217f3dea880c9e',1,'WindowsProvider32.c']]]
+  ['nt_5fcurrent_5fprocess_0',['NT_CURRENT_PROCESS',['../_windows_provider_nt_8c.html#a844a5d86ca3e1f6a5b8c7f58e0b2da71',1,'WindowsProviderNt.c']]],
+  ['nt_5fsuccess_1',['NT_SUCCESS',['../_windows_provider32_8c.html#ad14231612b7a675d33f0ead0b695d21a',1,'WindowsProvider32.c']]],
+  ['ntstatus_2',['NTSTATUS',['../_windows_provider32_8h.html#acccbcb2c4894d4553a546faf96d392ca',1,'WindowsProvider32.h']]]
 ];

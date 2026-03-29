@@ -11,6 +11,7 @@ var _windows_provider32_8c =
     [ "DAL_GetModuleBaseAddress32", "_windows_provider32_8c.html#aafd8ace868040ea847a2bf1bbc42e669", null ],
     [ "DAL_GetProcessArchitecture32", "_windows_provider32_8c.html#a93fb6d0fdbfa2b746d2d235965f1219f", null ],
     [ "DAL_GetProcessHandles32", "_windows_provider32_8c.html#a7d8b4140b05aabb27990fcb9fc881678", null ],
+    [ "DAL_GetProcessId32", "_windows_provider32_8c.html#a0aea2582483acd39203539da25b748d5", null ],
     [ "DAL_GetProcessInformation32", "_windows_provider32_8c.html#a9486281a29ba1d2f8cb6ee42e5424771", null ],
     [ "DAL_GetProcessModules32", "_windows_provider32_8c.html#a8ae9a101dcaf66563fe06903ea85f8e5", null ],
     [ "DAL_GetProcessThreads32", "_windows_provider32_8c.html#aacc92c88731d76353411d1c6b8836176", null ],
