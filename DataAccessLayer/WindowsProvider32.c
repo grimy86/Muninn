@@ -28,14 +28,18 @@
 MUNINN_API NTSTATUS MUNINN_CALL
 DAL_GetProcessId32(
 	_In_ const WCHAR* const processName,
-	_Out_ DWORD* const pProcessId)
+	_Out_ DWORD* const pProcessId,
+	_Out_ BOOL* const pIsRunning)
 {
 	if (processName == NULL)
 		return STATUS_INVALID_PARAMETER_1;
 	if (pProcessId == NULL)
 		return STATUS_INVALID_PARAMETER_2;
+	if (pIsRunning == NULL)
+		return STATUS_INVALID_PARAMETER_3;
 
 	*pProcessId = 0ul;
+	*pIsRunning = FALSE;
 
 	PROCESSENTRY32W pEntry32W = { 0 };
 	pEntry32W.dwSize = sizeof(pEntry32W);
@@ -58,13 +62,14 @@ DAL_GetProcessId32(
 		// Case insensitive widestring comparison.
 		if (_wcsicmp(pEntry32W.szExeFile, processName) == 0) {
 			*pProcessId = pEntry32W.th32ProcessID;
+			*pIsRunning = TRUE;
 			break;
 		}
 	} while (Process32Next(hSnapshot, &pEntry32W));
 
 	CloseHandle(hSnapshot);
 
-	return *pProcessId ?
+	return (*pProcessId != 0ul) ?
 		STATUS_SUCCESS :
 		STATUS_NOT_FOUND;
 }

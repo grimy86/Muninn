@@ -29,6 +29,7 @@ namespace Muninn::Controller
 		ProcessController(const ProcessController&) = delete;
 		ProcessController& operator=(const ProcessController&) = delete;
 
+		
 		const bool InitializeProcessEntry() noexcept;
 		const bool InitializeModuleList() noexcept;
 		const bool InitializeThreadList() noexcept;
@@ -36,6 +37,10 @@ namespace Muninn::Controller
 
 		const Muninn::Models::ProcessObject& GetProcessObject() const noexcept;
 		const HANDLE& GetProcessHandle() const noexcept;
-		static DWORD GetProcessId(const WCHAR* processName) noexcept;
+		const DWORD GetProcessId() const noexcept;
+
+		static DWORD GetProcessId(
+			const WCHAR* processName,
+			bool& isRunning) noexcept;
 	};
 }

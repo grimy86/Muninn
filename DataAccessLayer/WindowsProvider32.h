@@ -13,7 +13,8 @@
 MUNINN_API NTSTATUS MUNINN_CALL
 DAL_GetProcessId32(
 	_In_ const WCHAR* const processName,
-	_Out_ DWORD* const pProcessId);
+	_Out_ DWORD* const pProcessId,
+	_Out_ BOOL* const pIsRunning);
 
 MUNINN_API NTSTATUS MUNINN_CALL
 DAL_OpenProcessHandle32(

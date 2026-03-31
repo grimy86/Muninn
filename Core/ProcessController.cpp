@@ -357,10 +357,27 @@ namespace Muninn::Controller
 		return m_processHandle;
 	}
 
-	DWORD ProcessController::GetProcessId(const WCHAR* processName) noexcept
+	const DWORD ProcessController::GetProcessId() const noexcept
+	{
+		return m_process.processEntry.processId;
+	}
+
+	DWORD ProcessController::GetProcessId(const WCHAR* processName, bool& isRunning) noexcept
 	{
 		DWORD processId{ 0ul };
-		DAL_GetProcessId32(processName, &processId);
+		BOOL isRunningBuffer{ FALSE };
+
+		NTSTATUS status{ DAL_GetProcessId32(
+			processName,
+			&processId,
+			&isRunningBuffer) };
+
+		isRunning = 
+			(isRunningBuffer == TRUE);
+
+		if (!NT_SUCCESS(status))
+			return 0ul;
+		
 		return processId;
 	}
 }

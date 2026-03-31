@@ -140,6 +140,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="ProcessPrinter.cpp" />
+    <ClCompile Include="ProcessPrinter.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ClientConfig.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
