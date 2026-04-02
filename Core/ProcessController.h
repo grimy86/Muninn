@@ -1,5 +1,6 @@
 #pragma once
-#include "WindowsModels.h"
+#include "ProcessModel.h"
+#include "InjectorModel.h"
 #include <MuninnDal.h>
 
 namespace Muninn::Controller
@@ -11,11 +12,12 @@ namespace Muninn::Controller
 	class ProcessController final
 	{
 	private:
-		Muninn::Models::ProcessObject m_process{};
+		Muninn::Model::ProcessModel m_process{};
+		Muninn::Model::InjectorModel m_injector{};
 		HANDLE m_processHandle{ nullptr };
 
-		bool InitializeProcessId(const DWORD processId) noexcept;
-		bool InitializeProcessHandle(const ACCESS_MASK accessMask) noexcept;
+		bool SetProcessId(const DWORD processId) noexcept;
+		bool SetProcessHandle(const ACCESS_MASK accessMask) noexcept;
 		bool DisposeHandle();
 
 	public:
@@ -29,13 +31,14 @@ namespace Muninn::Controller
 		ProcessController(const ProcessController&) = delete;
 		ProcessController& operator=(const ProcessController&) = delete;
 
-		
 		const bool InitializeProcessEntry() noexcept;
 		const bool InitializeModuleList() noexcept;
 		const bool InitializeThreadList() noexcept;
 		const bool InitializeHandleList() noexcept;
+		const bool SimpleInjectDll() noexcept;
 
-		const Muninn::Models::ProcessObject& GetProcessObject() const noexcept;
+		const Muninn::Model::ProcessModel& GetProcessObject() const noexcept;
+		const Muninn::Model::InjectorModel& GetInjectorObject() const noexcept;
 		const HANDLE& GetProcessHandle() const noexcept;
 		const DWORD GetProcessId() const noexcept;
 

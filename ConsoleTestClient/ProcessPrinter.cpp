@@ -55,7 +55,7 @@ void PrintEntry(Muninn::Controller::ProcessController* pProcessController) noexc
 	std::wcout << std::hex << L"processEntry.pebBaseAddress: 0x"
 		<< pProcessController->GetProcessObject().processEntry.pebBaseAddress << L'\n';
 
-	std::wcout << L"processEntry.pebBaseAddress: 0x"
+	std::wcout << L"processEntry.moduleBaseAddress: 0x"
 		<< pProcessController->GetProcessObject().processEntry.moduleBaseAddress << L'\n';
 
 	std::wcout << std::dec << L"processEntry.parentProcessId: "
@@ -81,19 +81,19 @@ void PrintEntry(Muninn::Controller::ProcessController* pProcessController) noexc
 
 	switch (pProcessController->GetProcessObject().processEntry.architectureType)
 	{
-	case(Muninn::Models::ArchitectureType::x86):
+	case(Muninn::Model::ArchitectureType::x86):
 	{
 		std::wcout << L"processEntry.architectureType: " <<
 			L"x86" << L'\n';
 		break;
 	}
-	case(Muninn::Models::ArchitectureType::x64):
+	case(Muninn::Model::ArchitectureType::x64):
 	{
 		std::wcout << L"Controller..process.processEntry.architectureType: " <<
 			L"x64" << L'\n';
 		break;
 	}
-	case(Muninn::Models::ArchitectureType::Unknown):
+	case(Muninn::Model::ArchitectureType::Unknown):
 	{
 		std::wcout << L"Controller..process.processEntry.architectureType: " <<
 			L"Unknown" << L'\n';
@@ -145,4 +145,15 @@ void PrintModules(Muninn::Controller::ProcessController* pProcessController) noe
 		std::wcout << "moduleList[" << i << "].tlsIndex: " <<
 			pProcessController->GetProcessObject().moduleList[i].tlsIndex << '\n';
 	}
+}
+
+void PrintSimpleInject(
+	Muninn::Controller::ProcessController* pProcessController,
+	const wchar_t* dllPath,
+	HMODULE& pModuleHandle,
+	bool& isInjected) noexcept
+{
+	isInjected = pProcessController->SimpleInjectDll(
+		dllPath,
+		pModuleHandle);
 }

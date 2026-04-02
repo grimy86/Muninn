@@ -8,3 +8,8 @@ void PrintProcessId(Muninn::Controller::ProcessController* pProcessController) n
 void PrintProcessHandle(Muninn::Controller::ProcessController* pProcessController) noexcept;
 void PrintEntry(Muninn::Controller::ProcessController* pProcessController) noexcept;
 void PrintModules(Muninn::Controller::ProcessController* pProcessController) noexcept;
+void PrintSimpleInject(
+	Muninn::Controller::ProcessController* pProcessController,
+	const wchar_t* dllPath,
+	HMODULE& pModuleHandle,
+	bool& isInjected) noexcept;

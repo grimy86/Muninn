@@ -11,6 +11,20 @@
 #endif // !NTSTATUS
 
 MUNINN_API NTSTATUS MUNINN_CALL
+DAL_WriteVirtualMemory32(
+	HANDLE processHandle,
+	uintptr_t address,
+	const void* value,
+	SIZE_T size);
+
+MUNINN_API NTSTATUS MUNINN_CALL
+DAL_ReadVirtualMemory32(
+	HANDLE processHandle,
+	uintptr_t address,
+	void* out,
+	SIZE_T size);
+
+MUNINN_API NTSTATUS MUNINN_CALL
 DAL_GetProcessId32(
 	_In_ const WCHAR* const processName,
 	_Out_ DWORD* const pProcessId,
@@ -120,4 +134,17 @@ DAL_GetProcessHandles32(
 	PSS_HANDLE_ENTRY* const pBuffer,
 	_In_ const DWORD bufferLength,
 	_Out_ DWORD* const pCopiedLength);
+
+MUNINN_API NTSTATUS MUNINN_CALL
+DAL_SimpleDLLInjectA32(
+	_In_ const HANDLE processHandle,
+	_In_ const CHAR* const dllPath,
+	_Out_ HMODULE* pModuleHandle);
+
+MUNINN_API NTSTATUS MUNINN_CALL
+DAL_SimpleDLLInjectW32(
+	_In_ const HANDLE processHandle,
+	_In_ const WCHAR* const dllPath,
+	_Out_ HMODULE* pModuleHandle);
+
 #endif // !MUNINN_DATA_WINDOWS_PROVIDER_32

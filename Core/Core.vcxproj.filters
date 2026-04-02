@@ -32,7 +32,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="MathModels.cpp">
+    <ClCompile Include="VectorModel.cpp">
       <Filter>ModelLayer\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ProcessController.cpp">
@@ -46,10 +46,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MathModels.h">
-      <Filter>ModelLayer\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="WindowsModels.h">
+    <ClInclude Include="VectorModel.h">
       <Filter>ModelLayer\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ProcessController.h">
@@ -60,6 +57,27 @@
     </ClInclude>
     <ClInclude Include="ViewUtilities.h">
       <Filter>ViewLayer\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="InjectorModel.h">
+      <Filter>ModelLayer\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ProcessModel.h">
+      <Filter>ModelLayer\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SystemModel.h">
+      <Filter>ModelLayer\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ModuleModel.h">
+      <Filter>ModelLayer\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadModel.h">
+      <Filter>ModelLayer\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HandleModel.h">
+      <Filter>ModelLayer\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AccessTokenModel.h">
+      <Filter>ModelLayer\Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

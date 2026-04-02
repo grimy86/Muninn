@@ -1,10 +1,10 @@
-#include "MathModels.h"
+#include "VectorModel.h"
 
-namespace Muninn::Models
+namespace Muninn::Model
 {
-	Vector Vector::operator-(const Vector& vector) const
+	VectorModel VectorModel::operator-(const VectorModel& vector) const
 	{
-		Vector vectorBetweenPoints //vector to enemy (dest(enemy) - source(player))
+		VectorModel vectorBetweenPoints //vector to enemy (dest(enemy) - source(player))
 		{
 			x - vector.x, //distance between x postions
 			y - vector.y, //distance between y positions
@@ -14,12 +14,12 @@ namespace Muninn::Models
 		return vectorBetweenPoints;
 	}
 
-	Vector Vector::ViewToVec() const
+	VectorModel VectorModel::ViewToVec() const
 	{
 		// x = yaw
 		// y = pitch
 
-		Vector viewVector{};
+		VectorModel viewVector{};
 		if (x >= 0.0f && x < 90.0f) // +x, -y
 		{
 			viewVector.y = -1.0f;
@@ -54,10 +54,10 @@ namespace Muninn::Models
 		return viewVector;
 	}
 
-	Vector Vector::VecToView() const
+	VectorModel VectorModel::VecToView() const
 	{
 		//Yaw angles
-		Vector aimAngles{};
+		VectorModel aimAngles{};
 		if (x >= 0.0f && y < 0.0f) // +x, -y
 		{
 			aimAngles.x = RadiansToDegrees(atanf(x / -y));
@@ -87,27 +87,27 @@ namespace Muninn::Models
 		return aimAngles;
 	}
 
-	float Vector::CalcAngleBetweenVectors(const Vector& vector) const
+	float VectorModel::CalcAngleBetweenVectors(const VectorModel& vector) const
 	{
 		return RadiansToDegrees(acosf(VectorDotProduct(vector) / (CalcVectorLength() * vector.CalcVectorLength())));
 	}
 
-	float Vector::VectorDotProduct(const Vector& vector) const
+	float VectorModel::VectorDotProduct(const VectorModel& vector) const
 	{
 		return (x * vector.x) + (y * vector.y) + (z * vector.z);
 	}
 
-	float Vector::CalcVectorLength() const
+	float VectorModel::CalcVectorLength() const
 	{
 		return sqrtf((x * x) + (y * y) + (z * z));
 	}
 
-	float Vector::RadiansToDegrees(float radians) const
+	float VectorModel::RadiansToDegrees(float radians) const
 	{
 		return ((radians * 180.0f) / 3.14159265359f);
 	}
 
-	float Vector::DegreesToRadians(float degrees) const
+	float VectorModel::DegreesToRadians(float degrees) const
 	{
 		return ((degrees / 180.0f) * 3.14159265359f);
 	}

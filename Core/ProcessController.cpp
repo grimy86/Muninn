@@ -20,14 +20,14 @@ namespace Muninn::Controller
 		const DWORD processId,
 		const ACCESS_MASK accessMask)
 	{
-		if (!InitializeProcessId(processId))
+		if (!SetProcessId(processId))
 			return;
 
-		if (!InitializeProcessHandle(accessMask))
+		if (!SetProcessHandle(accessMask))
 			return;
 	}
 
-	bool ProcessController::InitializeProcessId(
+	bool ProcessController::SetProcessId(
 		const DWORD processId) noexcept
 	{
 		if (!DAL_IsValidProcessId(processId))
@@ -35,7 +35,7 @@ namespace Muninn::Controller
 		m_process.processEntry.processId = processId;
 	}
 
-	bool ProcessController::InitializeProcessHandle(
+	bool ProcessController::SetProcessHandle(
 		const ACCESS_MASK accessMask) noexcept
 	{
 		if (!DAL_IsValidProcessId(m_process.processEntry.processId))
@@ -55,6 +55,7 @@ namespace Muninn::Controller
 		return true;
 	}
 
+	// All to be reviewed, should make use of getters n setters
 	const bool ProcessController::InitializeProcessEntry() noexcept
 	{
 		if (!DAL_IsValidProcessId(m_process.processEntry.processId))
@@ -145,20 +146,19 @@ namespace Muninn::Controller
 		switch (processMachine)
 		{
 		case(IMAGE_FILE_MACHINE_I386):
-			m_process.processEntry.architectureType = Muninn::Models::ArchitectureType::x86;
+			m_process.processEntry.architectureType = Muninn::Model::ArchitectureType::x86;
 			break;
 		case(IMAGE_FILE_MACHINE_AMD64):
-			m_process.processEntry.architectureType = Muninn::Models::ArchitectureType::x64;
+			m_process.processEntry.architectureType = Muninn::Model::ArchitectureType::x64;
 			break;
 		default:
-			m_process.processEntry.architectureType = Muninn::Models::ArchitectureType::Unknown;
+			m_process.processEntry.architectureType = Muninn::Model::ArchitectureType::Unknown;
 			break;
 		}
 
 		return true;
 	}
 
-	// To be reviewed
 	const bool ProcessController::InitializeModuleList() noexcept
 	{
 		if (!DAL_IsValidProcessId(m_process.processEntry.processId))
@@ -185,7 +185,7 @@ namespace Muninn::Controller
 
 		for (DWORD i{0ul}; i < copiedLength; ++i)
 		{
-			Models::ModuleEntry moduleEntry{};
+			Model::ModuleModel moduleEntry{};
 
 			/*
 			status = DAL_GetRemoteUnicodeStringNt(
@@ -261,7 +261,7 @@ namespace Muninn::Controller
 
 		for (DWORD i{ 0ul }; i < copiedLength / sizeof(SYSTEM_THREAD_INFORMATION); ++i)
 		{
-			Models::ThreadEntry threadEntry{};
+			Model::ThreadModel threadEntry{};
 
 			threadEntry.kernelThreadStartAddress =
 				reinterpret_cast<uintptr_t>(
@@ -305,7 +305,7 @@ namespace Muninn::Controller
 
 		for (DWORD i{ 0ul }; i < copiedLength / sizeof(SYSTEM_HANDLE_TABLE_ENTRY_INFO); ++i)
 		{
-			Models::HandleEntry handleEntry{};
+			Model::HandleModel handleEntry{};
 			handleEntry.objectName = std::wstring(
 				reinterpret_cast<WCHAR*>(handleList[i].Object),
 				MAX_PATH);
@@ -326,6 +326,23 @@ namespace Muninn::Controller
 		return true;
 	}
 
+	const bool ProcessController::SimpleInjectDll(
+		const WCHAR* dllPath, HMODULE& pModuleHandle) noexcept
+	{
+		if (!DAL_IsValidProcessId(m_process.processEntry.processId))
+			return false;
+		if (!DAL_IsValidHandle(m_processHandle))
+			return false;
+
+		NTSTATUS status{ DAL_SimpleDLLInjectW32(
+			m_processHandle,
+			dllPath,
+			&pModuleHandle) };
+			
+		return NT_SUCCESS(status) == STATUS_SUCCESS ?
+			true :
+			false;
+	}
 
 	ProcessController::~ProcessController()
 	{
@@ -344,12 +361,16 @@ namespace Muninn::Controller
 		return true;
 	}
 
-
-
-	const Muninn::Models::ProcessObject&
+	const Muninn::Model::ProcessModel&
 		ProcessController::GetProcessObject() const noexcept
 	{
 		return m_process;
+	}
+
+	const Muninn::Model::InjectorModel&
+		ProcessController::GetInjectorObject() const noexcept
+	{
+		return m_injector;
 	}
 
 	const HANDLE& ProcessController::GetProcessHandle() const noexcept

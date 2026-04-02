@@ -201,7 +201,7 @@ DAL_GetQSIBufferSizeNt(
 
 	*pRequiredBufferSize = 0ul;
 
-	BYTE buffer[QSI_MIN_BUFFER_SIZE];
+	BYTE buffer[QSI_MIN_BUFFER_SIZE] = {0};
 	NTSTATUS status = NtQuerySystemInformation(
 		infoClass,
 		buffer,
@@ -1645,7 +1645,7 @@ DAL_GetProcessTokenSessionIdNt(
 	BOOL GetProcessHandleObjectsNt(
 	const HANDLE processHandle,
 	const DWORD processId,
-	std::vector<Muninn::Object::HandleEntry>& handles)
+	std::vector<Muninn::Object::HandleModel>& handles)
 {
 	if (!IsValidHandle(processHandle)) return FALSE;
 	if (!IsValidProcessId(processId)) return FALSE;
@@ -1677,7 +1677,7 @@ DAL_GetProcessTokenSessionIdNt(
 		if (static_cast<uintptr_t>(sHandleInfo.UniqueProcessId) != static_cast<uintptr_t>(processId))
 			continue;
 
-		Muninn::Object::HandleEntry handleEntry{};
+		Muninn::Object::HandleModel handleEntry{};
 		handleEntry.handleValue = reinterpret_cast<HANDLE>(sHandleInfo.HandleValue);
 		handleEntry.typeName = DAL_GetObjectTypeNameNt(handleEntry.handleValue, processId);
 		handleEntry.objectName = DAL_GetObjectNameNt(handleEntry.handleValue, processId);
@@ -1757,7 +1757,7 @@ std::vector<SYSTEM_EXTENDED_THREAD_INFORMATION> GetProcessThreadsExtendedNt(cons
 BOOL GetProcessThreadObjectsNt(
 	const HANDLE processHandle,
 	const DWORD processId,
-	std::vector<Muninn::Object::ThreadEntry>& threads)
+	std::vector<Muninn::Object::ThreadModel>& threads)
 {
 	if (!IsValidHandle(processHandle)) return FALSE;
 	if (!IsValidProcessId(processId)) return FALSE;
@@ -1794,7 +1794,7 @@ BOOL GetProcessThreadObjectsNt(
 			for (ULONG i{ 0 }; i < processInfo->NumberOfThreads; ++i)
 			{
 				const SYSTEM_THREAD_INFORMATION& sThreadInfo{ processInfo->Threads[i] };
-				Muninn::Object::ThreadEntry threadEntry{};
+				Muninn::Object::ThreadModel threadEntry{};
 				threadEntry.kernelThreadStartAddress =
 					reinterpret_cast<uintptr_t>(sThreadInfo.StartAddress);
 				threadEntry.nativeThreadBasePriority =
@@ -1818,7 +1818,7 @@ BOOL GetProcessThreadObjectsNt(
 	BOOL GetProcessThreadObjectsExtendedNt(
 		const HANDLE processHandle,
 		const DWORD processId,
-		std::vector<Muninn::Object::ThreadEntry>& threads)
+		std::vector<Muninn::Object::ThreadModel>& threads)
 	{
 		if (!IsValidHandle(processHandle)) return FALSE;
 		if (!IsValidProcessId(processId)) return FALSE;
@@ -1856,7 +1856,7 @@ BOOL GetProcessThreadObjectsNt(
 				{
 					const SYSTEM_THREAD_INFORMATION& sThreadInfo{ processInfo->Threads[i] };
 					const SYSTEM_EXTENDED_THREAD_INFORMATION& sThreadExInfo{ processInfo->ThreadsEx[i] };
-					Muninn::Object::ThreadEntry threadEntry{};
+					Muninn::Object::ThreadModel threadEntry{};
 					threadEntry.kernelThreadStartAddress =
 						reinterpret_cast<uintptr_t>(sThreadInfo.StartAddress);
 					threadEntry.win32ThreadStartAddress =
@@ -1886,7 +1886,7 @@ BOOL GetProcessModuleObjectsNt(
 	const HANDLE processHandle,
 	const DWORD processId,
 	const PEB& peb,
-	std::vector<Muninn::Object::ModuleEntry>& modules)
+	std::vector<Muninn::Object::ModuleModel>& modules)
 {
 	if (!IsValidHandle(processHandle)) return FALSE;
 	if (!IsValidProcessId(processId)) return FALSE;
@@ -1917,7 +1917,7 @@ BOOL GetProcessModuleObjectsNt(
 		if (!NT_SUCCESS(ReadVirtualMemoryNt<LDR_DATA_TABLE_ENTRY>(processHandle, entryAddress, entry)))
 			break;
 
-		Muninn::Object::ModuleEntry moduleEntry{};
+		Muninn::Object::ModuleModel moduleEntry{};
 		moduleEntry.moduleName = DAL_GetRemoteUnicodeStringNt(processHandle, entry.BaseDllName);
 		moduleEntry.modulePath = DAL_GetRemoteUnicodeStringNt(processHandle, entry.FullDllName);
 		moduleEntry.moduleEntryPoint
@@ -1983,7 +1983,7 @@ std::vector<Muninn::Object::ProcessEntry> WindowsProviderNt::QueryProcesses()
 		// Threads
 		for (ULONG i = 0; i < processInfo->NumberOfThreads; ++i)
 		{
-			Muninn::Object::ThreadEntry threadEntry{};
+			Muninn::Object::ThreadModel threadEntry{};
 			const SYSTEM_THREAD_INFORMATION& sThreadInfo = processInfo->Threads[i];
 
 			threadEntry.structureSize = sizeof(SYSTEM_THREAD_INFORMATION);
@@ -2030,7 +2030,7 @@ BOOL GetProcessTokenPriviligeObjectsNt(const HANDLE tokenHandle, std::vector<Mun
 BOOL GetProcessAccessTokenObjectNt(
 	const HANDLE processHandle,
 	const ACCESS_MASK accessMask,
-	Muninn::Object::AccessToken& accessToken)
+	Muninn::Object::AccessTokenModel& accessToken)
 {
 	if (!IsValidHandle(processHandle)) return FALSE;
 
