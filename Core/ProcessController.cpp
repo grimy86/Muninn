@@ -17,50 +17,110 @@
 namespace Muninn::Controller
 {
 	ProcessController::ProcessController(
-		const DWORD processId,
-		const ACCESS_MASK accessMask)
+		const DWORD processId) noexcept
 	{
 		if (!SetProcessId(processId))
-			return;
-
-		if (!SetProcessHandle(accessMask))
-			return;
+			m_state = ProcessControllerState::ConstructorError;
+		else
+			m_state = ProcessControllerState::Constructed;
 	}
 
-	bool ProcessController::SetProcessId(
-		const DWORD processId) noexcept
+	ProcessController::ProcessController(
+		const DWORD processId,
+		const ACCESS_MASK accessMask) noexcept
+	{
+		if (!SetProcessId(processId))
+			m_state = ProcessControllerState::ConstructorError;
+
+		// A valid processId is required to be set before setting the process handle
+		if (!SetProcessHandle(accessMask))
+			m_state = ProcessControllerState::ConstructorError;
+		else
+			m_state = ProcessControllerState::Constructed;
+	}
+
+	bool ProcessController::Dispose() noexcept
+	{
+		if (!DAL_IsValidHandle(m_process.processHandle))
+		{
+			m_state = ProcessControllerState::Disposed;
+			return true;
+		}
+
+		if (!NT_SUCCESS(DAL_CloseHandleNt(
+			m_process.processHandle)))
+		{
+			m_state = ProcessControllerState::DisposeError;
+			return false;
+		}
+
+		m_process.processHandle = nullptr;
+		m_state = ProcessControllerState::Disposed;
+		return true;
+	}
+
+	ProcessController::~ProcessController() noexcept
+	{
+		if (!Dispose())
+		{
+			m_state = ProcessControllerState::DestructorError;
+		}
+
+		m_state = ProcessControllerState::Destructed;
+	}
+
+	bool ProcessController::SetProcessId(const DWORD processId) noexcept
 	{
 		if (!DAL_IsValidProcessId(processId))
 			return false;
+
 		m_process.processEntry.processId = processId;
 	}
 
-	bool ProcessController::SetProcessHandle(
-		const ACCESS_MASK accessMask) noexcept
+	bool ProcessController::SetProcessHandle(const ACCESS_MASK accessMask) noexcept
 	{
 		if (!DAL_IsValidProcessId(m_process.processEntry.processId))
 			return false;
 
-		if (!DAL_IsValidHandle(m_processHandle))
+		if (!DAL_IsValidHandle(m_process.processHandle))
 		{
 			NTSTATUS status{ DAL_OpenProcessHandleNt(
 			m_process.processEntry.processId,
 			accessMask,
-			&m_processHandle) };
+			&m_process.processHandle) };
 
-			if (!NT_SUCCESS(status) || !DAL_IsValidHandle(m_processHandle))
+			if (!NT_SUCCESS(status) ||
+				!DAL_IsValidHandle(m_process.processHandle))
 				return false;
 		}
 
 		return true;
 	}
 
-	// All to be reviewed, should make use of getters n setters
-	const bool ProcessController::InitializeProcessEntry() noexcept
+	bool ProcessController::SetDllPathA(const char* dllPath) noexcept
+	{
+		if (dllPath == nullptr)
+			return false;
+
+		m_injector.DllPathA = dllPath;
+		return true;
+	}
+
+	bool ProcessController::SetDllPathW(const wchar_t* dllPath) noexcept
+	{
+		if (dllPath == nullptr)
+			return false;
+
+		m_injector.DllPathW = dllPath;
+		return true;
+	}
+
+	// Below to be reviewed
+	bool ProcessController::InitializeProcessEntry() noexcept
 	{
 		if (!DAL_IsValidProcessId(m_process.processEntry.processId))
 			return false;
-		if (!DAL_IsValidHandle(m_processHandle))
+		if (!DAL_IsValidHandle(m_process.processHandle))
 			return false;
 
 		PROCESSENTRY32W processEntry32{};
@@ -79,7 +139,7 @@ namespace Muninn::Controller
 		m_process.processEntry.userFullProcessImageName.resize(MAX_PATH);
 
 		status = DAL_GetImageFileNameWin32Nt(
-			m_processHandle,
+			m_process.processHandle,
 			m_process.processEntry.userFullProcessImageName.data(),
 			MAX_PATH,
 			&copiedLength);
@@ -88,7 +148,7 @@ namespace Muninn::Controller
 
 		m_process.processEntry.NativeImageFileName.resize(MAX_PATH);
 		status = DAL_GetImageFileNameNt(
-			m_processHandle,
+			m_process.processHandle,
 			m_process.processEntry.NativeImageFileName.data(),
 			MAX_PATH,
 			&copiedLength);
@@ -96,14 +156,14 @@ namespace Muninn::Controller
 			return false;
 
 		status = DAL_GetPebBaseAddressAndProcessInfoNt(
-			m_processHandle,
+			m_process.processHandle,
 			&m_process.processEntry.pebBaseAddress,
 			&processInfo);
 		if (!NT_SUCCESS(status))
 			return false;
 
 		status = DAL_GetModuleBaseAddressFromPebBaseAddressNt(
-			m_processHandle,
+			m_process.processHandle,
 			&m_process.processEntry.pebBaseAddress,
 			&m_process.processEntry.moduleBaseAddress);
 		if (!NT_SUCCESS(status))
@@ -136,7 +196,7 @@ namespace Muninn::Controller
 		BOOL isWow64{};
 
 		status = DAL_GetProcessArchitecture32(
-			m_processHandle,
+			m_process.processHandle,
 			&processMachine,
 			&nativeMachine,
 			&isWow64);
@@ -159,11 +219,11 @@ namespace Muninn::Controller
 		return true;
 	}
 
-	const bool ProcessController::InitializeModuleList() noexcept
+	bool ProcessController::InitializeModuleList() noexcept
 	{
 		if (!DAL_IsValidProcessId(m_process.processEntry.processId))
 			return false;
-		if (!DAL_IsValidHandle(m_processHandle))
+		if (!DAL_IsValidHandle(m_process.processHandle))
 			return false;
 		if (m_process.processEntry.pebBaseAddress == NULL)
 			return false;
@@ -175,7 +235,7 @@ namespace Muninn::Controller
 		DWORD copiedLength{0ul};
 
 		NTSTATUS status{ DAL_GetProcessModulesNt(
-			m_processHandle,
+			m_process.processHandle,
 			pPeb,
 			moduleList.data(),
 			MAX_MODULES,
@@ -240,18 +300,18 @@ namespace Muninn::Controller
 		return true;
 	}
 
-	const bool ProcessController::InitializeThreadList() noexcept
+	bool ProcessController::InitializeThreadList() noexcept
 	{
 		if (!DAL_IsValidProcessId(m_process.processEntry.processId))
 			return false;
-		if (!DAL_IsValidHandle(m_processHandle))
+		if (!DAL_IsValidHandle(m_process.processHandle))
 			return false;
 
 		std::vector<SYSTEM_THREAD_INFORMATION> threadList{ MAX_THREADS };
 		DWORD copiedLength{ 0ul };
 
 		NTSTATUS status{ DAL_GetProcessThreadsNt(
-			m_processHandle,
+			m_process.processHandle,
 			m_process.processEntry.processId,
 			threadList.data(),
 			sizeof(MAX_THREADS),
@@ -285,17 +345,17 @@ namespace Muninn::Controller
 		return true;
 	}
 
-	const bool ProcessController::InitializeHandleList() noexcept
+	bool ProcessController::InitializeHandleList() noexcept
 	{
 		if (!DAL_IsValidProcessId(m_process.processEntry.processId))
 			return false;
-		if (!DAL_IsValidHandle(m_processHandle))
+		if (!DAL_IsValidHandle(m_process.processHandle))
 			return false;
 
 		std::vector<SYSTEM_HANDLE_TABLE_ENTRY_INFO> handleList{ MAX_HANDLES };
 		DWORD copiedLength{ 0ul };
 		NTSTATUS status{ DAL_GetProcessHandlesNt(
-			m_processHandle,
+			m_process.processHandle,
 			m_process.processEntry.processId,
 			handleList.data(),
 			MAX_HANDLES,
@@ -326,64 +386,47 @@ namespace Muninn::Controller
 		return true;
 	}
 
-	const bool ProcessController::SimpleInjectDll(
-		const WCHAR* dllPath, HMODULE& pModuleHandle) noexcept
+	bool ProcessController::SimpleDLLInjectA() noexcept
 	{
 		if (!DAL_IsValidProcessId(m_process.processEntry.processId))
 			return false;
-		if (!DAL_IsValidHandle(m_processHandle))
+		if (!DAL_IsValidHandle(m_process.processHandle))
+			return false;
+		if(m_injector.DllPathA == nullptr)
 			return false;
 
-		NTSTATUS status{ DAL_SimpleDLLInjectW32(
-			m_processHandle,
-			dllPath,
-			&pModuleHandle) };
+		NTSTATUS status{ DAL_SimpleDLLInjectA32(
+			m_process.processHandle,
+			m_injector.DllPathA,
+			&m_injector.ModuleHandle) };
 			
 		return NT_SUCCESS(status) == STATUS_SUCCESS ?
 			true :
 			false;
 	}
 
-	ProcessController::~ProcessController()
+	bool ProcessController::SimpleDllInjectW() noexcept
 	{
-		if (!DisposeHandle());
-	}
-
-	bool ProcessController::DisposeHandle()
-	{
-		if (!DAL_IsValidHandle(m_processHandle))
-			return true;
-
-		if (!DAL_CloseHandleNt(m_processHandle))
+		if (!DAL_IsValidProcessId(m_process.processEntry.processId))
+			return false;
+		if (!DAL_IsValidHandle(m_process.processHandle))
+			return false;
+		if (m_injector.DllPathW == nullptr)
 			return false;
 
-		m_processHandle = nullptr;
-		return true;
+		NTSTATUS status{ DAL_SimpleDLLInjectW32(
+			m_process.processHandle,
+			m_injector.DllPathW,
+			&m_injector.ModuleHandle) };
+
+		return NT_SUCCESS(status) == STATUS_SUCCESS ?
+			true :
+			false;
 	}
 
-	const Muninn::Model::ProcessModel&
-		ProcessController::GetProcessObject() const noexcept
-	{
-		return m_process;
-	}
-
-	const Muninn::Model::InjectorModel&
-		ProcessController::GetInjectorObject() const noexcept
-	{
-		return m_injector;
-	}
-
-	const HANDLE& ProcessController::GetProcessHandle() const noexcept
-	{
-		return m_processHandle;
-	}
-
-	const DWORD ProcessController::GetProcessId() const noexcept
-	{
-		return m_process.processEntry.processId;
-	}
-
-	DWORD ProcessController::GetProcessId(const WCHAR* processName, bool& isRunning) noexcept
+	DWORD ProcessController::FindProcessId(
+		const WCHAR* processName,
+		bool& isRunning) noexcept
 	{
 		DWORD processId{ 0ul };
 		BOOL isRunningBuffer{ FALSE };

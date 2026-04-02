@@ -79,5 +79,8 @@
     <ClInclude Include="AccessTokenModel.h">
       <Filter>ModelLayer\Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="IController.h">
+      <Filter>ControllerLayer\Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

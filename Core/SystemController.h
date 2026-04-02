@@ -1,8 +1,9 @@
 #pragma once
+#include "IController.h"
 
 namespace Muninn::Controller
 {
-	class SystemController final
+	class SystemController final : public IController
 	{
 	private:
 		SystemController() = default;

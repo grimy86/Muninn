@@ -139,6 +139,7 @@
   <ItemGroup>
     <ClInclude Include="AccessTokenModel.h" />
     <ClInclude Include="HandleModel.h" />
+    <ClInclude Include="IController.h" />
     <ClInclude Include="InjectorModel.h" />
     <ClInclude Include="ModuleModel.h" />
     <ClInclude Include="ProcessModel.h" />

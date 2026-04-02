@@ -1,4 +1,5 @@
 #pragma once
+#include "IController.h"
 #include "ProcessModel.h"
 #include "InjectorModel.h"
 #include <MuninnDal.h>
@@ -6,43 +7,62 @@
 namespace Muninn::Controller
 {
 	/// <summary>
+	/// A state machine for tracking the lifecycle of the process controller itself.
+	/// </summary>
+	enum class ProcessControllerState : uint8_t
+	{
+		None,
+		Constructed,
+		ConstructorError,
+		Disposed,
+		DisposeError,
+		Destructed,
+		DestructorError
+	};
+
+	/// <summary>
 	/// Manages process object lifetime, initialization, population & state tracking.
 	/// <para> Note that getters are not state tracked. </para>
 	/// </summary>
-	class ProcessController final
+	class ProcessController final : public IController
 	{
 	private:
+		ProcessControllerState m_state{ ProcessControllerState::None };
 		Muninn::Model::ProcessModel m_process{};
 		Muninn::Model::InjectorModel m_injector{};
-		HANDLE m_processHandle{ nullptr };
+
+		bool Dispose() noexcept override;
+
+	public:
+		ProcessController() noexcept = default;
+		ProcessController(const DWORD processId) noexcept;
+		ProcessController(
+			const DWORD processId,
+			const ACCESS_MASK accessMask) noexcept;
+		~ProcessController() noexcept;
+
+		const ProcessControllerState& GetState() const noexcept
+		{ return m_state; }
+
+		const Muninn::Model::ProcessModel& GetProcess() const noexcept
+		{ return m_process; }
+
+		const Muninn::Model::InjectorModel& GetInjector() const noexcept
+		{ return m_injector; }
 
 		bool SetProcessId(const DWORD processId) noexcept;
 		bool SetProcessHandle(const ACCESS_MASK accessMask) noexcept;
-		bool DisposeHandle();
+		bool SetDllPathA(const char* dllPath) noexcept;
+		bool SetDllPathW(const wchar_t* dllPath) noexcept;
 
-	public:
-		ProcessController() = default;
-		ProcessController(
-			const DWORD processId,
-			const ACCESS_MASK accessMask);
-		~ProcessController();
-
-		// Delete copy constructor and copy assignment operator
-		ProcessController(const ProcessController&) = delete;
-		ProcessController& operator=(const ProcessController&) = delete;
-
-		const bool InitializeProcessEntry() noexcept;
-		const bool InitializeModuleList() noexcept;
-		const bool InitializeThreadList() noexcept;
-		const bool InitializeHandleList() noexcept;
-		const bool SimpleInjectDll() noexcept;
-
-		const Muninn::Model::ProcessModel& GetProcessObject() const noexcept;
-		const Muninn::Model::InjectorModel& GetInjectorObject() const noexcept;
-		const HANDLE& GetProcessHandle() const noexcept;
-		const DWORD GetProcessId() const noexcept;
-
-		static DWORD GetProcessId(
+		bool InitializeProcessEntry() noexcept;
+		bool InitializeModuleList() noexcept;
+		bool InitializeThreadList() noexcept;
+		bool InitializeHandleList() noexcept;
+		bool SimpleDLLInjectA() noexcept;
+		bool SimpleDllInjectW() noexcept;
+		
+		static DWORD FindProcessId(
 			const WCHAR* processName,
 			bool& isRunning) noexcept;
 	};
