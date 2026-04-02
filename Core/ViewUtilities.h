@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include <WinUser.h>
+#include <Windows.h>
 #include <string>
 
 namespace Muninn::View

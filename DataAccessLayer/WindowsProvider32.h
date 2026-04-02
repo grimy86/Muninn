@@ -2,7 +2,6 @@
 #define WINDOWS_PROVIDER_32_H
 
 #include "DalConfig.h"
-#include <phnt_windows.h>
 #include <TlHelp32.h>
 #include <ProcessSnapshot.h>
 

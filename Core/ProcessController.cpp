@@ -59,6 +59,128 @@ namespace Muninn::Controller
 		return true;
 	}
 
+	bool ProcessController::PopulateProcessEntryBasicInfo() noexcept
+	{
+		PROCESSENTRY32W processEntry32{};
+
+		NTSTATUS status{ DAL_GetProcessInformation32(
+			m_process.processEntry.processId,
+			&processEntry32) };
+		if (!NT_SUCCESS(status))
+			return false;
+
+		m_process.processEntry.processName =
+			processEntry32.szExeFile;
+
+		return true;
+	}
+
+	bool ProcessController::PopulateProcessEntryImagePaths() noexcept
+	{
+		DWORD copiedLength{ 0ul };
+		m_process.processEntry.userFullProcessImageName.resize(MAX_PATH);
+		NTSTATUS status{ DAL_GetImageFileNameWin32Nt(
+			m_process.processHandle,
+			m_process.processEntry.userFullProcessImageName.data(),
+			MAX_PATH,
+			&copiedLength) };
+		if (!NT_SUCCESS(status))
+			return false;
+
+		// Trim back
+		m_process.processEntry.userFullProcessImageName.resize(copiedLength);
+
+		m_process.processEntry.NativeImageFileName.resize(MAX_PATH);
+		copiedLength = 0ul;
+		status = DAL_GetImageFileNameNt(
+			m_process.processHandle,
+			m_process.processEntry.NativeImageFileName.data(),
+			MAX_PATH,
+			&copiedLength);
+		if (!NT_SUCCESS(status))
+			return false;
+
+		// Trim back
+		m_process.processEntry.NativeImageFileName.resize(copiedLength);
+
+		return true;
+	}
+
+	bool ProcessController::PopulateProcessEntryExtendedInfo() noexcept
+	{
+		PROCESS_EXTENDED_BASIC_INFORMATION processInfo{};
+
+		NTSTATUS status{ DAL_GetPebBaseAddressAndProcessInfoNt(
+			m_process.processHandle,
+			&m_process.processEntry.pebBaseAddress,
+			&processInfo) };
+		if (!NT_SUCCESS(status))
+			return false;
+
+		status = DAL_GetModuleBaseAddressFromPebBaseAddressNt(
+			m_process.processHandle,
+			&m_process.processEntry.pebBaseAddress,
+			&m_process.processEntry.moduleBaseAddress);
+		if (!NT_SUCCESS(status))
+			return false;
+
+		m_process.processEntry.parentProcessId =
+			static_cast<DWORD>(
+				reinterpret_cast<uintptr_t>(
+					processInfo.InheritedFromUniqueProcessId));
+
+		m_process.processEntry.isProtectedProcess =
+			processInfo.IsProtectedProcess;
+		m_process.processEntry.isWow64Process =
+			processInfo.IsWow64Process;
+		m_process.processEntry.isBackgroundProcess =
+			processInfo.IsBackground;
+		m_process.processEntry.isSecureProcess =
+			processInfo.IsSecureProcess;
+		m_process.processEntry.isSubsystemProcess =
+			processInfo.IsSubsystemProcess;
+
+		return true;
+	}
+
+	bool ProcessController::PopulateProcessEntryWindowInfo() noexcept
+	{
+		NTSTATUS status{ DAL_GetWindowVisibility32(
+			m_process.processEntry.processId,
+			&m_process.processEntry.hasVisibleWindow) };
+		if (!NT_SUCCESS(status))
+			return false;
+
+		return true;
+	}
+
+	bool ProcessController::PopulateProcessEntryArchitecture() noexcept
+	{
+		USHORT processMachine{};
+		USHORT nativeMachine{};
+		BOOL isWow64{};
+
+		NTSTATUS status{ DAL_GetProcessArchitecture32(
+			m_process.processHandle,
+			&processMachine,
+			&nativeMachine,
+			&isWow64) };
+		if (!NT_SUCCESS(status))
+			return false;
+
+		if (isWow64)
+			m_process.processEntry.architectureType = 
+			Muninn::Model::ArchitectureType::x86;
+		else if (processMachine == IMAGE_FILE_MACHINE_AMD64)
+			m_process.processEntry.architectureType = 
+			Muninn::Model::ArchitectureType::x64;
+		else
+			m_process.processEntry.architectureType = 
+			Muninn::Model::ArchitectureType::Unknown;
+
+		return true;
+	}
+
 	ProcessController::~ProcessController() noexcept
 	{
 		if (!Dispose())
@@ -97,7 +219,7 @@ namespace Muninn::Controller
 		return true;
 	}
 
-	bool ProcessController::SetDllPathA(const char* dllPath) noexcept
+	bool ProcessController::SetInjectorDllPathA(const char* dllPath) noexcept
 	{
 		if (dllPath == nullptr)
 			return false;
@@ -106,7 +228,7 @@ namespace Muninn::Controller
 		return true;
 	}
 
-	bool ProcessController::SetDllPathW(const wchar_t* dllPath) noexcept
+	bool ProcessController::SetInjectorDllPathW(const wchar_t* dllPath) noexcept
 	{
 		if (dllPath == nullptr)
 			return false;
@@ -115,111 +237,30 @@ namespace Muninn::Controller
 		return true;
 	}
 
-	// Below to be reviewed
-	bool ProcessController::InitializeProcessEntry() noexcept
+	bool ProcessController::PopulateProcessEntry() noexcept
 	{
 		if (!DAL_IsValidProcessId(m_process.processEntry.processId))
 			return false;
 		if (!DAL_IsValidHandle(m_process.processHandle))
 			return false;
-
-		PROCESSENTRY32W processEntry32{};
-		PROCESS_EXTENDED_BASIC_INFORMATION processInfo{};
-
-		NTSTATUS status{ DAL_GetProcessInformation32(
-			m_process.processEntry.processId,
-			&processEntry32) };
-		if (!NT_SUCCESS(status))
+		
+		// If-statements for debugging purposes instead of a compound statement.
+		if (!PopulateProcessEntryBasicInfo())
 			return false;
-
-		m_process.processEntry.processName =
-			processEntry32.szExeFile;
-
-		DWORD copiedLength{0ul};
-		m_process.processEntry.userFullProcessImageName.resize(MAX_PATH);
-
-		status = DAL_GetImageFileNameWin32Nt(
-			m_process.processHandle,
-			m_process.processEntry.userFullProcessImageName.data(),
-			MAX_PATH,
-			&copiedLength);
-		if (!NT_SUCCESS(status))
+		if (!PopulateProcessEntryImagePaths())
 			return false;
-
-		m_process.processEntry.NativeImageFileName.resize(MAX_PATH);
-		status = DAL_GetImageFileNameNt(
-			m_process.processHandle,
-			m_process.processEntry.NativeImageFileName.data(),
-			MAX_PATH,
-			&copiedLength);
-		if (!NT_SUCCESS(status))
+		if (!PopulateProcessEntryExtendedInfo())
 			return false;
-
-		status = DAL_GetPebBaseAddressAndProcessInfoNt(
-			m_process.processHandle,
-			&m_process.processEntry.pebBaseAddress,
-			&processInfo);
-		if (!NT_SUCCESS(status))
+		if (!PopulateProcessEntryWindowInfo())
 			return false;
-
-		status = DAL_GetModuleBaseAddressFromPebBaseAddressNt(
-			m_process.processHandle,
-			&m_process.processEntry.pebBaseAddress,
-			&m_process.processEntry.moduleBaseAddress);
-		if (!NT_SUCCESS(status))
+		if (!PopulateProcessEntryArchitecture())
 			return false;
-
-		m_process.processEntry.parentProcessId =
-			static_cast<DWORD>(
-				reinterpret_cast<uintptr_t>(
-					processInfo.InheritedFromUniqueProcessId));
-
-		m_process.processEntry.isProtectedProcess =
-			processInfo.IsProtectedProcess;
-		m_process.processEntry.isWow64Process =
-			processInfo.IsWow64Process;
-		m_process.processEntry.isBackgroundProcess =
-			processInfo.IsBackground;
-		m_process.processEntry.isSecureProcess =
-			processInfo.IsSecureProcess;
-		m_process.processEntry.isSubsystemProcess =
-			processInfo.IsSubsystemProcess;
-
-		status = DAL_GetWindowVisibility32(
-			m_process.processEntry.processId,
-			&m_process.processEntry.hasVisibleWindow);
-		if (!NT_SUCCESS(status))
-			return false;
-
-		USHORT processMachine{};
-		USHORT nativeMachine{};
-		BOOL isWow64{};
-
-		status = DAL_GetProcessArchitecture32(
-			m_process.processHandle,
-			&processMachine,
-			&nativeMachine,
-			&isWow64);
-		if (!NT_SUCCESS(status))
-			return false;
-
-		switch (processMachine)
-		{
-		case(IMAGE_FILE_MACHINE_I386):
-			m_process.processEntry.architectureType = Muninn::Model::ArchitectureType::x86;
-			break;
-		case(IMAGE_FILE_MACHINE_AMD64):
-			m_process.processEntry.architectureType = Muninn::Model::ArchitectureType::x64;
-			break;
-		default:
-			m_process.processEntry.architectureType = Muninn::Model::ArchitectureType::Unknown;
-			break;
-		}
 
 		return true;
 	}
 
-	bool ProcessController::InitializeModuleList() noexcept
+	// To be reviewed
+	bool ProcessController::PopulateProcessModuleList() noexcept
 	{
 		if (!DAL_IsValidProcessId(m_process.processEntry.processId))
 			return false;
@@ -300,7 +341,8 @@ namespace Muninn::Controller
 		return true;
 	}
 
-	bool ProcessController::InitializeThreadList() noexcept
+	// To be reviewed
+	bool ProcessController::PopulateProcessThreadList() noexcept
 	{
 		if (!DAL_IsValidProcessId(m_process.processEntry.processId))
 			return false;
@@ -345,7 +387,8 @@ namespace Muninn::Controller
 		return true;
 	}
 
-	bool ProcessController::InitializeHandleList() noexcept
+	// To be reviewed
+	bool ProcessController::PopulateProcessHandleList() noexcept
 	{
 		if (!DAL_IsValidProcessId(m_process.processEntry.processId))
 			return false;
@@ -386,6 +429,7 @@ namespace Muninn::Controller
 		return true;
 	}
 
+	// To be reviewed
 	bool ProcessController::SimpleDLLInjectA() noexcept
 	{
 		if (!DAL_IsValidProcessId(m_process.processEntry.processId))
@@ -405,6 +449,7 @@ namespace Muninn::Controller
 			false;
 	}
 
+	// To be reviewed
 	bool ProcessController::SimpleDllInjectW() noexcept
 	{
 		if (!DAL_IsValidProcessId(m_process.processEntry.processId))

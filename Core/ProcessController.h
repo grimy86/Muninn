@@ -33,6 +33,12 @@ namespace Muninn::Controller
 
 		bool Dispose() noexcept override;
 
+		bool PopulateProcessEntryBasicInfo() noexcept;
+		bool PopulateProcessEntryImagePaths() noexcept;
+		bool PopulateProcessEntryExtendedInfo() noexcept;
+		bool PopulateProcessEntryWindowInfo() noexcept;
+		bool PopulateProcessEntryArchitecture() noexcept;
+
 	public:
 		ProcessController() noexcept = default;
 		ProcessController(const DWORD processId) noexcept;
@@ -42,26 +48,33 @@ namespace Muninn::Controller
 		~ProcessController() noexcept;
 
 		const ProcessControllerState& GetState() const noexcept
-		{ return m_state; }
+		{
+			return m_state;
+		}
 
 		const Muninn::Model::ProcessModel& GetProcess() const noexcept
-		{ return m_process; }
+		{
+			return m_process;
+		}
 
 		const Muninn::Model::InjectorModel& GetInjector() const noexcept
-		{ return m_injector; }
+		{
+			return m_injector;
+		}
 
 		bool SetProcessId(const DWORD processId) noexcept;
 		bool SetProcessHandle(const ACCESS_MASK accessMask) noexcept;
-		bool SetDllPathA(const char* dllPath) noexcept;
-		bool SetDllPathW(const wchar_t* dllPath) noexcept;
+		bool SetInjectorDllPathA(const char* dllPath) noexcept;
+		bool SetInjectorDllPathW(const wchar_t* dllPath) noexcept;
 
-		bool InitializeProcessEntry() noexcept;
-		bool InitializeModuleList() noexcept;
-		bool InitializeThreadList() noexcept;
-		bool InitializeHandleList() noexcept;
+		bool PopulateProcessEntry() noexcept;
+		bool PopulateProcessModuleList() noexcept;
+		bool PopulateProcessThreadList() noexcept;
+		bool PopulateProcessHandleList() noexcept;
+
 		bool SimpleDLLInjectA() noexcept;
 		bool SimpleDllInjectW() noexcept;
-		
+
 		static DWORD FindProcessId(
 			const WCHAR* processName,
 			bool& isRunning) noexcept;

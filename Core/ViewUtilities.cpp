@@ -1,13 +1,17 @@
 #include "ViewUtilities.h"
 
-BOOL ShowMessageBox(
-	const std::wstring& text,
-	const std::wstring& title,
-	UINT MB_Type = MB_OK) noexcept
+namespace Muninn::View
 {
-	return ::MessageBoxW(
-		nullptr,
-		text.c_str(),
-		title.c_str(),
-		MB_Type);
+	BOOL ShowMessageBox(
+		const std::wstring& text,
+		const std::wstring& title,
+		UINT MB_Type) noexcept
+	{
+		// WinUser.h
+		return ::MessageBoxW(
+			nullptr,
+			text.c_str(),
+			title.c_str(),
+			MB_Type);
+	}
 }

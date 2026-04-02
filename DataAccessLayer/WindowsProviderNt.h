@@ -2,8 +2,6 @@
 #define WINDOWS_PROVIDER_NT_H
 
 #include "DalConfig.h"
-#include <phnt_windows.h>
-#include <phnt.h>
 
 MUNINN_API NTSTATUS MUNINN_CALL
 DAL_WriteVirtualMemoryNt(

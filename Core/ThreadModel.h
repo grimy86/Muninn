@@ -1,5 +1,5 @@
 #pragma once
-#include <windows.h>
+#include <Windows.h>
 
 #ifndef UNDEFINED_PRIORITY_CLASS
 #define UNDEFINED_PRIORITY_CLASS 0x00000000

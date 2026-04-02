@@ -1,5 +1,5 @@
-#include "DataUtilities.h"
 #include "WindowsProviderNt.h"
+#include "DataUtilities.h"
 
 #ifndef QSI_MIN_BUFFER_SIZE 
 #define QSI_MIN_BUFFER_SIZE 0x20

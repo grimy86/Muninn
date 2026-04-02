@@ -2,10 +2,8 @@
 #define DATA_UTILITIES_H
 
 #include "DalConfig.h"
-#include <phnt_windows.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <sal.h>
 
 MUNINN_API bool MUNINN_CALL
 DAL_IsValidProcessId(

@@ -37,7 +37,7 @@ int main()
 	BREAKLINE;
 
 	PrintTitle(hConsole, L"__InitializeProcessEntry()__");
-	isInitialized = pProcessController->InitializeProcessEntry();
+	isInitialized = pProcessController->PopulateProcessEntry();
 	if (!isInitialized)
 	{
 		PrintError(hConsole, L"Failed to initialize process entry.");
