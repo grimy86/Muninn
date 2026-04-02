@@ -12,6 +12,8 @@
       <img src="https://img.shields.io/badge/Language-C11-000000?logo=c&logoColor=white&style=for-the-badge" />
       <img src="https://img.shields.io/badge/License-MIT-000000?style=for-the-badge" />
       <img src="https://img.shields.io/badge/Snyk-Security%20Monitored-000000?logo=snyk&logoColor=white&style=for-the-badge" />
+      <img src="https://img.shields.io/badge/CodeQL-Security%20Monitored-000000?logo=githubactions&logoColor=white&style=for-the-badge" />
+      <img src="https://img.shields.io/badge/Doxygen-Documented-000000?logo=doxygen&logoColor=white&style=for-the-badge" />
     </td>
   </tr>
 </table>
