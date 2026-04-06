@@ -950,7 +950,7 @@ DAL_SimpleDLLInjectA32(
 		return STATUS_INVALID_HANDLE;
 	}
 
-	// Wait for injection
+	// Wait until the thread finishes.
 	WaitForSingleObject(threadHandle, WAIT_TIME);
 
 	DWORD exitCode = 0ul;
@@ -1041,7 +1041,7 @@ DAL_SimpleDLLInjectW32(
 		processHandle,
 		NULL,
 		0ull,
-		(LPTHREAD_START_ROUTINE)LoadLibraryA, // StartAddress
+		(LPTHREAD_START_ROUTINE)LoadLibraryW, // StartAddress
 		location, // Pointer to the remote DLL path string
 		0ul,
 		NULL);
@@ -1058,7 +1058,7 @@ DAL_SimpleDLLInjectW32(
 	}
 
 	// Wait for injection
-	WaitForSingleObject(threadHandle, WAIT_TIME);
+	WaitForSingleObject(threadHandle, INFINITE);
 
 	DWORD exitCode = 0ul;
 

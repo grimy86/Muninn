@@ -443,14 +443,19 @@ namespace Muninn::Controller
 			m_process.processHandle,
 			m_injector.DllPathA,
 			&m_injector.ModuleHandle) };
-			
-		return NT_SUCCESS(status) == STATUS_SUCCESS ?
-			true :
-			false;
+
+		if (!NT_SUCCESS(status))
+		{
+			m_injector.IsInjected = false;
+			return false;
+		}
+
+		m_injector.IsInjected = true;
+		return true;
 	}
 
 	// To be reviewed
-	bool ProcessController::SimpleDllInjectW() noexcept
+	bool ProcessController::SimpleDLLInjectW() noexcept
 	{
 		if (!DAL_IsValidProcessId(m_process.processEntry.processId))
 			return false;
@@ -464,9 +469,14 @@ namespace Muninn::Controller
 			m_injector.DllPathW,
 			&m_injector.ModuleHandle) };
 
-		return NT_SUCCESS(status) == STATUS_SUCCESS ?
-			true :
-			false;
+		if (!NT_SUCCESS(status))
+		{
+			m_injector.IsInjected = false;
+			return false;
+		}
+
+		m_injector.IsInjected = true;
+		return true;
 	}
 
 	DWORD ProcessController::FindProcessId(

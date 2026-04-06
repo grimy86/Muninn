@@ -83,7 +83,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>Core.lib;Ntdll.lib;DataAccessLayer.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)$(Platform)\$(Configuration)\;%(AdditionalDependencies)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(Configuration)\;%(AdditionalDependencies)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -140,8 +140,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="ProcessPrinter.cpp" />
-    <ClCompile Include="ProcessPrinter.h" />
+    <ClCompile Include="ConsoleUtilities.cpp" />
+    <ClCompile Include="ConsoleUtilities.h" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClientConfig.h" />

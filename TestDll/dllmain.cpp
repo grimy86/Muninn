@@ -1,8 +1,10 @@
 #include <MuninnDal.h>
 
-DWORD WINAPI TestThread(HMODULE hModule)
+DWORD WINAPI TestThread(HMODULE libModule)
 {
     MessageBoxW(NULL, L"Hello from the DLL!", L"Test DLL", MB_OK);
+    
+    FreeLibraryAndExitThread(libModule, 0);
     return 0;
 }
 
@@ -14,6 +16,8 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     {
     case DLL_PROCESS_ATTACH:
     {
+        DisableThreadLibraryCalls(hModule);
+
         HANDLE hThread{ CreateThread(
                     nullptr,
                     0,
@@ -22,8 +26,10 @@ BOOL APIENTRY DllMain( HMODULE hModule,
                     0,
                     nullptr) };
 
-        DAL_CloseHandle32(hThread);
-        break; 
+        if (hThread)
+            CloseHandle(hThread);
+
+        break;
     }
 
     case DLL_THREAD_ATTACH:
@@ -31,5 +37,6 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     case DLL_PROCESS_DETACH:
         break;
     }
+
     return TRUE;
 }

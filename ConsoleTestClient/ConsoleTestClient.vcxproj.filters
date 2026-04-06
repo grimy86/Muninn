@@ -14,10 +14,10 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ProcessPrinter.cpp">
+    <ClCompile Include="ConsoleUtilities.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ProcessPrinter.h">
+    <ClCompile Include="ConsoleUtilities.h">
       <Filter>Header Files</Filter>
     </ClCompile>
   </ItemGroup>

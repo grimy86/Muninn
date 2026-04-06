@@ -1,18 +1,34 @@
 #pragma once
 
-#ifndef PROCESSNAMEW
-#define PROCESSNAMEW L"ac_client.exe"
+#ifndef PROCESSNAME_W
+#define PROCESSNAME_W L"ac_client.exe"
 #endif // !PROCESSNAMEW
 
-#ifndef DLLPATHW
-#define DLLPATHW L"TestDll.dll"
+#define PRINT_PROCESSNAME L"[PROCESSNAMEW] " PROCESSNAME_W
+#define PRINT_ENTRY L"[PRINT_ENTRY]"
+
+#define PRINT_MODULES L"[PRINT_MODULES]"
+#undef PRINT_MODULES
+
+#define PRINT_THREADS L"[PRINT_THREADS]"
+#undef PRINT_THREADS
+
+#define PRINT_HANDLES L"[PRINT_HANDLES]"
+#undef PRINT_HANDLES
+
+#ifndef DLLPATH_A
+#define DLLPATH_A R"(C:\Users\Amend\source\repos\grimy86\Muninn\Debug\TestDll.dll)"
+#endif // !DLLPATHA
+
+#ifndef DLLPATH_W
+#define DLLPATH_W LR"(C:\Users\Amend\source\repos\grimy86\Muninn\Debug\TestDll.dll)"
 #endif // !DLLPATHW
 
-#define PRINT_PROCESSNAME L"Defined PRINT_PROCESSNAME: " PROCESSNAMEW
-#define PRINT_ENTRY L"Defined: PRINT_ENTRY"
-#define PRINT_MODULES L"Defined: PRINT_MODULES"
-#undef PRINT_MODULES
-#define PRINT_THREADS L"Defined: PRINT_THREADS"
-#define PRINT_HANDLES L"Defined: PRINT_HANDLES"
-#define PRINT_DLLPATH L"Defined PRINT_DLLPATH: " DLLPATHW
-#define PRINT_SIMPLE_INJECTION L"Defined: PRINT_SIMPLE_INJECTION"
+#define PRINT_DLLPATH_A L"[DLLPATH_A] " DLLPATH_A
+#define PRINT_DLLPATH_W L"[DLLPATH_W] " DLLPATH_W
+
+#define PRINT_SIMPLE_INJECTION_A L"[PRINT_SIMPLE_INJECTION_A]"
+#undef PRINT_SIMPLE_INJECTION_A
+
+#define PRINT_SIMPLE_INJECTION_W L"[PRINT_SIMPLE_INJECTION_W]"
+// #undef PRINT_SIMPLE_INJECTION_W

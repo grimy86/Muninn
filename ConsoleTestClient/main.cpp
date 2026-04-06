@@ -1,29 +1,22 @@
 #include "ClientConfig.h"
-#include "ProcessPrinter.h"
-
-#ifndef BREAKLINE
-#define BREAKLINE std::wcout << '\n'
-#endif
+#include "ConsoleUtilities.h"
 
 int main()
 {
-	HANDLE hConsole{ GetStdHandle(STD_OUTPUT_HANDLE) };
-	DWORD processId{ 0ul };
-	bool isRunning{ false };
-	bool isInitialized{ false };
-	bool isInjected{ false };
+	PrintTitle(L"__Main()__");
 
-	PrintTitle(hConsole, L"__Main()__");
 #ifdef PRINT_PROCESSNAME
-	PrintConfig(hConsole, PRINT_PROCESSNAME);
+	PrintConfig(PRINT_PROCESSNAME);
 #endif
 
-	processId = Muninn::Controller::ProcessController::GetProcessId(
-			PROCESSNAMEW,isRunning);
+	bool isRunning{ false };
+	DWORD processId{ Muninn::Controller::ProcessController::FindProcessId(
+			PROCESSNAME_W,isRunning) };
+
 	if (!isRunning)
 	{
-		PrintError(hConsole, L"Please run the process first.");
-		PrintTitle(hConsole, L"__Exiting program__");
+		PrintError(L"Please run the process first.");
+		PrintTitle(L"__Exiting program__");
 		return 0;
 	}
 
@@ -36,11 +29,11 @@ int main()
 	PrintProcessHandle(pProcessController);
 	BREAKLINE;
 
-	PrintTitle(hConsole, L"__InitializeProcessEntry()__");
-	isInitialized = pProcessController->PopulateProcessEntry();
+	PrintTitle(L"__InitializeProcessEntry()__");
+	bool isInitialized = pProcessController->PopulateProcessEntry();
 	if (!isInitialized)
 	{
-		PrintError(hConsole, L"Failed to initialize process entry.");
+		PrintError(L"Failed to initialize process entry.");
 		BREAKLINE;
 		delete pProcessController;
 		pProcessController = nullptr;
@@ -48,48 +41,53 @@ int main()
 	}
 
 #ifdef PRINT_ENTRY
-	PrintConfig(hConsole, PRINT_ENTRY);
+	PrintConfig(PRINT_ENTRY);
 	PrintEntry(pProcessController);
 	BREAKLINE;
 #endif
 		
 #ifdef PRINT_MODULES
-	PrintConfig(hConsole, PRINT_MODULES);
+	PrintConfig(PRINT_MODULES);
 	pProcessController->InitializeModuleList();
 	PrintModules(pProcessController);
 	BREAKLINE;
 #endif
 
-#undef PRINT_THREADS
 #ifdef PRINT_THREADS
-	PrintConfig(hConsole, PRINT_MODULES);
+	PrintConfig(PRINT_MODULES);
 	pProcessController->InitializeThreadList();
 	PrintThreads(pProcessController);
 	BREAKLINE;
 #endif
 
-#undef PRINT_HANDLES
 #ifdef PRINT_HANDLES
-	PrintConfig(hConsole, PRINT_MODULES);
+	PrintConfig(PRINT_MODULES);
 	pProcessController->InitializeHandleList();
 	PrintHandles(pProcessController);
 	BREAKLINE;
 #endif
 
-#ifdef PRINT_DLLPATH
-	PrintConfig(hConsole, PRINT_DLLPATH);
+#ifdef PRINT_SIMPLE_INJECTION_A
+	PrintTitle(L"__PrintSimpleInject()__");
+	PrintConfig(PRINT_DLLPATH_A);
+	PrintConfig(PRINT_SIMPLE_INJECTION_A);
+	pProcessController->SetInjectorDllPathA(DLLPATH_A);
+	PrintSimpleInject(pProcessController);
 #endif
 
-#ifdef PRINT_SIMPLE_INJECTION
-	PrintConfig(hConsole, PRINT_SIMPLE_INJECTION);
-	PrintSimpleInject();
+#ifdef PRINT_SIMPLE_INJECTION_W
+	PrintTitle(L"__PrintSimpleInject()__");
+	PrintConfig(PRINT_DLLPATH_W);
+	PrintConfig(PRINT_SIMPLE_INJECTION_W);
+	pProcessController->SetInjectorDllPathW(DLLPATH_W);
+	PrintSimpleInject(pProcessController);
 #endif
 
-	PrintTitle(hConsole, L"__Cleanup__");
+	PrintTitle(L"__Cleanup__");
 	delete pProcessController;
 	pProcessController = nullptr;
 	BREAKLINE;
 	
-	PrintTitle(hConsole, L"__Exiting program__");
+	PrintTitle(L"__Exiting program__");
 	return 0;
 };

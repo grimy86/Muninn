@@ -73,7 +73,7 @@ namespace Muninn::Controller
 		bool PopulateProcessHandleList() noexcept;
 
 		bool SimpleDLLInjectA() noexcept;
-		bool SimpleDllInjectW() noexcept;
+		bool SimpleDLLInjectW() noexcept;
 
 		static DWORD FindProcessId(
 			const WCHAR* processName,
