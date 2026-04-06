@@ -273,6 +273,7 @@ namespace Muninn::Controller
 				m_process.processEntry.pebBaseAddress) };
 
 		std::vector<LDR_DATA_TABLE_ENTRY> moduleList{ MAX_MODULES };
+
 		DWORD copiedLength{0ul};
 
 		NTSTATUS status{ DAL_GetProcessModulesNt(
@@ -284,29 +285,35 @@ namespace Muninn::Controller
 		if (!NT_SUCCESS(status))
 			return false;
 
-		for (DWORD i{0ul}; i < copiedLength; ++i)
+		moduleList.resize(copiedLength);
+
+		wchar_t buffer[MAX_PATH]{};
+
+		for (DWORD i{0ul}; i < moduleList.size(); ++i)
 		{
 			Model::ModuleModel moduleEntry{};
 
-			/*
 			status = DAL_GetRemoteUnicodeStringNt(
-				m_processHandle,
+				m_process.processHandle,
 				&moduleList[i].BaseDllName,
-				moduleEntry.moduleName.data(),
+				buffer,
 				MAX_PATH,
 				&copiedLength);
 			if (!NT_SUCCESS(status))
-				return false;
+				continue;
+
+			moduleEntry.moduleName = buffer;
 
 			status = DAL_GetRemoteUnicodeStringNt(
-				m_processHandle,
+				m_process.processHandle,
 				&moduleList[i].FullDllName,
-				moduleEntry.modulePath.data(),
-				static_cast<DWORD>(moduleEntry.modulePath.size()),
+				buffer,
+				MAX_PATH,
 				&copiedLength);
 			if (!NT_SUCCESS(status))
-				return false;
-				*/
+				continue;
+
+			moduleEntry.modulePath = buffer;
 
 			moduleEntry.moduleLoadAddress =
 				reinterpret_cast<uintptr_t>(

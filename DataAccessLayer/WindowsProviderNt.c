@@ -497,43 +497,14 @@ DAL_GetRemoteUnicodeStringNt(
 		bufferLength * sizeof(WCHAR));
 
 	*pCopiedLength = 0ul;
-
-	UNICODE_STRING localString = {0};
-
+	
 	NTSTATUS status = DAL_ReadVirtualMemoryNt(
 		processHandle,
-		(uintptr_t)pRemoteUnicodeString,
-		&localString,
-		sizeof(localString));
-
-	if (!NT_SUCCESS(status))
-		return status;
-
-	// The string is empty
-	if (!localString.Buffer || localString.Length == 0)
-		return STATUS_SUCCESS;
-
-	DWORD charsToCopy =
-		localString.Length / sizeof(WCHAR);
-
-	if (charsToCopy >= bufferLength)
-		charsToCopy = bufferLength - 1ul;
-
-	SIZE_T bytesToRead =
-		charsToCopy * sizeof(WCHAR);
-
-	status = DAL_ReadVirtualMemoryNt(
-		processHandle,
-		(uintptr_t)localString.Buffer,
+		(uintptr_t)pRemoteUnicodeString->Buffer,
 		pBuffer,
-		bytesToRead);
+		pRemoteUnicodeString->Length);
 
-	if (!NT_SUCCESS(status))
-		return status;
-
-	pBuffer[charsToCopy] = L'\0';
-	*pCopiedLength = charsToCopy;
-
+	*pCopiedLength = pRemoteUnicodeString->Length / sizeof(WCHAR);
 	return status;
 }
 

@@ -150,6 +150,8 @@ void PrintModules(Muninn::Controller::ProcessController* pProcessController) noe
 
 		std::wcout << "moduleList[" << i << "].tlsIndex: " <<
 			pProcessController->GetProcess().moduleList[i].tlsIndex << '\n';
+
+		BREAKLINE;
 	}
 }
 

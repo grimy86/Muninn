@@ -48,7 +48,7 @@ int main()
 		
 #ifdef PRINT_MODULES
 	PrintConfig(PRINT_MODULES);
-	pProcessController->InitializeModuleList();
+	pProcessController->PopulateProcessModuleList();
 	PrintModules(pProcessController);
 	BREAKLINE;
 #endif
