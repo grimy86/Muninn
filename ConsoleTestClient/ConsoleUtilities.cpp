@@ -1,49 +1,5 @@
 #include "ConsoleUtilities.h"
 
-#ifndef FOREGROUND_WHITE
-#define FOREGROUND_WHITE (FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE)
-#endif // !FOREGROUND_WHITE
-
-void PrintTitle(const wchar_t* title) noexcept
-{
-	HANDLE stdHandle{ GetStdHandle(STD_OUTPUT_HANDLE) };
-
-	SetConsoleTextAttribute(stdHandle, FOREGROUND_GREEN | FOREGROUND_INTENSITY);
-	std::wcout << title << '\n';
-	SetConsoleTextAttribute(stdHandle, FOREGROUND_WHITE);
-}
-
-void PrintError(const wchar_t* error) noexcept
-{
-	HANDLE stdHandle{ GetStdHandle(STD_OUTPUT_HANDLE) };
-
-	SetConsoleTextAttribute(stdHandle, FOREGROUND_RED | FOREGROUND_INTENSITY);
-	std::wcout << error << '\n';
-	SetConsoleTextAttribute(stdHandle, FOREGROUND_WHITE);
-}
-
-void PrintConfig(const wchar_t* config) noexcept
-{
-	HANDLE stdHandle{ GetStdHandle(STD_OUTPUT_HANDLE) };
-
-	SetConsoleTextAttribute(stdHandle, FOREGROUND_BLUE | FOREGROUND_INTENSITY);
-	std::wcout << config << '\n';
-	SetConsoleTextAttribute(stdHandle, FOREGROUND_WHITE);
-}
-
-void PrintProcessId(Muninn::Controller::ProcessController* pProcessController) noexcept
-{
-	std::wcout << std::dec << "processId: " <<
-		pProcessController->GetProcess().processEntry.processId << '\n';
-}
-
-void PrintProcessHandle(Muninn::Controller::ProcessController* pProcessController) noexcept
-{
-	std::wcout << std::hex << "processHandle: 0x" <<
-		reinterpret_cast<uintptr_t>(
-			pProcessController->GetProcess().processHandle) << '\n';
-}
-
 void PrintEntry(Muninn::Controller::ProcessController* pProcessController) noexcept
 {
 	std::wcout << std::dec << "processEntry.processId: " <<
@@ -159,7 +115,7 @@ void PrintSimpleInject(Muninn::Controller::ProcessController* pProcessController
 {
 	if (pProcessController->GetInjector().IsInjected == true)
 	{
-		PrintError(L"You've already injected.");
+		Log(ConsoleColor::Red, "You've already injected.");
 		return;
 	}
 
@@ -171,7 +127,7 @@ void PrintSimpleInject(Muninn::Controller::ProcessController* pProcessController
 
 	if (!isDllPathASet && !isDllPathWSet)
 	{
-		PrintError(L"Please set the injector DLL path first.");
+		Log(ConsoleColor::Red, "Please set the injector DLL path first.");
 		return;
 	}
 
@@ -182,10 +138,10 @@ void PrintSimpleInject(Muninn::Controller::ProcessController* pProcessController
 		pProcessController->SimpleDLLInjectW();
 
 	if (!pProcessController->GetInjector().IsInjected)
-		PrintError(L"Failed to inject DLL using the path.");
+		Log(ConsoleColor::Red, "Failed to inject DLL using the path.");
 
 	if (pProcessController->GetInjector().IsInjected)
-		PrintTitle(L"__DLL injected successfully using the path!__");
+		Log(ConsoleColor::Yellow, "DLL injected successfully using the path.");
 
 	return;
 }
