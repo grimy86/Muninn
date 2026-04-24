@@ -1,5 +1,6 @@
 #include "ClientConfig.h"
 #include "ConsoleUtilities.h"
+#include "Tests.h"
 
 int main()
 {
@@ -34,7 +35,7 @@ int main()
 		return 1;
 	}
 
-	PrintEntry(pProcessController);
+	ShowEntry(pProcessController);
 	BREAKLINE;
 
 #ifdef PRINT_SIMPLE_INJECTION_W

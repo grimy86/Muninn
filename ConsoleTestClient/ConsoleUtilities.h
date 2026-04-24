@@ -48,7 +48,6 @@ void LogW(ConsoleColor color, Args&&... args) noexcept
 	SetConsoleTextAttribute(h, static_cast<WORD>(ConsoleColor::White));
 }
 
-void PrintProcessHandle(Muninn::Controller::ProcessController* pProcessController) noexcept;
-void PrintEntry(Muninn::Controller::ProcessController* pProcessController) noexcept;
-void PrintModules(Muninn::Controller::ProcessController* pProcessController) noexcept;
-void PrintSimpleInject( Muninn::Controller::ProcessController* pProcessController) noexcept;
+void ShowEntry(Muninn::Controller::ProcessController* pProcessController) noexcept;
+void ShowModules(Muninn::Controller::ProcessController* pProcessController) noexcept;
+void TrySimpleDllInjtect(Muninn::Controller::ProcessController* pProcessController) noexcept;

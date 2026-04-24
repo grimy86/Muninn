@@ -140,11 +140,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="ConsoleUtilities.cpp" />
     <ClCompile Include="ConsoleUtilities.h" />
+    <ClCompile Include="ConsoleUtilities.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClientConfig.h" />
+    <ClInclude Include="Tests.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

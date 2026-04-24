@@ -1,76 +1,48 @@
+#include "Tests.h"
 #include "ConsoleUtilities.h"
 
-void PrintEntry(Muninn::Controller::ProcessController* pProcessController) noexcept
+void ShowEntry(Muninn::Controller::ProcessController* pProcessController) noexcept
 {
-	std::wcout << std::dec << "processEntry.processId: " <<
-		pProcessController->GetProcess().processEntry.processId << '\n';
-
-	std::wcout << L"processEntry.processName: "
-		<< pProcessController->GetProcess().processEntry.processName << L'\n';
-
-	std::wcout << L"processEntry.userFullProcessImageName: "
-		<< pProcessController->GetProcess().processEntry.userFullProcessImageName << L'\n';
-
-	std::wcout << L"processEntry.NativeImageFileName: "
-		<< pProcessController->GetProcess().processEntry.NativeImageFileName << L'\n';
-
-	std::wcout << std::hex << L"processEntry.pebBaseAddress: 0x"
-		<< pProcessController->GetProcess().processEntry.pebBaseAddress << L'\n';
-
-	std::wcout << L"processEntry.moduleBaseAddress: 0x"
-		<< pProcessController->GetProcess().processEntry.moduleBaseAddress << L'\n';
-
-	std::wcout << std::dec << L"processEntry.parentProcessId: "
-		<< pProcessController->GetProcess().processEntry.parentProcessId << L'\n';
-
-	std::wcout << L"processEntry.isProtectedProcess: "
-		<< pProcessController->GetProcess().processEntry.isProtectedProcess << L'\n';
-
-	std::wcout << L"processEntry.isWow64Process: "
-		<< pProcessController->GetProcess().processEntry.isWow64Process << L'\n';
-
-	std::wcout << L"processEntry.isBackgroundProcess: "
-		<< pProcessController->GetProcess().processEntry.isBackgroundProcess << L'\n';
-
-	std::wcout << L"processEntry.isSecureProcess: "
-		<< pProcessController->GetProcess().processEntry.isSecureProcess << L'\n';
-
-	std::wcout << L"processEntry.isSubsystemProcess: "
-		<< pProcessController->GetProcess().processEntry.isSubsystemProcess << L'\n';
-
-	std::wcout << L"processEntry.hasVisibleWindow: "
-		<< pProcessController->GetProcess().processEntry.hasVisibleWindow << L'\n';
-
+	LogW(ConsoleColor::Yellow, L"ParentPID: ", std::dec, pProcessController->GetProcess().processEntry.parentProcessId);
+	LogW(ConsoleColor::Yellow, L"PID: ", std::dec, pProcessController->GetProcess().processEntry.processId);
+	LogW(ConsoleColor::Yellow, L"Name: ", std::dec, pProcessController->GetProcess().processEntry.processName);
+	LogW(ConsoleColor::Yellow, L"ImageName32: ", std::dec, pProcessController->GetProcess().processEntry.userFullProcessImageName);
+	LogW(ConsoleColor::Yellow, L"ImageNameNt: ", std::dec, pProcessController->GetProcess().processEntry.NativeImageFileName);
+	LogW(ConsoleColor::Yellow, L"ModuleBase: ", std::hex, pProcessController->GetProcess().processEntry.moduleBaseAddress);
+	LogW(ConsoleColor::Yellow, L"PEB: ", std::hex, pProcessController->GetProcess().processEntry.pebBaseAddress);
+	LogW(ConsoleColor::Yellow, L"Protected: ", std::dec, pProcessController->GetProcess().processEntry.isProtectedProcess);
+	LogW(ConsoleColor::Yellow, L"WoW64: ", std::dec, pProcessController->GetProcess().processEntry.isWow64Process);
+	LogW(ConsoleColor::Yellow, L"Background: ", std::dec, pProcessController->GetProcess().processEntry.isBackgroundProcess);
+	LogW(ConsoleColor::Yellow, L"Secure: ", std::dec, pProcessController->GetProcess().processEntry.isSecureProcess);
+	LogW(ConsoleColor::Yellow, L"Subsystem: ", std::dec, pProcessController->GetProcess().processEntry.isSubsystemProcess);
+	LogW(ConsoleColor::Yellow, L"VisibleWindow: ", std::dec, pProcessController->GetProcess().processEntry.hasVisibleWindow);
+	
 	switch (pProcessController->GetProcess().processEntry.architectureType)
 	{
 	case(Muninn::Model::ArchitectureType::x86):
 	{
-		std::wcout << L"processEntry.architectureType: " <<
-			L"x86" << L'\n';
+		LogW(ConsoleColor::Yellow, L"Architecture: x86");
 		break;
 	}
 	case(Muninn::Model::ArchitectureType::x64):
 	{
-		std::wcout << L"Controller..process.processEntry.architectureType: " <<
-			L"x64" << L'\n';
+		LogW(ConsoleColor::Yellow, L"Architecture: x64");
 		break;
 	}
 	case(Muninn::Model::ArchitectureType::Unknown):
 	{
-		std::wcout << L"Controller..process.processEntry.architectureType: " <<
-			L"Unknown" << L'\n';
+		LogW(ConsoleColor::Yellow, L"Architecture: Unknown");
 		break;
 	}
 	default:
 	{
-		std::wcout << L"Controller..process.processEntry.architectureType: " <<
-			L"Unknown" << L'\n';
+		LogW(ConsoleColor::Yellow, L"Architecture: Unknown");
 		break;
 	}
 	}
 }
 
-void PrintModules(Muninn::Controller::ProcessController* pProcessController) noexcept
+void ShowModules(Muninn::Controller::ProcessController* pProcessController) noexcept
 {
 	for (DWORD i{ 0ul }; i < pProcessController->GetProcess().moduleList.size(); ++i)
 	{
@@ -111,7 +83,7 @@ void PrintModules(Muninn::Controller::ProcessController* pProcessController) noe
 	}
 }
 
-void PrintSimpleInject(Muninn::Controller::ProcessController* pProcessController) noexcept
+void TrySimpleDllInjtect(Muninn::Controller::ProcessController* pProcessController) noexcept
 {
 	if (pProcessController->GetInjector().IsInjected == true)
 	{
@@ -119,10 +91,10 @@ void PrintSimpleInject(Muninn::Controller::ProcessController* pProcessController
 		return;
 	}
 
-	bool isDllPathASet{ 
+	bool isDllPathASet{
 		pProcessController->GetInjector().DllPathA != nullptr };
 
-	bool isDllPathWSet{ 
+	bool isDllPathWSet{
 		pProcessController->GetInjector().DllPathW != nullptr };
 
 	if (!isDllPathASet && !isDllPathWSet)
