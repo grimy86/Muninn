@@ -1,10 +1,6 @@
 #pragma once
 #include <iostream>
-#include <ProcessController.h>
-
-#ifndef BREAKLINE
-#define BREAKLINE std::wcout << '\n'
-#endif
+#include <windows.h>
 
 enum class ConsoleColor : WORD
 {
@@ -47,7 +43,3 @@ void LogW(ConsoleColor color, Args&&... args) noexcept
 
 	SetConsoleTextAttribute(h, static_cast<WORD>(ConsoleColor::White));
 }
-
-void ShowEntry(Muninn::Controller::ProcessController* pProcessController) noexcept;
-void ShowModules(Muninn::Controller::ProcessController* pProcessController) noexcept;
-void TrySimpleDllInjtect(Muninn::Controller::ProcessController* pProcessController) noexcept;
