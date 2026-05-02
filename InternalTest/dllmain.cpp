@@ -1,9 +1,29 @@
 #include <MuninnDal.h>
+#include "Offsets.h"
+#include "Hook.h"
+
+const char* iconFilePath{ "C:\\Program Files (x86)\\AssaultCube\\packages\\crosshairs\\cube.png" };
 
 DWORD WINAPI TestThread(HMODULE libModule)
 {
     MessageBoxW(NULL, L"Hello from the DLL!", L"Test DLL", MB_OK);
     
+    AssaultCube::SDL_WM_SetCaption("Hello from the DLL!", nullptr);
+	AssaultCube::SDL_Surface* iconSurface{ AssaultCube::IMG_Load(iconFilePath) };
+
+	if (iconSurface == nullptr)
+    {
+        MessageBoxW(NULL, L"Failed to load icon.png", L"Error", MB_OK | MB_ICONERROR);
+        FreeLibraryAndExitThread(libModule, 1);
+        return 1;
+    }
+
+	AssaultCube::SDL_WM_SetIcon(iconSurface, nullptr);
+
+
+	PatchMemory(AssaultCube::shotDelay, AssaultCube::shotDelayPatch, sizeof(AssaultCube::shotDelayPatch));
+	PatchMemory(AssaultCube::kickBackMultiplyer, AssaultCube::kickBackMultiplyerPatch, sizeof(AssaultCube::kickBackMultiplyerPatch));
+
     FreeLibraryAndExitThread(libModule, 0);
     return 0;
 }

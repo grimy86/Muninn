@@ -2,6 +2,10 @@
 #include <iostream>
 #include <windows.h>
 
+#ifndef NewLine
+#define NewLine() std::cout << '\n'
+#endif // !NewLine
+
 enum class ConsoleColor : WORD
 {
 	Black = 0ul,

@@ -24,7 +24,7 @@
     <ProjectGuid>{86A326D2-7FC1-442D-B0ED-E0FCBD11A0B9}</ProjectGuid>
     <RootNamespace>ConsoleTestClient</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>SystemTest</ProjectName>
+    <ProjectName>Client</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -140,8 +140,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Injector.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Log.h" />
+    <ClCompile Include="SystemInfo.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Injector.h" />
+    <ClInclude Include="SystemInfo.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

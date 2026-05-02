@@ -8,9 +8,7 @@
     <Project Path="DataAccessLayer/DataAccessLayer.vcxproj" Id="742f121f-5880-4766-9a24-1b69016cf872" />
   </Folder>
   <Folder Name="/Tests/">
-    <Project Path="ExternalTest/ExternalTest.vcxproj" Id="e6b4261c-69da-4082-a5ee-1c06732c46f1" />
-    <Project Path="InjectorTest/InjectorTest.vcxproj" Id="b9c4da3c-4def-4a96-94c9-3b795502ddfa" />
     <Project Path="InternalTest/InternalTest.vcxproj" Id="be60464d-67fd-48be-a86c-a8ad5c35c384" />
-    <Project Path="SystemTest/SystemTest.vcxproj" />
+    <Project Path="SystemTest/SystemTest.vcxproj" Id="86a326d2-7fc1-442d-b0ed-e0fcbd11a0b9" />
   </Folder>
 </Solution>
