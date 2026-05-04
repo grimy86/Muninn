@@ -9,24 +9,36 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
+    <Filter Include="Source Files\Hooks">
+      <UniqueIdentifier>{4f88fb49-fbd8-42fd-9ff3-0067323998d8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Globals">
+      <UniqueIdentifier>{f405a07a-62eb-45a0-b84f-7bff64ac3d31}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Hooks\Utils">
+      <UniqueIdentifier>{5b1438be-7420-487f-9e19-025b5d2f9a4b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Hook.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="HookUtilities.cpp">
+      <Filter>Source Files\Hooks\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Hooks.cpp">
+      <Filter>Source Files\Hooks</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Offsets.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="HookUtilities.h">
+      <Filter>Source Files\Hooks\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="Functions.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="Globals.h">
+      <Filter>Source Files\Globals</Filter>
     </ClInclude>
-    <ClInclude Include="Hook.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="Hooks.h">
+      <Filter>Source Files\Hooks</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

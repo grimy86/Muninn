@@ -1,28 +1,63 @@
 #include <MuninnDal.h>
-#include "Offsets.h"
-#include "Hook.h"
+#include "Globals.h"
+#include "HookUtilities.h"
+#include "Hooks.h"
 
 const char* iconFilePath{ "C:\\Program Files (x86)\\AssaultCube\\packages\\crosshairs\\cube.png" };
 
 DWORD WINAPI TestThread(HMODULE libModule)
 {
-    MessageBoxW(NULL, L"Hello from the DLL!", L"Test DLL", MB_OK);
-    
-    AssaultCube::SDL_WM_SetCaption("Hello from the DLL!", nullptr);
-	AssaultCube::SDL_Surface* iconSurface{ AssaultCube::IMG_Load(iconFilePath) };
+    // Allocate console for debug output
+    AllocConsole();
+    FILE* f;
+    freopen_s(&f, "CONOUT$", "w", stdout);
 
-	if (iconSurface == nullptr)
+    // Set window caption and icon
+    AssaultCube::SDL_WM_SetCaption("Hello from the DLL!", nullptr);
+    AssaultCube::SDL_Surface* iconSurface{ AssaultCube::IMG_Load(iconFilePath) };
+
+    if (iconSurface == nullptr)
     {
-        MessageBoxW(NULL, L"Failed to load icon.png", L"Error", MB_OK | MB_ICONERROR);
+        printf("Failed to load icon.png\n");
         FreeLibraryAndExitThread(libModule, 1);
         return 1;
     }
 
-	AssaultCube::SDL_WM_SetIcon(iconSurface, nullptr);
+    AssaultCube::SDL_WM_SetIcon(iconSurface, nullptr);
 
+    // Apply memory patches
+    PatchInstructions(
+        AssaultCube::shotDelayInstruction,
+        AssaultCube::shotDelayPatch,
+        sizeof(AssaultCube::shotDelayPatch));
 
-	PatchMemory(AssaultCube::shotDelay, AssaultCube::shotDelayPatch, sizeof(AssaultCube::shotDelayPatch));
-	PatchMemory(AssaultCube::kickBackMultiplyer, AssaultCube::kickBackMultiplyerPatch, sizeof(AssaultCube::kickBackMultiplyerPatch));
+    PatchInstructions(
+        AssaultCube::kickBackMultiplyer,
+        AssaultCube::kickBackMultiplyerPatch,
+        sizeof(AssaultCube::kickBackMultiplyerPatch));
+
+    InstallHook(
+        AssaultCube::recoilInstruction,
+        (uintptr_t)LaserGunAsmHook,
+        AssaultCube::recoilInstructionLength);
+
+    /*
+    InstallHook(
+        AssaultCube::scanForCheatEngineFunction,
+        (uintptr_t)ScanForCheatEngineHook,
+        6);
+    */
+
+    InstallTrampolineHook(
+        AssaultCube::scanForCheatEngineFunction,
+        (uintptr_t)ScanForCheatEngineTrampolineHook,
+		6);
+
+    // Keep DLL alive until END key is pressed
+    while (!GetAsyncKeyState(VK_END))
+    {
+        Sleep(100);
+    }
 
     FreeLibraryAndExitThread(libModule, 0);
     return 0;
