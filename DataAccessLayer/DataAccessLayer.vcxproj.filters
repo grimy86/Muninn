@@ -1,37 +1,66 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    <Filter Include="Utilities">
+      <UniqueIdentifier>{9e4dbd30-5ef4-4422-8a82-0af889986e7c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{63a7f8b6-dd6c-4659-b3e7-3280610bba58}</UniqueIdentifier>
+    <Filter Include="Configuration">
+      <UniqueIdentifier>{c13d8b24-44bb-4035-92e4-29fc4c1ac61e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="NTAPI">
+      <UniqueIdentifier>{cb347da6-22c9-468b-88e6-0f55b839d0bb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="WIN32API">
+      <UniqueIdentifier>{56fe66c2-1df7-4011-8002-ed69eae60beb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="WIN32API\DLLInjection">
+      <UniqueIdentifier>{b110656b-18d2-4b29-a421-b1ba3ad6ad16}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="WIN32API\MemoryPatching">
+      <UniqueIdentifier>{3c548eff-be85-4cf6-a2bb-9520dddeab3f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="WIN32API\ProcessInspection">
+      <UniqueIdentifier>{abbeb5b7-b3a2-4510-90ce-ee03ea6441f3}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DalConfig.h" />
+    <ClInclude Include="WindowsProcessProviderNt.h">
+      <Filter>NTAPI</Filter>
+    </ClInclude>
     <ClInclude Include="DataUtilities.h">
-      <Filter>Header Files</Filter>
+      <Filter>Utilities</Filter>
     </ClInclude>
-    <ClInclude Include="WindowsProvider32.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="DalConfig.h">
+      <Filter>Configuration</Filter>
     </ClInclude>
-    <ClInclude Include="WindowsProviderNt.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="MuninnDal.h">
+      <Filter>Configuration</Filter>
     </ClInclude>
-    <ClInclude Include="MuninnDal.h" />
+    <ClInclude Include="WindowsInjectionProvider32.h">
+      <Filter>WIN32API\DLLInjection</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowsMemoryProvider32.h">
+      <Filter>WIN32API\MemoryPatching</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowsProcessProvider32.h">
+      <Filter>WIN32API\ProcessInspection</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="WindowsProcessProviderNt.c">
+      <Filter>NTAPI</Filter>
+    </ClCompile>
     <ClCompile Include="DataUtilities.c">
-      <Filter>Source Files</Filter>
+      <Filter>Utilities</Filter>
     </ClCompile>
-    <ClCompile Include="WindowsProvider32.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="WindowsInjectionProvider32.c">
+      <Filter>WIN32API\DLLInjection</Filter>
     </ClCompile>
-    <ClCompile Include="WindowsProviderNt.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="WindowsMemoryProvider32.c">
+      <Filter>WIN32API\MemoryPatching</Filter>
     </ClCompile>
-    <ClCompile Include="dllmain.c" />
+    <ClCompile Include="WindowsProcessProvider32.c">
+      <Filter>WIN32API\ProcessInspection</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -1,44 +1,20 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
-    <Filter Include="Source Files\Hooks">
-      <UniqueIdentifier>{4f88fb49-fbd8-42fd-9ff3-0067323998d8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Globals">
-      <UniqueIdentifier>{f405a07a-62eb-45a0-b84f-7bff64ac3d31}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Hooks\Utils">
-      <UniqueIdentifier>{5b1438be-7420-487f-9e19-025b5d2f9a4b}</UniqueIdentifier>
-    </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="dllmain.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="HookUtilities.cpp">
-      <Filter>Source Files\Hooks\Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="Hooks.cpp">
-      <Filter>Source Files\Hooks</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="HookUtilities.h">
-      <Filter>Source Files\Hooks\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Globals.h">
-      <Filter>Source Files\Globals</Filter>
-    </ClInclude>
+    <ClInclude Include="Offsets.h" />
     <ClInclude Include="Hooks.h">
-      <Filter>Source Files\Hooks</Filter>
+      <Filter>Hooks</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="Hooks.cpp">
+      <Filter>Hooks</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Hooks">
+      <UniqueIdentifier>{faaed321-8e8f-482b-9e54-1bbc65595bd7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>

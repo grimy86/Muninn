@@ -1,4 +1,4 @@
-#include "WindowsProviderNt.h"
+#include "WindowsProcessProviderNt.h"
 #include "DataUtilities.h"
 
 #ifndef QSI_MIN_BUFFER_SIZE 

@@ -1,21 +1,33 @@
 #include <MuninnDal.h>
-#include "Globals.h"
-#include "HookUtilities.h"
+#include "Offsets.h"
 #include "Hooks.h"
+#include <cstdio>
 
 const char* iconFilePath{ "C:\\Program Files (x86)\\AssaultCube\\packages\\crosshairs\\cube.png" };
 
 DWORD WINAPI TestThread(HMODULE libModule)
 {
-    // Allocate console for debug output
+	MessageBoxA(nullptr, "DLL injected successfully!", "Info", MB_OK | MB_ICONINFORMATION);
+
+    // Allocating console for debugging
     AllocConsole();
     FILE* f;
     freopen_s(&f, "CONOUT$", "w", stdout);
+    
+    // Initializing function pointers
+    SDL_WM_SetCaption_t SDL_WM_SetCaption =
+        (SDL_WM_SetCaption_t)(offsets::AssaultCube + offsets::sdl_WM_SetCaption);
 
-    // Set window caption and icon
-    AssaultCube::SDL_WM_SetCaption("Hello from the DLL!", nullptr);
-    AssaultCube::SDL_Surface* iconSurface{ AssaultCube::IMG_Load(iconFilePath) };
+    IMG_Load_t IMG_Load =
+        (IMG_Load_t)(offsets::AssaultCube + offsets::img_Load);
 
+    SDL_WM_SetIcon_t SDL_WM_SetIcon =
+        (SDL_WM_SetIcon_t)(offsets::SDL + offsets::sdl_WM_SetIcon);
+
+    // Calling base module functions
+    SDL_WM_SetCaption("Hello from the DLL!", nullptr);
+    printf("Called SDL_WM_SetCaption\n");
+    SDL_Surface* iconSurface{ IMG_Load(iconFilePath) };
     if (iconSurface == nullptr)
     {
         printf("Failed to load icon.png\n");
@@ -23,35 +35,22 @@ DWORD WINAPI TestThread(HMODULE libModule)
         return 1;
     }
 
-    AssaultCube::SDL_WM_SetIcon(iconSurface, nullptr);
+	// Calling loaded module functions
+    SDL_WM_SetIcon(iconSurface, nullptr);
+    printf("Called SDL_WM_SetIcon\n");
 
-    // Apply memory patches
-    PatchInstructions(
-        AssaultCube::shotDelayInstruction,
-        AssaultCube::shotDelayPatch,
-        sizeof(AssaultCube::shotDelayPatch));
+    // Install regular C++ hook
+    // InstallHook(&ceScanHookInfo);
 
-    PatchInstructions(
-        AssaultCube::kickBackMultiplyer,
-        AssaultCube::kickBackMultiplyerPatch,
-        sizeof(AssaultCube::kickBackMultiplyerPatch));
+	// Install trampoline hook
+    InstallHook(&ceScanTrampolineHookInfo);
 
-    InstallHook(
-        AssaultCube::recoilInstruction,
-        (uintptr_t)LaserGunAsmHook,
-        AssaultCube::recoilInstructionLength);
+    // Install assembly hook
+    InstallHook(&recoilAssemblyHookInfo);
 
-    /*
-    InstallHook(
-        AssaultCube::scanForCheatEngineFunction,
-        (uintptr_t)ScanForCheatEngineHook,
-        6);
-    */
-
-    InstallTrampolineHook(
-        AssaultCube::scanForCheatEngineFunction,
-        (uintptr_t)ScanForCheatEngineTrampolineHook,
-		6);
+    // Install shellcode patches
+    InstallHook(&shotDelayPatchInfo);
+    InstallHook(&kickBackMultiplierPatchInfo);
 
     // Keep DLL alive until END key is pressed
     while (!GetAsyncKeyState(VK_END))
@@ -59,6 +58,11 @@ DWORD WINAPI TestThread(HMODULE libModule)
         Sleep(100);
     }
 
+	UninstallHook(&ceScanTrampolineHookInfo);
+
+    HWND consoleWindow = GetConsoleWindow();
+    FreeConsole();
+    PostMessage(consoleWindow, WM_CLOSE, 0, 0);
     FreeLibraryAndExitThread(libModule, 0);
     return 0;
 }

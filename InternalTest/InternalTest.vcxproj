@@ -156,14 +156,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="HookUtilities.cpp" />
-    <ClCompile Include="Hooks.cpp" />
+    <ClInclude Include="Hooks.h" />
+    <ClInclude Include="Offsets.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="HookUtilities.h" />
-    <ClInclude Include="Globals.h" />
-    <ClInclude Include="Hooks.h" />
+    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="Hooks.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

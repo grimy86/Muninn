@@ -1,5 +1,5 @@
-#ifndef WINDOWS_PROVIDER_32_H
-#define WINDOWS_PROVIDER_32_H
+#ifndef WINDOWS_PROCESS_PROVIDER_32_H
+#define WINDOWS_PROCESS_PROVIDER_32_H
 
 #include "DalConfig.h"
 #include <TlHelp32.h>
@@ -146,4 +146,4 @@ DAL_SimpleDLLInjectW32(
 	_In_ const WCHAR* const dllPath,
 	_Out_ HMODULE* pModuleHandle);
 
-#endif // !MUNINN_DATA_WINDOWS_PROVIDER_32
+#endif // !WINDOWS_PROCESS_PROVIDER_32
